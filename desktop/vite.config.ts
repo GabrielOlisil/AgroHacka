@@ -1,4 +1,5 @@
 import vue from '@vitejs/plugin-vue'
+import * as path from 'path';
 import { defineConfig } from 'vite'
 
 
@@ -8,6 +9,15 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+
+  resolve: {
+    alias: [
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "src"),
+      },
+    ],
+  },
 
   clearScreen: false,
 
