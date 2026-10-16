@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StockModule } from './stock/stock.module';
 import { DevicesModule } from './devices/devices.module';
+import { SyncModule } from './sync/sync.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DevicesModule } from './devices/devices.module';
     AuthModule,
     StockModule,
     DevicesModule,
+    SyncModule,
   ],
   controllers: [AppController],
   providers: [AppService],

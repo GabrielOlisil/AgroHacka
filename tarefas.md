@@ -113,11 +113,11 @@
 - [x] **3.1. Endpoints de Pareamento no NestJS:**
   - [x] `POST /devices/pairing-token`: Gera token de pareamento e código alfanumérico de 6 caracteres vinculado ao nome do Operador.
   - [x] `POST /devices/connect`: Valida conexão do Nó Operador.
-- [ ] **3.2. Endpoint de Sincronização Híbrida (`POST /sync`):**
-  - [ ] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
-  - [ ] Retorna registros novos/atualizados e recalcula alertas.
-- [ ] **3.3. Endpoint de Descoberta de IP (`PUT /farm/heartbeat`):**
-  - [ ] Registra o IP local do Nó Gestor na VPS para consulta do Operador.
+- [x] **3.2. Endpoint de Sincronização Híbrida (`POST /sync`):**
+  - [x] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
+  - [x] Retorna registros novos/atualizados e recalcula alertas.
+- [x] **3.3. Endpoint de Descoberta de IP (`PUT /farm/heartbeat`):**
+  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador.
 
 #### 🔹 [DEV 2] Interface do Usuário (Vue 3 Responsivo)
 - [ ] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
