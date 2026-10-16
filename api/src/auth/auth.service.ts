@@ -2,31 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { PrismaService } from '../prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-export interface RegisterDto {
-  nome: string;
-  email: string;
-  senha: string;
-  nomeFazenda: string;
-  telefone?: string;
-}
-
-export interface LoginDto {
-  email: string;
-  senha: string;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  user: {
-    id: string;
-    nome: string;
-    email: string;
-    role: string;
-    farmId: string | null;
-    farmNome?: string;
-  };
-}
+import { RegisterDto, LoginDto, AuthResponse } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -47,7 +23,6 @@ export class AuthService {
     const senhaHash = await bcrypt.hash(dto.senha, saltRounds);
 
     return this.prisma.$transaction(async (tx: any) => {
-      // Cria a fazenda do gestor
       const farm = await tx.farm.create({
         data: {
           nome: dto.nomeFazenda,
@@ -55,7 +30,6 @@ export class AuthService {
         },
       });
 
-      // Cria o usuário gestor associado à fazenda
       const user = await tx.user.create({
         data: {
           nome: dto.nome,

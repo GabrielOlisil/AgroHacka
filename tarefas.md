@@ -78,8 +78,8 @@
   - [ ] Rodar migrations no PostgreSQL da VPS.
 - [x] **1.2. Módulo de Autenticação Simples:**
   - [x] Endpoints `POST /auth/register` e `POST /auth/login` (E-mail + Senha com bcrypt e JWT).
-- [ ] **1.3. Base de Dados Simulada (Seed):**
-  - [ ] Criar `prisma/seed.ts` com produtos e movimentações simulando os problemas do Anexo III do regulamento (falta, vencimento, anomalia de diesel, curva ABC).
+- [x] **1.3. Base de Dados Simulada (Seed):**
+  - [x] Criar `prisma/seed.ts` com produtos e movimentações simulando os problemas do Anexo III do regulamento (falta, vencimento, anomalia de diesel, curva ABC).
 
 #### 🔹 [DEV 2] Banco Local Offline-First (SQLite + Tauri)
 - [ ] **1.4. Integração do SQLite no Tauri:**
