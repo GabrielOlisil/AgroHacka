@@ -56,10 +56,10 @@
 ### ETAPA 0: Infraestrutura Inicial & Repositório *(Dia 1)*
 *Dependência para que o restante do desenvolvimento avance.*
 
-- [ ] **0.1. [DEV 1] Setup do Coolify na VPS:**
-  - [ ] Criar serviço do **PostgreSQL** no Coolify.
-  - [ ] Obter a string de conexão (`DATABASE_URL`).
-  - [ ] Configurar aplicação da API NestJS no Coolify com deploy automático via Git.
+- [x] **0.1. [DEV 1] Setup do Coolify na VPS:**
+  - [x] Criar serviço do **PostgreSQL** no Coolify.
+  - [x] Obter a string de conexão (`DATABASE_URL`).
+  - [x] Configurar aplicação da API NestJS no Coolify com deploy automático via Git.
 - [ ] **0.2. [DEV 2] Setup do Tauri v2 nos Clientes:**
   - [ ] Garantir dependências de build Windows (Rust + WebView2) e Android (SDK/NDK) na máquina.
   - [ ] Verificar execução inicial da pasta `desktop/` com Vue 3.
@@ -73,9 +73,9 @@
 *Construção das duas pontas de persistência de dados.*
 
 #### 🔹 [DEV 1] Backend Central (NestJS + Prisma + PostgreSQL)
-- [ ] **1.1. Modelagem Prisma (`api/prisma/schema.prisma`):**
+- [x] **1.1. Modelagem Prisma (`api/prisma/schema.prisma`):**
   - [x] Criar tabelas: `Farm`, `User` (Gestor), `Device` (Operador), `Product`, `StockMovement`, `Alert`, `SyncLog`.
-  - [ ] Rodar migrations no PostgreSQL da VPS.
+  - [x] Rodar migrations no PostgreSQL da VPS.
 - [x] **1.2. Módulo de Autenticação Simples:**
   - [x] Endpoints `POST /auth/register` e `POST /auth/login` (E-mail + Senha com bcrypt e JWT).
 - [x] **1.3. Base de Dados Simulada (Seed):**
