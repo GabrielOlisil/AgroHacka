@@ -1,122 +1,221 @@
-# 📋 Checklist de Tarefas — AgroHack 2026/2 (IFRO)
+# 📋 Plano de Tarefas e Arquitetura — AgroHack 2026/2 (IFRO)
 
 > **Desafio Oficial:** Gestão Inteligente de Insumos em uma Propriedade Rural  
-> **Objetivo:** Transformar registros de estoque em informações úteis para identificar problemas, antecipar necessidades e apoiar decisões.  
-> **Data de Apresentação:** 29 de outubro de 2026 (SNCT)  
+> **Objetivo:** Transformar registros de estoque em informações úteis para identificar problemas, antecipar necessidades e apoiar decisões de forma simples e eficiente.  
+> **Data de Apresentação:** 29 de outubro de 2026 (Semana Nacional de Ciência e Tecnologia - SNCT)  
 > **Premiação:** R$ 2.000,00  
 
 ---
 
+## 🏗️ Resumo da Arquitetura e Decisões Técnicas
+
+| Camada / Recurso | Tecnologia | Função e Comportamento |
+| :--- | :--- | :--- |
+| **Backend Central** | **NestJS + TypeScript** | API REST central, autenticação do Gestor, orquestração de sincronização e Webhooks |
+| **Banco Central** | **PostgreSQL + Prisma ORM** | Persistência central em nuvem, histórico consolidado multi-dispositivos |
+| **Clientes** | **Tauri v2 + Vue 3 (Desktop .exe & Mobile .apk)** | **Paridade total de código e recursos:** mesma base Vue 3 responsiva para ambos |
+| **Perfis de Dispositivo** | **Nó Gestor** vs. **Nó Operador** | **Central Dinâmica:** qualquer dispositivo pode ser o Gestor ou Operador |
+| **Banco Local** | **SQLite local** (Tauri SQL Plugin) | Operação **100% Offline-First** em todos os dispositivos |
+| **Backup Automático** | **Snapshots SQLite (Estilo Anki)** | Cópias atômicas diárias (`VACUUM INTO`), retenção de 7 dias e restauração com 1 clique |
+| **Sincronização Híbrida** | **Local (LAN) primeiro $\rightarrow$ Nuvem depois** | Tenta rota local na rede Wi-Fi (timeout 500ms); se falhar, envia para a Nuvem |
+| **Descoberta de IP** | **Heartbeat na Nuvem + mDNS local** | Atualização automática de IP local sem qualquer intervenção humana |
+| **Firewall do Windows** | **Regra nativa no instalador do .exe** | Liberação automática da porta TCP de sincronização local em redes privadas |
+| **Pareamento Flexível** | **QR Code + Código Manual Alternativo** | Vincula o Nó Operador informando o nome do operador com ou sem câmera |
+| **Inteligência de Estoque** | **Motor Híbrido (TypeScript puro)** | Regras de alertas executam localmente no SQLite e também no Backend |
+| **Notificações Críticas** | **Twilio API (WhatsApp)** | Envio automático de alertas urgentes para o WhatsApp cadastrado do Gestor |
+
+---
+
 ## 📌 Fase 1: Gestão de Inscrição, Equipe e Repositório
-*Tarefas administrativas e de conformidade obrigatórias pelo regulamento.*
+*Obrigatório pelo regulamento oficial do evento.*
 
-- [ ] **1.1. Conferir dados de inscrição:** Verificar protocolo e chave de acesso da equipe na plataforma [incubadora.cloud/agrohack](https://incubadora.cloud/agrohack/).
-- [ ] **1.2. Configurar acesso ao GitHub:** Garantir que o repositório esteja acessível à banca avaliadora (público ou com permissões concedidas aos avaliadores).
-- [ ] **1.3. Submeter link do repositório:** Cadastrar o link oficial do GitHub na área "Minha equipe" no site do evento dentro do prazo limite divulgado.
-- [ ] **1.4. Identificar versão de entrega:** Criar uma `tag` ou registrar o hash do `commit` final para avaliação da banca.
-
----
-
-## 📊 Fase 2: Ingestão e Tratamento de Dados
-*Obrigatório para viabilizar as análises sem erros grosseiros apontados no regulamento.*
-
-- [ ] **2.1. Carga da base de dados:**
-  - [ ] Preparar ambiente para importar a base oficial do desafio assim que for divulgada.
-  - [ ] Criar/utilizar base de dados simulada com situações normais e problemáticas para desenvolvimento e testes iniciais (identificada claramente como simulada).
-- [ ] **2.2. Tratamento e higienização dos registros:**
-  - [ ] Padronizar produtos cadastrados com nomes ou grafias diferentes (ex: "NPK 10-10-10", "npk 10 10 10").
-  - [ ] Tratar unidades de medida distintas (não somar unidades diferentes como `kg`, `L`, `sc`, `un` sem a devida conversão/tratamento).
-  - [ ] Tratar campos ausentes ou nulos (garantir que ausência de preço ou data de validade não seja interpretada erroneamente como zero).
-- [ ] **2.3. Atualização e reanálise dinâmica:**
-  - [ ] Implementar fluxo de inclusão/registro de novas movimentações (entradas, saídas, compras).
-  - [ ] Garantir recálculo e reanálise imediata dos alertas e indicadores após qualquer atualização dos registros (requisito explícito do regulamento).
+- [ ] **1.1. Conferência cadastral:** Validar número de protocolo e chave da equipe na plataforma [incubadora.cloud/agrohack](https://incubadora.cloud/agrohack/).
+- [ ] **1.2. Acesso ao GitHub:** Garantir que o repositório esteja acessível à banca avaliadora.
+- [ ] **1.3. Submissão do repositório:** Inserir a URL do GitHub na área "Minha equipe" no site oficial dentro do prazo limite.
+- [ ] **1.4. Identificação da versão de entrega:** Criar uma `git tag` (ex: `v1.0.0-entrega`) e registrar o commit final para avaliação.
 
 ---
 
-## 🧠 Fase 3: Regras de Negócio e Inteligência de Estoque
-*As 7 perguntas centrais que a solução é OBRIGADA a responder segundo o desafio.*
+## 🗄️ Fase 2: Backend Central & Modelagem (NestJS + PostgreSQL + Prisma)
+*Estruturação da API central e modelo relacional multi-dispositivo.*
 
-- [ ] **3.1. Risco de Falta e Estoque Crítico:**
-  - [ ] Identificar produtos com saldo abaixo do estoque mínimo.
-  - [ ] Cruzar saldo atual com o ritmo de consumo recente para alertar produtos que vão acabar em breve.
-- [ ] **3.2. Estimativa de Duração do Estoque (Runout Time):**
-  - [ ] Calcular a projeção de dias/semanas de autonomia para cada insumo com base no consumo médio.
-  - [ ] Apresentar justificativa compreensível do cálculo (ex: *"Mantendo o consumo médio recente, o saldo será suficiente por aproximadamente 8 dias"*).
-  - [ ] Tratar e comunicar a incerteza para itens com pouco histórico de movimentação.
-- [ ] **3.3. Risco de Vencimento:**
-  - [ ] Identificar produtos com prazo de validade próximo.
-  - [ ] Cruzar lote/validade com a taxa de consumo para alertar produtos que vão vencer antes de serem totalmente utilizados.
-- [ ] **3.4. Variação e Tendência de Consumo:**
-  - [ ] Mapear o consumo de cada produto ao longo do tempo (identificar períodos de pico, sazonalidade e tendências de aumento).
+- [ ] **2.1. Configuração do Prisma no NestJS (`api/`):**
+  - [ ] Inicializar o Prisma (`npx prisma init`) apontando para o PostgreSQL.
+  - [ ] Modelar tabelas relacionais com UUIDs e timestamps:
+    - `Farm` (id, nome, gestor_id, local_ip, local_port, created_at, updated_at).
+    - `User` (id, farm_id, nome, email, senha_hash, role: GESTOR | OPERADOR, created_at).
+    - `Device` (id, farm_id, user_id, device_token, nome_dispositivo, pairing_code, ativo).
+    - `Product` (id, farm_id, nome, categoria, unidade_medida, estoque_minimo, preco_aquisicao, validade, lote, fornecedor, updated_at).
+    - `StockMovement` (id, farm_id, product_id, tipo: ENTRADA/SAIDA, quantidade, data_movimento, destino, operador_nome, updated_at).
+    - `Alert` (id, farm_id, product_id, nivel_urgencia: ALTA/MEDIA/BAIXA, justificativa, data_geracao, resolvido).
+  - [ ] Executar migrations no PostgreSQL.
+- [ ] **2.2. Endpoints da API REST:**
+  - [ ] Autenticação do Gestor (`POST /auth/register`, `POST /auth/login`).
+  - [ ] Pareamento de Dispositivos:
+    - `POST /devices/pairing-token`: Gestor gera token/QR Code e código alfanumérico com o nome do Operador.
+    - `POST /devices/connect`: Nó Operador envia o token ou código alfanumérico para validação e vínculo.
+  - [ ] Presença e Descoberta de Rede (`PUT /farm/heartbeat`): Registra o IP e porta local mais recentes do Nó Gestor.
+  - [ ] Sincronização em Lote (`POST /sync`): Recebe movimentações locais pendentes e retorna atualizações incrementais do servidor.
+  - [ ] Reanálise Central de Estoque (`POST /stock/analyze`): Processa dados e gera novos alertas.
+- [ ] **2.3. Carga de Dados e Seed:**
+  - [ ] Criar script `prisma/seed.ts` com dados simulados contendo anomalias e rotinas normais para validação.
+  - [ ] Preparar rotina para importar a base de dados oficial do evento assim que disponibilizada pela organização.
+
+---
+
+## 🧠 Fase 3: Motor Híbrido de Inteligência de Estoque (TypeScript Puro)
+*Módulo de regras de negócio compartilhado entre Backend, Desktop e Mobile — responde às 7 perguntas do desafio.*
+
+- [ ] **3.1. Tratamento e Higienização de Registros:**
+  - [ ] Padronização de grafias diferentes do mesmo insumo.
+  - [ ] Tratamento e conversão de unidades de medida (não misturar litros com quilos sem tratamento).
+  - [ ] Tratamento de campos ausentes (ausência de preço ou validade não pode ser tratada como zero).
+- [ ] **3.2. Risco de Falta e Estimativa de Duração (Runout Time):**
+  - [ ] Identificar saldo abaixo do estoque mínimo.
+  - [ ] Calcular taxa média de consumo diário/semanal baseada no histórico.
+  - [ ] Estimar dias de autonomia com justificativa clara (ex: *"Mantendo o consumo recente, o saldo será suficiente por aproximadamente 8 dias"*).
+  - [ ] Indicar nível de incerteza para itens com poucas movimentações registradas.
+- [ ] **3.3. Risco de Vencimento vs. Taxa de Consumo:**
+  - [ ] Alertar produtos próximos da validade antes do consumo estimado total.
+- [ ] **3.4. Tendência e Padrão de Consumo:**
+  - [ ] Mapear variações temporais (picos de consumo sazonal e aumentos progressivos).
 - [ ] **3.5. Detecção de Anomalias e Movimentações Fora do Padrão:**
-  - [ ] Detectar retiradas ou saídas atípicas (quantidades muito superiores à média habitual da propriedade).
-  - [ ] Apontar mudanças abruptas no padrão de consumo de itens específicos.
+  - [ ] Detectar retiradas em volumes discrepantes da média histórica da propriedade.
 - [ ] **3.6. Concentração Financeira e Excesso de Estoque:**
-  - [ ] Identificar onde está concentrado o maior valor monetário do estoque (curva ABC / capital imobilizado).
-  - [ ] Detectar produtos com estoque excessivo e baixa rotatividade (dinheiro parado).
+  - [ ] Classificação Curva ABC de capital imobilizado.
+  - [ ] Destacar insumos de alto valor com baixa rotatividade (capital travado).
 - [ ] **3.7. Motor de Priorização de Alertas:**
-  - [ ] Categorizar os alertas por nível de severidade/urgência (ex: Urgente, Atenção, Normal), evitando tratar todos os problemas como iguais.
-  - [ ] Destacar claramente na interface: *"Quais itens merecem atenção imediata e por quê"*.
+  - [ ] Categorizar alertas em níveis: Urgente, Atenção, Informativo.
+  - [ ] Apresentar lista priorizada: *"Quais itens merecem atenção imediata e por quê"*.
 
 ---
 
-## 🖥️ Fase 4: Interface e Experiência do Usuário (Painel do Produtor)
-*Apresentação simples, eficiente e acessível para o responsável pela propriedade rural.*
+## 💾 Fase 4: Persistência Local, Backup Automático e Sincronização Híbrida
+*Funcionamento robusto no campo rural com garantia de integridade.*
 
-- [ ] **4.1. Dashboard com Visão Geral e Prioridades:**
-  - [ ] Tela inicial destacando os alertas críticos imediatos e resumo financeiro/operacional.
-- [ ] **4.2. Visualização e Consulta de Estoque:**
-  - [ ] Listagem de produtos com filtros por categoria, status de risco, validade e valor.
-- [ ] **4.3. Telas de Detalhes e Justificativas:**
-  - [ ] Exibição transparente do porquê de cada alerta e de como foram obtidas as previsões.
-- [ ] **4.4. Interface para Entrada de Dados e Demonstração da Reanálise:**
-  - [ ] Interface prática para registrar nova movimentação e visualizar a atualização imediata dos alertas.
+- [ ] **4.1. SQLite Local via Tauri Plugin:**
+  - [ ] Configurar `@tauri-apps/plugin-sql` no projeto compartilhado.
+  - [ ] Criar schema SQLite local idêntico com tabela de controle `sync_outbox` (registros pendentes de envio).
+- [ ] **4.2. Sistema de Backup Automático (Estilo Anki):**
+  - [ ] Implementar rotina de snapshot atômico do SQLite via comando `VACUUM INTO 'backups/backup-[timestamp].db'`.
+  - [ ] Disparo automático diário ao iniciar a aplicação ou antes de cada sincronização pesada.
+  - [ ] Política de retenção rotativa: manter os últimos 7 backups diários, removendo os mais antigos automaticamente.
+  - [ ] Interface visual simples em *Configurações > Backups*: listagem das cópias com botão "Restaurar em 1 Clique".
+- [ ] **4.3. Motor de Sincronização Híbrida (Local Primeiro $\rightarrow$ Nuvem Depois):**
+  - [ ] Ao sincronizar, disparar ping rápido (500ms) no IP local do Nó Gestor na rede Wi-Fi.
+  - [ ] Se o Nó Gestor responder localmente: enviar dados diretamente via LAN (rápido e sem gastar internet).
+  - [ ] Se não responder: enviar para o endpoint da Nuvem (`POST /sync`).
+  - [ ] Resolução de conflitos usando timestamp mais recente (`updated_at`) e UUIDs para evitar duplicações.
+- [ ] **4.4. Atualização Automática de IP Local (Zero Ação Manual):**
+  - [ ] O Nó Gestor identifica seu IP na rede local e envia heartbeat periódico para a Nuvem.
+  - [ ] Anúncio e descoberta local via mDNS na rede Wi-Fi para que os Nós Operadores encontrem o Gestor mesmo sem internet.
 
 ---
 
-## 🧪 Fase 5: Testes, Validação e Limitações
+## 💻 Fase 5: Central Dinâmica e Paridade de Recursos (Desktop e Mobile)
+*A mesma base de código Vue 3 servindo com perfeição para o Nó Gestor e Nó Operador.*
+
+- [ ] **5.1. Fluxo de Inicialização e Boas-Vindas:**
+  - [ ] Tela inicial com duas escolhas claras:
+    - 🏢 **"Criar Nova Fazenda" (Nó Gestor):** Exige cadastro/login com email e senha para vincular a fazenda na nuvem.
+    - 📱 **"Conectar a uma Fazenda Existente" (Nó Operador):** Abre a tela de pareamento com passo a passo ilustrado.
+- [ ] **5.2. Mecanismo de Pareamento Duplo (QR Code + Código Manual):**
+  - [ ] **No Nó Gestor:**
+    - Modal *"Adicionar Dispositivo"*: campo para digitar o nome do operador (ex: *"Carlos Silva - Tratorista"*).
+    - Gera na tela o **QR Code** (contendo Farm ID, Worker Name, Device Token, IP Local e Porta).
+    - Exibe logo abaixo o **Código Alfanumérico Alternativo de 6 caracteres** (ex: `AGRO-88`).
+  - [ ] **No Nó Operador:**
+    - Opção padrão: apontar a câmera e escanear o QR Code.
+    - Opção alternativa: botão *"Digitar Código Manualmente"* para casos em que a câmera não funcione.
+    - Ao confirmar, o dispositivo grava o perfil do Operador no SQLite local e conclui a conexão.
+- [ ] **5.3. Telas e Funcionalidades com Paridade Total:**
+  - [ ] **Visão do Gestor:** Dashboard com indicadores, alertas críticos, Curva ABC, relatórios, cadastros completos e gestão de backups.
+  - [ ] **Visão do Operador:** Interface com botões grandes de acesso rápido para "Registrar Saída" e "Registrar Entrada" (com o nome do operador já pré-preenchido e bloqueado), além de consulta rápida de estoque.
+  - [ ] Responsividade Mobile-First (a mesma tela se adapta de monitores desktop para telas de smartphone).
+
+---
+
+## 📦 Fase 6: Empacotamento e Configuração de Instaladores
+*Facilidade de uso sem configurações técnicas manuais.*
+
+- [ ] **6.1. Instalador do Desktop (.exe):**
+  - [ ] Configurar build do executável Windows via Tauri (`cargo tauri build`).
+  - [ ] Configurar script do instalador (MSI/NSIS) para criar automaticamente a regra no Firewall do Windows:
+    `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
+  - [ ] Testar instalação silenciosa em máquina Windows limpa.
+- [ ] **6.2. Pacote Mobile (.apk):**
+  - [ ] Configurar build do Android via Tauri Mobile (`tauri android build`).
+  - [ ] Testar instalação e execução da `.apk` em celular Android real.
+
+---
+
+## 📲 Fase 7: Alertas Críticos no WhatsApp (Twilio API)
+*Diferencial prático de alto impacto na avaliação da banca.*
+
+- [ ] **7.1. Integração com Twilio WhatsApp:**
+  - [ ] Configurar credenciais Twilio na API NestJS (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`).
+  - [ ] Cadastrar número de WhatsApp do Gestor nas configurações da fazenda.
+- [ ] **7.2. Template de Notificação e Disparo Automático:**
+  - [ ] Criar mensagem formatada e objetiva:
+    > ⚠️ *ALERTA AGROHACK — GESTÃO DE ESTOQUE*  
+    > *Insumo:* Ureia Fertilizante  
+    > *Nível:* CRÍTICO  
+    > *Diagnóstico:* Mantendo a média de consumo recente, o saldo acaba em **2 dias**.  
+    > *Ação recomendada:* Programar novo pedido com o fornecedor.
+  - [ ] Disparar mensagem automaticamente quando a reanálise detectar alerta de nível ALTO/CRÍTICO.
+  - [ ] Botão no painel do Gestor para envio de teste para o WhatsApp.
+
+---
+
+## 🧪 Fase 8: Testes, Validação e Limitações
 *Critério de 15 pontos da banca avaliadora.*
 
-- [ ] **5.1. Testes com a base oficial:** Executar a solução com a base de dados real fornecida pela organização e conferir os resultados.
-- [ ] **5.2. Testes de casos de borda (edge cases):** Validar comportamento com itens sem preço, sem validade, produtos novos sem histórico e estoques zerados.
-- [ ] **5.3. Mapeamento de limitações:** Documentar formalmente o que a solução faz com precisão e quais são as limitações atuais (o que pode ser melhorado em versões futuras).
+- [ ] **8.1. Testes com a base oficial do desafio:** Carregar os dados oficiais da organização e conferir identificação de todas as anomalias.
+- [ ] **8.2. Validação da Sincronização Híbrida e Modo Offline:**
+  - [ ] Realizar movimentações com o dispositivo 100% desconectado da internet.
+  - [ ] Reconectar na rede Wi-Fi local e validar envio direto para o Nó Gestor sem internet externa.
+  - [ ] Desligar o Nó Gestor e validar sincronização automática via Nuvem (4G).
+- [ ] **8.3. Validação do Backup Automático:**
+  - [ ] Simular exclusão/alteração de registros e restaurar o snapshot do SQLite com 1 clique.
+- [ ] **8.4. Mapeamento de Limitações:**
+  - [ ] Documentar o que a solução faz com precisão e limitações conhecidas (ex: estimativa com menos de 3 movimentações é conservadora).
 
 ---
 
-## 📦 Fase 6: Documentação Obrigatória do Repositório (README)
-*Seguir rigorosamente o Anexo II do regulamento no `README.md`.*
+## 📄 Fase 9: Documentação Obrigatória do Repositório (README.md)
+*Estrutura estrita exigida pelo Anexo II do regulamento.*
 
-- [ ] **6.1. Seção Equipe:** Nomes completos, cursos, turmas, funções de cada integrante e identificação do responsável (ADS).
-- [ ] **6.2. Seção Problema e Público:** Contextualização do agronegócio, perfil do usuário e decisões que a ferramenta apoia.
-- [ ] **6.3. Seção Solução:** Descrição geral das funcionalidades e guia rápido.
-- [ ] **6.4. Seção Como Testar:** Instruções passo a passo reproduzíveis para instalação, execução local e carga dos dados.
-- [ ] **6.5. Seção Dados e Critérios:** Dicionário dos dados, tratamentos feitos, fórmulas dos alertas e limites das estimativas.
-- [ ] **6.6. Seção Demonstração:** Links para o vídeo demonstrativo, exemplos de uso e evidência da reanálise de dados.
-- [ ] **6.7. Seção Validação e Testes:** Resumo dos testes executados, resultados observados e limitações da solução.
-- [ ] **6.8. Seção Tecnologias e Uso de IA:**
-  - [ ] Listagem das tecnologias utilizadas.
-  - [ ] Declaração formal das ferramentas de IA utilizadas, com finalidade, partes apoiadas e revisões feitas (ou declaração expressa de não uso).
-- [ ] **6.9. Seção Autoria, Referências e Licença:** Fontes consultadas, termos de uso/licença e garantia de nenhuma credencial ou chave de API exposta.
-- [ ] **6.10. Seção Versão de Entrega:** Registro da versão/tag final entregue.
+- [ ] **9.1. Equipe:** Nomes, cursos, funções no projeto e identificação do responsável (ADS).
+- [ ] **9.2. Problema e Público:** Contextualização rural, dores de estoque e tomada de decisão de Gestores e Operadores.
+- [ ] **9.3. Solução:** Descrição da arquitetura híbrida, Central Dinâmica, Offline-First e paridade Desktop/Mobile.
+- [ ] **9.4. Como Testar:** Instruções passo a passo reproduzíveis para execução e links para download do `.exe` e `.apk`.
+- [ ] **9.5. Dados e Critérios:** Dicionário dos campos, tratamentos de unidades/grafias, fórmulas dos alertas e limites das estimativas.
+- [ ] **9.6. Demonstração:** Link do vídeo, prints das telas principais e evidência de reanálise imediata após novas movimentações.
+- [ ] **9.7. Validação e Testes:** Resumo dos testes com os dados oficiais e registro das limitações.
+- [ ] **9.8. Tecnologias e Declaração de IA:** Ferramentas utilizadas e declaração formal do uso de IA (finalidades, revisões humanas ou ausência de uso).
+- [ ] **9.9. Autoria e Licença:** Termos de uso, referências e garantia de que nenhuma chave ou credencial está exposta.
+- [ ] **9.10. Versão de Entrega:** Tag e commit final avaliado.
 
 ---
 
-## 🎥 Fase 7: Vídeo Demonstrativo e Materiais de Apresentação
-*Entregáveis obrigatórios no repositório para avaliação.*
+## 🎬 Fase 10: Vídeo Demonstrativo e Materiais de Apresentação
+*Entregáveis obrigatórios no repositório antes do evento.*
 
-- [ ] **7.1. Gravação do Vídeo Demonstrativo:**
-  - [ ] Gravar vídeo mostrando a solução funcionando com os dados do desafio.
-  - [ ] Demonstrar os alertas, a lógica/justificativa e o fluxo de reanálise após atualizar registros.
-  - [ ] Subir o vídeo (YouTube não listado, Drive compartilhado ou arquivo no repositório) e disponibilizar link no `README.md`.
-- [ ] **7.2. Produção dos Slides / Pitch:**
-  - [ ] Criar apresentação com foco no problema rural, demonstração prática, critérios dos alertas e valor gerado para o produtor.
-  - [ ] Salvar os slides/materiais de apresentação dentro do repositório.
+- [ ] **10.1. Gravação do Vídeo Demonstrativo (3 a 5 min):**
+  - [ ] 1. Visão do Gestor com dados reais e alertas críticos.
+  - [ ] 2. Pareamento do Nó Operador via QR Code e via Código Alfanumérico.
+  - [ ] 3. Registro de saída offline pelo Operador no campo.
+  - [ ] 4. Sincronização local/nuvem e reanálise instantânea dos alertas na tela do Gestor.
+  - [ ] 5. Recebimento da notificação do alerta no WhatsApp via Twilio.
+  - [ ] 6. Demonstração do Backup Automático e restauração em 1 clique (estilo Anki).
+- [ ] **10.2. Produção dos Slides do Pitch:**
+  - [ ] Slides salvos em PDF no repositório focados no problema rural, demonstração ao vivo, impacto financeiro e viabilidade técnica.
 
 ---
 
-## 🎤 Fase 8: Apresentação Final (SNCT — 29/10/2026)
-*Banca avaliadora presencial.*
+## 🏆 Fase 11: Apresentação Final (SNCT — 29/10/2026)
+*Banca avaliadora presencial no IFRO Campus Ariquemes.*
 
-- [ ] **8.1. Roteiro de Pitch e Demonstração:** Ensaiar a apresentação respeitando o tempo estipulado pela organização.
-- [ ] **8.2. Preparação para a Sabatina:** Alinhar com a equipe as respostas sobre decisões de código, critérios de alertas, limitações e uso de IA.
-- [ ] **8.3. Presença e Credenciamento:** Garantir a presença de todos os integrantes no IFRO Campus Ariquemes para os registros de presença e certificação.
+- [ ] **11.1. Ensaio Geral da Apresentação:** Cronometragem e revezamento da fala entre os integrantes da equipe.
+- [ ] **11.2. Preparação para a Sabatina:** Alinhar respostas técnicas sobre decisões de arquitetura, consistência offline, critérios de cálculos e uso responsável de IA.
+- [ ] **11.3. Checklist Presencial:** Aparelhos carregados, `.exe` e `.apk` testados e presença confirmada de toda a equipe.
