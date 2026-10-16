@@ -110,9 +110,9 @@
 *Construção visual e fluxo de uso dos perfis.*
 
 #### 🔹 [DEV 1] Endpoints de Pareamento & Sincronização
-- [ ] **3.1. Endpoints de Pareamento no NestJS:**
-  - [ ] `POST /devices/pairing-token`: Gera token de pareamento e código alfanumérico de 6 caracteres vinculado ao nome do Operador.
-  - [ ] `POST /devices/connect`: Valida conexão do Nó Operador.
+- [x] **3.1. Endpoints de Pareamento no NestJS:**
+  - [x] `POST /devices/pairing-token`: Gera token de pareamento e código alfanumérico de 6 caracteres vinculado ao nome do Operador.
+  - [x] `POST /devices/connect`: Valida conexão do Nó Operador.
 - [ ] **3.2. Endpoint de Sincronização Híbrida (`POST /sync`):**
   - [ ] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
   - [ ] Retorna registros novos/atualizados e recalcula alertas.
