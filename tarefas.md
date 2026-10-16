@@ -74,10 +74,10 @@
 
 #### 🔹 [DEV 1] Backend Central (NestJS + Prisma + PostgreSQL)
 - [ ] **1.1. Modelagem Prisma (`api/prisma/schema.prisma`):**
-  - [ ] Criar tabelas: `Farm`, `User` (Gestor), `Device` (Operador), `Product`, `StockMovement`, `Alert`, `SyncLog`.
+  - [x] Criar tabelas: `Farm`, `User` (Gestor), `Device` (Operador), `Product`, `StockMovement`, `Alert`, `SyncLog`.
   - [ ] Rodar migrations no PostgreSQL da VPS.
-- [ ] **1.2. Módulo de Autenticação Simples:**
-  - [ ] Endpoints `POST /auth/register` e `POST /auth/login` (E-mail + Senha com bcrypt e JWT).
+- [x] **1.2. Módulo de Autenticação Simples:**
+  - [x] Endpoints `POST /auth/register` e `POST /auth/login` (E-mail + Senha com bcrypt e JWT).
 - [ ] **1.3. Base de Dados Simulada (Seed):**
   - [ ] Criar `prisma/seed.ts` com produtos e movimentações simulando os problemas do Anexo III do regulamento (falta, vencimento, anomalia de diesel, curva ABC).
 

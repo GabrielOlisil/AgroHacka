@@ -1,10 +1,10 @@
-# 🧪 Diretrizes de Desenvolvimento — Test-Driven Development (TDD) Obrigatório
+# 🧪 Diretrizes de Desenvolvimento — TDD & Gestão de Tarefas
 
-Neste projeto, você DEVE seguir rigorosamente a metodologia de **Desenvolvimento Orientado a Testes (TDD)** para toda e qualquer funcionalidade, lógica de negócio, serviço, utilitário ou endpoint.
+Neste projeto, você DEVE seguir rigorosamente a metodologia de **Desenvolvimento Orientado a Testes (TDD)** e a **Gestão Ativa de Tarefas**.
 
 ---
 
-## 🔁 O Ciclo Red-Green-Refactor é Mandatório
+## 🔁 1. O Ciclo Red-Green-Refactor é Mandatório
 
 A cada nova funcionalidade ou correção de bug, execute os seguintes passos sem pular etapas:
 
@@ -24,7 +24,15 @@ A cada nova funcionalidade ou correção de bug, execute os seguintes passos sem
 
 ---
 
-## 🚫 Regras e Restrições Rígidas
+## 📋 2. Gestão Ativa do Checklist de Tarefas (`tarefas.md`)
+
+- **Consulta Contínua:** Antes de iniciar qualquer trabalho, verifique qual é a próxima tarefa pendente em `AgroHacka/tarefas.md`.
+- **Atualização Imediata:** Assim que uma tarefa ou subtarefa for concluída, testada e validada, marque o checkbox correspondente de `- [ ]` para `- [x]` no arquivo `AgroHacka/tarefas.md`.
+- **Transparência:** Sempre informe ao usuário qual tarefa da lista está sendo executada no momento e reporte a atualização do checklist ao finalizá-la.
+
+---
+
+## 🚫 3. Regras e Restrições Rígidas
 
 - **Sem código sem teste prévio:** É expressamente proibido criar arquivos de serviços, controllers, cálculos agronômicos ou funções de sincronização sem que um teste automatizado tenha sido escrito antes.
 - **Validação contínua:** Em cada etapa, mostre os comandos de teste executados e seus respectivos resultados (passes/fails).
