@@ -3,6 +3,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Força NODE_ENV=development no build para garantir que devDependencies (@nestjs/cli, typescript) sejam instaladas
+ENV NODE_ENV=development
+
 # Instala openssl para o Prisma Client
 RUN apk add --no-cache openssl
 
@@ -10,7 +13,7 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY prisma ./prisma/
 
-RUN npm install
+RUN npm install --include=dev
 
 COPY src ./src/
 
