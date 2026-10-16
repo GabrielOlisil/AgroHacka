@@ -93,15 +93,15 @@
 ### ETAPA 2: Motor de Inteligência de Estoque & Regras Agronômicas *(Dias 4 a 5)*
 *O coração do desafio do AgroHack — responde às 7 perguntas oficiais.*
 
-- [ ] **2.1. [EM CONJUNTO] Criação do Pacote Compartilhado de Regras (TypeScript Puro):**
-  - [ ] Função 1: **Normalização de Dados:** Padronização de nomes de produtos e conversão de unidades (não somar litros com quilos).
-  - [ ] Função 2: **Risco de Falta & Runout Time:** Cálculo de dias restantes de estoque baseado no consumo recente com justificativa clara (ex: *"Mantendo o consumo recente, o saldo será suficiente por ~8 dias"*).
-  - [ ] Função 3: **Risco de Vencimento:** Alerta de produtos que vão vencer antes do consumo estimado.
-  - [ ] Função 4: **Comportamento e Tendência:** Detecção de picos de consumo e sazonalidade.
-  - [ ] Função 5: **Anomalias:** Detecção de saídas fora da curva estatística da propriedade.
-  - [ ] Função 6: **Curva ABC & Estoque Parado:** Mapeamento de capital imobilizado e excesso de estoque.
-  - [ ] Função 7: **Priorização de Alertas:** Classificação em Urgente, Atenção e Normal.
-- [ ] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
+- [x] **2.1. [EM CONJUNTO] Criação do Pacote Compartilhado de Regras (TypeScript Puro):**
+  - [x] Função 1: **Normalização de Dados:** Padronização de nomes de produtos e conversão de unidades (não somar litros com quilos).
+  - [x] Função 2: **Risco de Falta & Runout Time:** Cálculo de dias restantes de estoque baseado no consumo recente com justificativa clara (ex: *"Mantendo o consumo recente, o saldo será suficiente por ~8 dias"*).
+  - [x] Função 3: **Risco de Vencimento:** Alerta de produtos que vão vencer antes do consumo estimado.
+  - [x] Função 4: **Comportamento e Tendência:** Detecção de picos de consumo e sazonalidade.
+  - [x] Função 5: **Anomalias:** Detecção de saídas fora da curva estatística da propriedade.
+  - [x] Função 6: **Curva ABC & Estoque Parado:** Mapeamento de capital imobilizado e excesso de estoque.
+  - [x] Função 7: **Priorização de Alertas:** Classificação em Urgente, Atenção e Normal.
+- [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [ ] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
 
 ---
