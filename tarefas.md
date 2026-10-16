@@ -136,12 +136,12 @@
 *Diferenciais de peso para a banca avaliadora.*
 
 #### 🔹 [DEV 1] Integração Twilio WhatsApp & Sync Backend
-- [ ] **4.1. Configuração da Conta Twilio:**
-  - [ ] Criar conta gratuita na Twilio e ativar a WhatsApp Sandbox.
-  - [ ] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`).
-- [ ] **4.2. Módulo de Disparo Automático:**
-  - [ ] Disparar mensagem WhatsApp para o número cadastrado do Gestor sempre que um alerta atingir nível CRÍTICO.
-  - [ ] Endpoint de teste manual para demonstração durante o pitch.
+- [x] **4.1. Configuração da Conta Twilio:**
+  - [x] Criar conta gratuita na Twilio e ativar a WhatsApp Sandbox.
+  - [x] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`).
+- [x] **4.2. Módulo de Disparo Automático:**
+  - [x] Disparar mensagem WhatsApp para o número cadastrado do Gestor sempre que um alerta atingir nível CRÍTICO.
+  - [x] Endpoint de teste manual para demonstração durante o pitch.
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
 - [ ] **4.3. Motor de Sincronização Híbrida:**
