@@ -30,7 +30,7 @@ jobs:
 
       - name: Instalar Dependências da API
         working-directory: api
-        run: npm ci
+        run: npm install
 
       - name: Gerar Prisma Client
         working-directory: api
