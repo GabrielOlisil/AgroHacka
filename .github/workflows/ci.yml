@@ -1,0 +1,41 @@
+name: CI - Testes Automatizados
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'feat/**'
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test-api:
+    name: Testes Automatizados (API NestJS)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: Instalar Dependências da API
+        working-directory: api
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        working-directory: api
+        run: npx prisma generate
+
+      - name: Executar Testes com Vitest
+        working-directory: api
+        run: npm test
