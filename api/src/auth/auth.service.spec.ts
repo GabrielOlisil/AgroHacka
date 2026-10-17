@@ -142,5 +142,49 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow('Credenciais inválidas');
     });
+
+    it('deve autenticar o Gestor informando campo password alternativo', async () => {
+      const bcrypt = await import('bcrypt');
+      const hash = await bcrypt.hash('agro1234', 10);
+
+      const mockUser = {
+        id: 'user-123',
+        farmId: 'farm-123',
+        nome: 'Produtor Silva',
+        email: 'gestor@fazenda.com',
+        senhaHash: hash,
+        role: 'GESTOR',
+        farm: {
+          id: 'farm-123',
+          nome: 'Fazenda Santa Maria',
+        },
+      };
+
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+
+      const result = await authService.login({
+        email: 'gestor@fazenda.com',
+        password: 'agro1234',
+      } as any);
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result.user.email).toBe('gestor@fazenda.com');
+    });
+
+    it('deve lançar erro se nem senha nem password forem informados', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'gestor@fazenda.com',
+        senhaHash: 'hash',
+      };
+
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+
+      await expect(
+        authService.login({
+          email: 'gestor@fazenda.com',
+        } as any),
+      ).rejects.toThrow('Credenciais inválidas');
+    });
   });
 });

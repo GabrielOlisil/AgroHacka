@@ -8,7 +8,8 @@ export class RegisterDto {
 
 export class LoginDto {
   email!: string;
-  senha!: string;
+  senha?: string;
+  password?: string;
 }
 
 export interface AuthResponse {
