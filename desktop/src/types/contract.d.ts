@@ -163,15 +163,56 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        RegisterDto: Record<string, never>;
-        LoginDto: Record<string, never>;
+        RegisterDto: {
+            nome: string;
+            email: string;
+            senha: string;
+            nomeFazenda: string;
+            telefone?: string;
+        };
+        LoginDto: {
+            email: string;
+            senha?: string;
+            password?: string;
+        };
         AnalyzeStockDto: Record<string, never>;
-        CreatePairingDto: Record<string, never>;
-        ConnectDeviceDto: Record<string, never>;
-        SyncPayloadDto: Record<string, never>;
-        HeartbeatDto: Record<string, never>;
-        SendTestWhatsAppDto: Record<string, never>;
-        DispatchAlertsDto: Record<string, never>;
+        CreatePairingDto: {
+            farmId: string;
+            nomeOperador: string;
+        };
+        ConnectDeviceDto: {
+            tokenOrCode: string;
+        };
+        SyncMovementDto: {
+            id: string;
+            farmId: string;
+            productId: string;
+            /** @enum {string} */
+            tipo: "ENTRADA" | "SAIDA";
+            quantidade: number;
+            dataMovimento: Record<string, never>;
+            destino?: string;
+            responsavel: string;
+            updatedAt?: Record<string, never>;
+        };
+        SyncPayloadDto: {
+            farmId: string;
+            deviceId?: string;
+            lastSyncTimestamp?: string;
+            pendingMovements?: components["schemas"]["SyncMovementDto"][];
+        };
+        HeartbeatDto: {
+            farmId: string;
+            localIp: string;
+            localPort?: number;
+        };
+        SendTestWhatsAppDto: {
+            paraTelefone: string;
+            mensagem?: string;
+        };
+        DispatchAlertsDto: {
+            farmId: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -194,7 +235,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": string;
+                };
             };
         };
     };
@@ -215,7 +258,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": Record<string, never>;
+                };
             };
         };
     };
@@ -236,7 +281,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": Record<string, never>;
+                };
             };
         };
     };
@@ -362,7 +409,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": Record<string, never>;
+                };
             };
         };
     };
@@ -383,7 +432,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": Record<string, never>;
+                };
             };
         };
     };
