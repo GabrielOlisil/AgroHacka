@@ -60,9 +60,9 @@
   - [x] Criar serviço do **PostgreSQL** no Coolify.
   - [x] Obter a string de conexão (`DATABASE_URL`).
   - [x] Configurar aplicação da API NestJS no Coolify com deploy automático via Git.
-- [ ] **0.2. [DEV 2] Setup do Tauri v2 nos Clientes:**
-  - [ ] Garantir dependências de build Windows (Rust + WebView2) e Android (SDK/NDK) na máquina.
-  - [ ] Verificar execução inicial da pasta `desktop/` com Vue 3.
+- [x] **0.2. [DEV 2] Setup do Tauri v2 nos Clientes:**
+  - [x] Garantir dependências de build Windows (Rust + WebView2) e Android (SDK/NDK) na máquina.
+  - [x] Verificar execução inicial da pasta `desktop/` com Vue 3.
 - [x] **0.3. [EM CONJUNTO] Governança do Repositório:**
   - [x] Conferir dados da inscrição, protocolo e chave na plataforma do AgroHack (Equipe: Oliveira & Oliveira | Protocolo: AGRO26-F009CD2F9F | Integrantes: Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira — ADS 6º Período).
   - [x] Garantir que o repositório GitHub esteja público ou com acesso aos avaliadores da banca (https://github.com/GabrielOlisil/AgroHacka).
