@@ -82,11 +82,13 @@
   - [x] Criar `prisma/seed.ts` com produtos e movimentações simulando os problemas do Anexo III do regulamento (falta, vencimento, anomalia de diesel, curva ABC).
 
 #### 🔹 [DEV 2] Banco Local Offline-First (SQLite + Tauri)
-- [ ] **1.4. Integração do SQLite no Tauri:**
-  - [ ] Instalar e configurar `@tauri-apps/plugin-sql` no projeto frontend/desktop.
-  - [ ] Criar script de inicialização do schema local SQLite espelhado (`products`, `movements`, `alerts`, `sync_outbox`, `app_config`).
-- [ ] **1.5. Persistência de Sessão Local:**
-  - [ ] Salvar token JWT e dados do Gestor no SQLite local para que o app nunca deslogue sem internet.
+- [x] **1.4. Integração do SQLite no Tauri:**
+  - [x] Instalar e configurar `@tauri-apps/plugin-sql` no projeto frontend/desktop.
+  - [x] Criar script de inicialização do schema local SQLite espelhado (`products`, `movements`, `alerts`, `sync_outbox`, `app_config`).
+- [x] **1.5. Persistência de Sessão Local:**
+  - [x] Salvar token JWT e dados do Gestor no SQLite local para que o app nunca deslogue sem internet.
+
+> Cliente: persistência e retomada offline validadas por testes. Tokens e backups ainda não estão criptografados; a proteção por cofre nativo permanece pendente e está documentada em `desktop/README.md`. Senhas de login não são persistidas.
 
 ---
 
@@ -102,7 +104,9 @@
   - [x] Função 6: **Curva ABC & Estoque Parado:** Mapeamento de capital imobilizado e excesso de estoque.
   - [x] Função 7: **Priorização de Alertas:** Classificação em Urgente, Atenção e Normal.
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
-- [ ] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
+- [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
+  - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
+- [ ] **2.4. [EM CONJUNTO] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e extrair o pacote realmente compartilhado. O cliente usa dias de calendário; o backend atual calcula média por registro.
 
 ---
 
@@ -120,15 +124,24 @@
   - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador.
 
 #### 🔹 [DEV 2] Interface do Usuário (Vue 3 Responsivo)
-- [ ] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
-  - [ ] Botão 🏢 *"Criar Nova Fazenda"* (Login/Cadastro do Gestor).
-  - [ ] Botão 📱 *"Conectar a uma Fazenda Existente"* (Fluxo do Operador).
+- [x] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
+  - [x] Botão 🏢 *"Criar Nova Fazenda"* (Login/Cadastro do Gestor).
+  - [x] Botão 📱 *"Conectar a uma Fazenda Existente"* (Fluxo do Operador).
 - [ ] **3.5. Pareamento Duplo (QR Code + Código Manual):**
-  - [ ] Modal no Gestor: digita nome do operador $\rightarrow$ exibe QR Code + Código alfanumérico (`AGRO-88`).
+  - [x] Modal no Gestor: digita nome do operador $\rightarrow$ exibe QR Code + Código alfanumérico (`AGRO-88`).
   - [ ] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
-- [ ] **3.6. Painéis e Paridade de Recursos:**
-  - [ ] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
-  - [ ] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
+    - [x] Conexão por código manual ou conteúdo do QR Code, com validação automatizada.
+    - [x] Implementar leitura por câmera e imagem QR na interface.
+    - [ ] Validar permissões e leitura da câmera na WebView e em aparelho Android real.
+- [x] **3.6. Painéis e Paridade de Recursos:**
+  - [x] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
+  - [x] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
+- [x] **3.7. [DEV 2] Refinamento visual conforme `desktop/design-system.md`:**
+  - [x] Aplicar tokens, tipografia local, cantos retos e controles compactos a todas as telas.
+  - [x] Substituir os símbolos da interface exclusivamente por ícones Lucide.
+  - [x] Validar navegação acessível, regressões e layouts desktop/mobile.
+
+> Revisão visual no navegador com dados simulados: autenticação, painéis, estoque, histórico, backups e pareamento; larguras desktop e mobile de 390/360 px. Validação final: 75 testes Vitest, checagem TypeScript e build aprovados. WebView e Android real continuam nas pendências específicas abaixo.
 
 ---
 
@@ -145,11 +158,15 @@
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
 - [ ] **4.3. Motor de Sincronização Híbrida:**
+  - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
+  - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
+  - [ ] Implementar servidor LAN no Tauri gestor, descoberta local e distinguir recebimento LAN de confirmação na nuvem.
   - [ ] Ping no IP local (500ms) $\rightarrow$ se responder, sincroniza via LAN; se falhar, envia para a VPS Coolify.
-- [ ] **4.4. Backup Automático no SQLite (Estilo Anki):**
-  - [ ] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
-  - [ ] Retenção automática dos últimos 7 dias.
-  - [ ] Tela em *Configurações > Backups* com lista e botão *"Restaurar em 1 Clique"*.
+- [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
+  - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
+  - [x] Retenção automática dos últimos 7 dias.
+  - [x] Tela em *Configurações > Backups* com lista e botão *"Restaurar em 1 Clique"*.
+  - [x] Verificar integridade antes da restauração e criar snapshot de recuperação do estado atual, com testes nativos em SQLite real.
 
 ---
 
@@ -175,8 +192,10 @@
 - [ ] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
   - [ ] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp.
 - [ ] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
+  - [x] Validar automaticamente persistência offline, rollback e reenvio idempotente entre dois SQLite e um servidor simulado.
   - [ ] Desligar Wi-Fi/4G, fazer movimentações no celular, reconectar e confirmar a sincronização sem duplicidade.
 - [ ] **6.4. [EM CONJUNTO] Registro de Limitações:**
+  - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `desktop/README.md`.
   - [ ] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
 
 ---

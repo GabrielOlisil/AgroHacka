@@ -1,0 +1,149 @@
+// Harness de revisão visual: fora da entrada de produção, sem API ou SQLite.
+import { createApp, ref } from "vue";
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-700.css";
+import "../src/style.css";
+import App from "../src/App.vue";
+import { analyzeInventory } from "../src/offline/analysis";
+import type { Movement, Product, Session } from "../src/offline/types";
+import type { Workspace } from "../src/workspace";
+
+const now = new Date();
+const date = (days: number) =>
+  new Date(now.getTime() + days * 86_400_000).toISOString();
+const products: Product[] = [
+  {
+    id: "diesel",
+    farmId: "f",
+    nome: "Óleo diesel S10",
+    categoria: "Combustíveis",
+    unidadeMedida: "L",
+    estoqueMinimo: 50,
+    precoAquisicao: 6.4,
+    validade: null,
+    fornecedor: "Distribuidora Rural",
+  },
+  {
+    id: "semente",
+    farmId: "f",
+    nome: "Sementes de milho",
+    categoria: "Sementes",
+    unidadeMedida: "kg",
+    estoqueMinimo: 40,
+    precoAquisicao: 26,
+    validade: date(90),
+    lote: "MIL-2026-04",
+  },
+  {
+    id: "herbicida",
+    farmId: "f",
+    nome: "Herbicida seletivo",
+    categoria: "Defensivos",
+    unidadeMedida: "L",
+    estoqueMinimo: 10,
+    precoAquisicao: 85,
+    validade: date(3),
+    lote: "HER-2026-09",
+  },
+];
+const movement = (
+  id: string,
+  productId: string,
+  tipo: "ENTRADA" | "SAIDA",
+  quantidade: number,
+  days: number,
+): Movement => ({
+  id,
+  farmId: "f",
+  productId,
+  tipo,
+  quantidade,
+  dataMovimento: date(days),
+  responsavel: "Ana Oliveira",
+  destino: tipo === "SAIDA" ? "Talhão 03" : "Compra de insumos",
+});
+const movements = ref([
+  movement("1", "diesel", "ENTRADA", 150, -25),
+  ...[22, 18, 14, 10, 6].map((days, index) =>
+    movement(`d${index}`, "diesel", "SAIDA", 26, -days),
+  ),
+  movement("2", "semente", "ENTRADA", 240, -20),
+  movement("3", "semente", "SAIDA", 40, -3),
+  movement("4", "herbicida", "ENTRADA", 80, -12),
+  movement("5", "herbicida", "SAIDA", 5, -4),
+]);
+const gestor: Session = {
+  role: "GESTOR",
+  farmId: "f",
+  farmNome: "Fazenda Boa Vista",
+  nome: "Ana Oliveira",
+  userId: "u",
+};
+const operador: Session = {
+  ...gestor,
+  role: "OPERADOR",
+  nome: "Carlos Oliveira",
+  deviceId: "d",
+};
+const profile = new URLSearchParams(location.search).get("profile");
+const session = ref<Session | null>(
+  profile === "guest" ? null : profile === "operador" ? operador : gestor,
+);
+const analysis = ref(analyzeInventory(products, movements.value, now));
+const controller: Workspace = {
+  ready: ref(true),
+  session,
+  analysis,
+  movements,
+  pendingCount: ref(2),
+  lastSync: ref(date(-1)),
+  error: ref(""),
+  syncing: ref(false),
+  backups: ref([
+    { name: `backup-${date(0).slice(0, 10)}.db`, size: 131072 },
+    { name: `backup-${date(-1).slice(0, 10)}.db`, size: 126976 },
+  ]),
+  async initialize() {},
+  async refresh() {},
+  async maintainBackups() {},
+  async sync() {},
+  async login() {
+    session.value = gestor;
+  },
+  async register() {
+    session.value = gestor;
+  },
+  async connect() {
+    session.value = operador;
+  },
+  async logout() {
+    session.value = null;
+  },
+  async record(input) {
+    movements.value.push({
+      ...input,
+      id: crypto.randomUUID(),
+      farmId: "f",
+      responsavel: session.value?.nome ?? gestor.nome,
+    });
+    analysis.value = analyzeInventory(products, movements.value);
+  },
+  async pair(nomeOperador) {
+    return {
+      pairingCode: "AGRO-DEMO",
+      deviceToken: "visual-test-token",
+      qrPayload: {
+        farmId: "f",
+        farmNome: gestor.farmNome,
+        nomeOperador,
+        deviceToken: "visual-test-token",
+      },
+    };
+  },
+  async createBackup() {},
+  async restoreBackup() {},
+  dispose() {},
+};
+createApp(App, { controller }).mount("#app");
