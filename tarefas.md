@@ -178,6 +178,20 @@
   - [x] Documentar em `regra_de_sync.md` idempotência, duplicidade operacional, saldo offline, protocolo de confirmação e plano de validação, distinguindo proposta de implementação atual.
 - [x] **4.6. [EM CONJUNTO] Skill de implementação das regras de sync:**
   - [x] Criar orientações compartilhadas com rotas para backend e frontend, registrar seu uso no `AGENTS.md` e validar estrutura, metadados e referências.
+- [x] **4.7. [DEV 1 + DEV 2] Sync cloud confiável (branch `codex/offline-stock-sync`):**
+  - [x] Autenticar gestor/operador e isolar fazenda, produto e autoria.
+  - [x] Persistir movimentos imutáveis e recibos individuais em transação, com conflitos explícitos.
+  - [x] Adaptar o contrato e `openapi-fetch`; preservar pendências e aplicar confirmações atomicamente.
+  - [x] Garantir identidade estável do rascunho, revisão de conflitos e sinalização de déficit sem descartar fatos.
+  - [x] Validar retries, isolamento, convergência e concorrência com PostgreSQL descartável e SQLite real.
+  - [x] Documentar limites: download completo consistente; sem cursor incremental, LAN, cotas ou estornos nesta etapa.
+
+> Validação de 4.7: desktop `npm test` (98), `npm run check` e `npm run build`;
+> API `npm test` (56), `npm run test:sync` (19) e `npm run build`, todos aprovados.
+> A skill `agrohacka-sync` orientou os testes de concorrência com conexões PostgreSQL
+> independentes e a aplicação atômica no SQLite. Nenhum banco real foi atualizado;
+> o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
+> tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
 ---
 

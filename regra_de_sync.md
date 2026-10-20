@@ -1,8 +1,9 @@
 # Regras de sincronização — SQLite local e PostgreSQL na nuvem
 
-Status: proposta para discussão e implementação incremental. Este documento não
-altera a API, o contrato OpenAPI ou os bancos existentes. As decisões de negócio
-sugeridas, especialmente sobre saldo negativo, precisam ser aprovadas pela equipe.
+Status: arquitetura de referência e implementação incremental. A seção 14 distingue
+o que já foi implementado nesta branch das propostas futuras. Foi aprovada a política
+de preservar fatos com déficit consolidado e sinalizá-lo ao gestor; as alternativas
+de cotas/reservas e permissões de correção não estão automaticamente aprovadas.
 
 ## 1. Decisão principal
 
@@ -481,8 +482,44 @@ um cursor antigo não produz um snapshot consistente.
 
 ## 14. Situação do código atual e lacunas
 
-Esta leitura se refere aos arquivos do repositório em 19/10/2026; não é uma auditoria
-do serviço em produção.
+### 14.1 Implementação cloud nesta branch
+
+Em `codex/offline-stock-sync`, criada da `dev`, o protocolo 2 implementa:
+
+- Autenticação JWT do gestor ou token de operador ativo, com fazenda/produto/autoria
+  verificados. Emissão de pareamento exige gestor; conexão manual devolve credencial.
+- Lock da fazenda no PostgreSQL, movimentações imutáveis e recibos transacionais
+  por ID/hash/autor. Retry recupera a decisão anterior; conteúdo diferente não edita
+  o histórico. Recusas de validação são duráveis.
+- Preservação de retiradas válidas mesmo com déficit combinado, incluindo o cenário
+  100 − 70 − 50 = −20. Divergência é retornada e mostrada, não corrigida artificialmente.
+- Download completo de produtos/movimentos sob snapshot consistente, **sem cursor**.
+  Não há ainda `farm_sync_state`, contador de commits ou log incremental da seção 8.
+- Rascunho local com ID persistido; outbox, confirmação individual, revisão e última
+  rodada gravadas atomicamente no SQLite. A tela distingue saldo conhecido e provisório.
+- Testes com conexões PostgreSQL independentes e fluxo HTTP NestJS + `openapi-fetch`
+  + dois SQLite reais, incluindo rollback, resposta perdida e revogação de operador.
+
+O contrato do cliente é gerado pelo comando existente `npm run openapi`, a partir
+da API atualizada. A adição `api/prisma/sync-migrations/002_sync_receipts.sql` ainda
+precisa ser aplicada explicitamente ao banco de destino após backup; os testes só
+usaram bancos descartáveis. Não houve mudança em envs nem na migration SQLite 001.
+
+Continuam propostas, não implementações: referência física e suspeita automática
+de duplicidade humana, cursor seguro/paginação, tombstones, precisão fixa no schema
+(ainda `Float`), LAN, cotas/reservas, estorno, inventário físico, resolução auditada
+e outbox de notificações. Revisão hoje é uma listagem preservada no aparelho, não
+um fluxo de decisão concluído do gestor. Os testes não validam WebView/mobile real.
+
+O detalhamento de compatibilidade e implantação está em `api/SYNC.md`. A versão 2
+substitui a resposta legada de análise por recibos/divergências; publicar as duas
+pontas coordenadamente. Não declarar compatibilidade irrestrita com clientes antigos.
+
+### 14.2 Diagnóstico histórico anterior a esta implementação
+
+A tabela e os pontos abaixo registram a baseline da `dev` inspecionada em
+19/10/2026, **antes** das alterações da seção 14.1. Não descrevem o estado atual
+desta branch nem constituem auditoria do serviço em produção.
 
 | Área              | O que existe hoje                                                                                          | O que falta para esta proposta                                                                                 |
 | ----------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
