@@ -174,6 +174,10 @@
   - [x] Retenção automática dos últimos 7 dias.
   - [x] Tela em *Configurações > Backups* com lista e botão *"Restaurar em 1 Clique"*.
   - [x] Verificar integridade antes da restauração e criar snapshot de recuperação do estado atual, com testes nativos em SQLite real.
+- [x] **4.5. [EM CONJUNTO] Proposta de regras de sincronização e concorrência:**
+  - [x] Documentar em `regra_de_sync.md` idempotência, duplicidade operacional, saldo offline, protocolo de confirmação e plano de validação, distinguindo proposta de implementação atual.
+- [x] **4.6. [EM CONJUNTO] Skill de implementação das regras de sync:**
+  - [x] Criar orientações compartilhadas com rotas para backend e frontend, registrar seu uso no `AGENTS.md` e validar estrutura, metadados e referências.
 
 ---
 

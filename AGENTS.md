@@ -37,3 +37,17 @@ A cada nova funcionalidade ou correção de bug, execute os seguintes passos sem
 - **Sem código sem teste prévio:** É expressamente proibido criar arquivos de serviços, controllers, cálculos agronômicos ou funções de sincronização sem que um teste automatizado tenha sido escrito antes.
 - **Validação contínua:** Em cada etapa, mostre os comandos de teste executados e seus respectivos resultados (passes/fails).
 - **Cobertura de Casos de Borda:** Todo teste de lógica de negócio (ex: cálculo de runout time, risco de vencimento, curva ABC, anomalias de consumo) deve obrigatoriamente testar casos felizes, valores zerados, listas vazias, dados nulos/ausentes e entradas inválidas.
+
+---
+
+## 🔄 4. Skill Compartilhada de Sincronização
+
+Ao implementar ou revisar sync, outbox, deduplicação, concorrência de estoque,
+recibos, cursores, estornos ou recuperação no backend ou frontend, use a skill
+`agrohacka-sync`: leia `skills/agrohacka-sync/SKILL.md` e a referência da camada
+envolvida. A fonte de arquitetura é `regra_de_sync.md` na raiz; confira sempre
+o que o código e o contrato atual realmente implementam.
+
+As decisões de negócio ainda propostas não estão automaticamente aprovadas.
+A skill não amplia o escopo do pedido, não autoriza alterações na outra camada,
+não substitui TDD e não permite apagar bancos reais ou editar migrations aplicadas.

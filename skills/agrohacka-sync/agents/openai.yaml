@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgroHacka Sync"
+  short_description: "Sync offline de estoque para backend e frontend"
+  default_prompt: "Use $agrohacka-sync para implementar ou revisar a tarefa de sincronização no AgroHacka, respeitando o contrato atual, o TDD e o escopo autorizado."

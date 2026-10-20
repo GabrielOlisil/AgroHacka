@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-      - dev
-      - 'feat/**'
-      - 'feature/**'
+      # - dev
+      # - 'feat/**'
+      # - 'feature/**'
   pull_request:
     branches:
       - main
-      - dev
+      # - dev
 
 jobs:
   test-api:
