@@ -1,0 +1,5 @@
+{
+  "typescript.tsdk": "api/node_modules/typescript/lib",
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.suggest.autoImports": true
+}

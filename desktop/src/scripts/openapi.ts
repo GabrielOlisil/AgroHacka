@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import openapiTS, { astToString } from "openapi-typescript";
 
-const openapiJsonUrl = "http://localhost:3000/api-json";
+const openapiJsonUrl = "http://localhost:3000/api/docs-json";
 
 
 const ast = await openapiTS(new URL(openapiJsonUrl));

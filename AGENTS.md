@@ -1,10 +1,10 @@
-# 🧪 Diretrizes de Desenvolvimento — Test-Driven Development (TDD) Obrigatório
+# 🧪 Diretrizes de Desenvolvimento — TDD & Gestão de Tarefas
 
-Neste projeto, você DEVE seguir rigorosamente a metodologia de **Desenvolvimento Orientado a Testes (TDD)** para toda e qualquer funcionalidade, lógica de negócio, serviço, utilitário ou endpoint.
+Neste projeto, você DEVE seguir rigorosamente a metodologia de **Desenvolvimento Orientado a Testes (TDD)** e a **Gestão Ativa de Tarefas**.
 
 ---
 
-## 🔁 O Ciclo Red-Green-Refactor é Mandatório
+## 🔁 1. O Ciclo Red-Green-Refactor é Mandatório
 
 A cada nova funcionalidade ou correção de bug, execute os seguintes passos sem pular etapas:
 
@@ -24,8 +24,30 @@ A cada nova funcionalidade ou correção de bug, execute os seguintes passos sem
 
 ---
 
-## 🚫 Regras e Restrições Rígidas
+## 📋 2. Gestão Ativa do Checklist de Tarefas (`tarefas.md`)
+
+- **Consulta Contínua:** Antes de iniciar qualquer trabalho, verifique qual é a próxima tarefa pendente em `AgroHacka/tarefas.md`.
+- **Atualização Imediata:** Assim que uma tarefa ou subtarefa for concluída, testada e validada, marque o checkbox correspondente de `- [ ]` para `- [x]` no arquivo `AgroHacka/tarefas.md`.
+- **Transparência:** Sempre informe ao usuário qual tarefa da lista está sendo executada no momento e reporte a atualização do checklist ao finalizá-la.
+
+---
+
+## 🚫 3. Regras e Restrições Rígidas
 
 - **Sem código sem teste prévio:** É expressamente proibido criar arquivos de serviços, controllers, cálculos agronômicos ou funções de sincronização sem que um teste automatizado tenha sido escrito antes.
 - **Validação contínua:** Em cada etapa, mostre os comandos de teste executados e seus respectivos resultados (passes/fails).
 - **Cobertura de Casos de Borda:** Todo teste de lógica de negócio (ex: cálculo de runout time, risco de vencimento, curva ABC, anomalias de consumo) deve obrigatoriamente testar casos felizes, valores zerados, listas vazias, dados nulos/ausentes e entradas inválidas.
+
+---
+
+## 🔄 4. Skill Compartilhada de Sincronização
+
+Ao implementar ou revisar sync, outbox, deduplicação, concorrência de estoque,
+recibos, cursores, estornos ou recuperação no backend ou frontend, use a skill
+`agrohacka-sync`: leia `skills/agrohacka-sync/SKILL.md` e a referência da camada
+envolvida. A fonte de arquitetura é `regra_de_sync.md` na raiz; confira sempre
+o que o código e o contrato atual realmente implementam.
+
+As decisões de negócio ainda propostas não estão automaticamente aprovadas.
+A skill não amplia o escopo do pedido, não autoriza alterações na outra camada,
+não substitui TDD e não permite apagar bancos reais ou editar migrations aplicadas.

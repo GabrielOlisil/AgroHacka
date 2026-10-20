@@ -1,0 +1,10 @@
+{
+  "name": "agrohacka-root",
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix api test",
+    "test:desktop": "npm --prefix desktop test",
+    "dev:api": "npm --prefix api start:dev",
+    "dev:desktop": "npm --prefix desktop tauri dev"
+  }
+}

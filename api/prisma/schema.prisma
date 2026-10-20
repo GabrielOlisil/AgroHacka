@@ -1,0 +1,152 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  GESTOR
+  OPERADOR
+}
+
+enum MovementType {
+  ENTRADA
+  SAIDA
+}
+
+enum AlertType {
+  ESTOQUE_CRITICO
+  RISCO_VENCIMENTO
+  CONSUMO_ANOMALO
+  EXCESSO_ESTOQUE
+  OUTRO
+}
+
+enum UrgencyLevel {
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+model Farm {
+  id        String   @id @default(uuid())
+  nome      String
+  gestorId  String
+  localIp   String?
+  localPort Int?     @default(3333)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  devices   Device[]
+  products  Product[]
+  movements StockMovement[]
+  alerts    Alert[]
+  syncLogs  SyncLog[]
+
+  @@map("farms")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  farmId    String?
+  nome      String
+  email     String   @unique
+  senhaHash String
+  telefone  String?
+  role      Role     @default(GESTOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm Farm? @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Device {
+  id           String   @id @default(uuid())
+  farmId       String
+  nomeOperador String
+  deviceToken  String   @unique
+  pairingCode  String   @unique
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@map("devices")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  farmId         String
+  nome           String
+  categoria      String
+  unidadeMedida  String
+  estoqueMinimo  Float     @default(0)
+  precoAquisicao Float?
+  validade       DateTime?
+  lote           String?
+  fornecedor     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  farm      Farm            @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  movements StockMovement[]
+  alerts    Alert[]
+
+  @@map("products")
+}
+
+model StockMovement {
+  id            String       @id @default(uuid())
+  farmId        String
+  productId     String
+  tipo          MovementType
+  quantidade    Float
+  dataMovimento DateTime     @default(now())
+  destino       String?
+  responsavel   String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  farm    Farm    @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("stock_movements")
+}
+
+model Alert {
+  id                 String       @id @default(uuid())
+  farmId             String
+  productId          String?
+  tipo               AlertType
+  nivelUrgencia      UrgencyLevel
+  justificativa      String
+  resolvido          Boolean      @default(false)
+  notificadoWhatsapp Boolean      @default(false)
+  dataGeracao        DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  farm    Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+model SyncLog {
+  id             String   @id @default(uuid())
+  farmId         String
+  deviceId       String?
+  totalRegistros Int
+  tipoSync       String   @default("CLOUD")
+  dataSync       DateTime @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@map("sync_logs")
+}
