@@ -17,6 +17,7 @@ import {
   type MovementInput,
   type RegisterInput,
   type Session,
+  type SyncReview,
 } from "./offline/types";
 
 interface WorkspaceDependencies {
@@ -31,6 +32,8 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   let coordinator: SyncCoordinator | undefined;
   let disposed = false;
   let restoring = false;
+  let recording = false;
+  const draftIds = new Map<string, string>();
   let maintainingBackups = false;
   let refreshVersion = 0;
   const ready = ref(false);
@@ -38,6 +41,8 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const analysis = ref<InventoryAnalysis>(analyzeInventory([], []));
   const movements = ref<Movement[]>([]);
   const pendingCount = ref(0);
+  const reviews = ref<SyncReview[]>([]);
+  const confirmedBalances = ref<Record<string, number>>({});
   const lastSync = ref<string | null>(null);
   const syncing = ref(false);
   const error = ref("");
@@ -54,10 +59,11 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     const current = session.value;
     if (!current) return;
     const db = requireStore();
-    const [snapshot, pending, timestamp] = await Promise.all([
+    const [snapshot, pending, timestamp, reviewItems] = await Promise.all([
       db.snapshot(current.farmId),
       db.pending(current.farmId),
       db.lastSync(current.farmId),
+      db.syncReviews(current.farmId),
     ]);
     if (
       disposed ||
@@ -66,10 +72,19 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     )
       return;
     analysis.value = analyzeInventory(snapshot.products, snapshot.movements);
+    const pendingIds = new Set(pending.map((m) => m.id));
+    const confirmed = analyzeInventory(
+      snapshot.products,
+      snapshot.movements.filter((m) => !pendingIds.has(m.id)),
+    );
+    confirmedBalances.value = Object.fromEntries(
+      confirmed.products.map((p) => [p.id, p.saldo]),
+    );
     movements.value = [...snapshot.movements].sort((a, b) =>
       b.dataMovimento.localeCompare(a.dataMovimento),
     );
     pendingCount.value = pending.length;
+    reviews.value = reviewItems;
     lastSync.value = timestamp;
     await db.saveAlerts(current.farmId, analysis.value.alerts);
   }
@@ -149,6 +164,8 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     analysis,
     movements,
     pendingCount,
+    reviews,
+    confirmedBalances,
     lastSync,
     syncing,
     error,
@@ -179,14 +196,36 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       analysis.value = analyzeInventory([], []);
       movements.value = [];
       pendingCount.value = 0;
+      reviews.value = [];
+      confirmedBalances.value = {};
       lastSync.value = null;
     },
     async record(input: MovementInput) {
       if (restoring) throw new Error("Aguarde a restauração do backup.");
+      if (recording) throw new Error("Aguarde o salvamento atual.");
       if (!session.value)
         throw new Error("Abra uma sessão antes de movimentar estoque.");
-      await requireStore().recordMovement(session.value, input);
-      await refresh();
+      recording = true;
+      try {
+        const db = requireStore();
+        const current = session.value;
+        const key = JSON.stringify([
+          current.farmId,
+          current.role,
+          current.deviceId ?? current.userId ?? current.nome,
+        ]);
+        const id = input.id ?? draftIds.get(key) ?? (await db.draftId(current));
+        draftIds.set(key, id);
+        await db.recordMovement(current, { ...input, id });
+        draftIds.delete(key);
+        try {
+          await refresh();
+        } catch (cause) {
+          error.value = `Movimentação salva neste aparelho, mas não foi possível atualizar a tela: ${message(cause)}`;
+        }
+      } finally {
+        recording = false;
+      }
     },
     async pair(name: string) {
       if (session.value?.role !== "GESTOR")
