@@ -46,6 +46,7 @@ model Farm {
   movements StockMovement[]
   alerts    Alert[]
   syncLogs  SyncLog[]
+  syncReceipts SyncReceipt[]
 
   @@map("farms")
 }
@@ -149,4 +150,17 @@ model SyncLog {
   farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@map("sync_logs")
+}
+
+model SyncReceipt {
+  farmId      String
+  movementId  String
+  actorId     String
+  payloadHash String
+  result      Json
+  createdAt   DateTime @default(now())
+  farm        Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@id([farmId, movementId])
+  @@map("sync_receipts")
 }
