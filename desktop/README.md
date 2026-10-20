@@ -61,6 +61,12 @@ e Android real.
 ## Persistência e sincronização
 
 - O plugin SQL aplica a migration `src-tauri/migrations/001_offline.sql`.
+- Migrations SQL usam LF, fixado por `desktop/.gitattributes`. O SQLx inclui
+  quebras de linha no checksum: trocar LF por CRLF pode causar o erro
+  `migration 1 was previously applied but has been modified` mesmo com SQL
+  equivalente. O teste de regressão preserva o checksum original e verifica
+  checkouts com diferentes configurações de `core.autocrlf`. Nunca edite uma
+  migration aplicada; mudanças no schema devem entrar em uma nova versão.
 - As tabelas são `products`, `movements`, `alerts`, `sync_outbox` e `app_config`.
 - Produtos e movimentações preservam os IDs da API e ficam isolados por fazenda.
 - Uma movimentação local recebe UUID, responsável da sessão e uma entrada na

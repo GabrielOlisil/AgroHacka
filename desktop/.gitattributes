@@ -1,0 +1,2 @@
+# SQLx checksums include line endings. Keep applied migrations byte-stable.
+src-tauri/migrations/*.sql text eol=lf

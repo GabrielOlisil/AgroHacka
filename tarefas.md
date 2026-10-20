@@ -66,6 +66,9 @@
 - [x] **0.3. [EM CONJUNTO] Governança do Repositório:**
   - [x] Conferir dados da inscrição, protocolo e chave na plataforma do AgroHack (Equipe: Oliveira & Oliveira | Protocolo: AGRO26-F009CD2F9F | Integrantes: Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira — ADS 6º Período).
   - [x] Garantir que o repositório GitHub esteja público ou com acesso aos avaliadores da banca (https://github.com/GabrielOlisil/AgroHacka).
+- [x] **0.4. [DEV 2] Compatibilidade da configuração Vite com ESM nativo:**
+  - [x] Validar o alias `@` nos loaders `bundle` e `native`, sem avisos de incompatibilidade.
+  - [x] Confirmar testes, TypeScript e build sem suprimir warnings por variável de ambiente.
 
 ---
 
@@ -87,6 +90,10 @@
   - [x] Criar script de inicialização do schema local SQLite espelhado (`products`, `movements`, `alerts`, `sync_outbox`, `app_config`).
 - [x] **1.5. Persistência de Sessão Local:**
   - [x] Salvar token JWT e dados do Gestor no SQLite local para que o app nunca deslogue sem internet.
+- [x] **1.6. [DEV 2] Estabilidade dos checksums das migrations locais:**
+  - [x] Reproduzir a divergência LF/CRLF em teste de regressão.
+  - [x] Restaurar a migration original em LF e preservar esse padrão no checkout do Git.
+  - [x] Validar o checksum e a suíte de testes sem apagar ou alterar o banco existente.
 
 > Cliente: persistência e retomada offline validadas por testes. Tokens e backups ainda não estão criptografados; a proteção por cofre nativo permanece pendente e está documentada em `desktop/README.md`. Senhas de login não são persistidas.
 
