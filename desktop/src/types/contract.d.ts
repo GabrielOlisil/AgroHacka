@@ -190,16 +190,54 @@ export interface components {
             /** @enum {string} */
             tipo: "ENTRADA" | "SAIDA";
             quantidade: number;
-            dataMovimento: Record<string, never>;
+            dataMovimento: string;
             destino?: string;
             responsavel: string;
-            updatedAt?: Record<string, never>;
+            updatedAt?: string;
         };
         SyncPayloadDto: {
+            /** @enum {number} */
+            protocolVersion?: 2;
             farmId: string;
             deviceId?: string;
             lastSyncTimestamp?: string;
             pendingMovements?: components["schemas"]["SyncMovementDto"][];
+        };
+        SyncReceiptDto: {
+            id: string;
+            /** @enum {string} */
+            status: "ACCEPTED" | "ID_PAYLOAD_CONFLICT" | "VALIDATION_REJECTED";
+            message?: string;
+            movement?: components["schemas"]["SyncMovementDto"];
+        };
+        SyncProductDto: {
+            id: string;
+            farmId: string;
+            nome: string;
+            categoria: string;
+            unidadeMedida: string;
+            estoqueMinimo: number;
+            precoAquisicao: number | null;
+            validade: string | null;
+            lote: string | null;
+            fornecedor: string | null;
+            updatedAt: string;
+        };
+        SyncDivergenceDto: {
+            productId: string;
+            saldo: number;
+            message: string;
+        };
+        SyncResponseDto: {
+            /** @enum {number} */
+            protocolVersion: 2;
+            sucesso: boolean;
+            serverTimestamp: string;
+            syncedCount: number;
+            results: components["schemas"]["SyncReceiptDto"][];
+            newMovements: components["schemas"]["SyncMovementDto"][];
+            newProducts: components["schemas"]["SyncProductDto"][];
+            divergences: components["schemas"]["SyncDivergenceDto"][];
         };
         HeartbeatDto: {
             farmId: string;
@@ -311,7 +349,9 @@ export interface operations {
     DevicesController_createPairing: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                authorization: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -353,7 +393,12 @@ export interface operations {
     SyncController_sync: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description JWT do gestor; alternativamente envie x-device-token. */
+                authorization?: string;
+                /** @description Credencial de operador ativo; não combine com Authorization. */
+                "x-device-token"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -367,14 +412,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SyncResponseDto"];
+                };
             };
         };
     };
     SyncController_heartbeat: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                authorization: string;
+            };
             path?: never;
             cookie?: never;
         };

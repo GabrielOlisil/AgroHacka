@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import crypto from 'crypto';
 
@@ -73,12 +77,15 @@ export class DevicesService {
     }
 
     if (!device || !device.ativo) {
-      throw new BadRequestException('Código ou Token de pareamento inválido ou inativo');
+      throw new BadRequestException(
+        'Código ou Token de pareamento inválido ou inativo',
+      );
     }
 
     return {
       sucesso: true,
       deviceId: device.id,
+      deviceToken: device.deviceToken,
       farmId: device.farmId,
       farmNome: device.farm.nome,
       nomeOperador: device.nomeOperador,

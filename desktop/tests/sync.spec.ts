@@ -19,6 +19,9 @@ const movement = {
   responsavel: "Ana",
 };
 const response = {
+  protocolVersion: 2 as const,
+  results: [{ id: movement.id, status: "ACCEPTED" as const, movement }],
+  divergences: [],
   sucesso: true,
   serverTimestamp: "2026-10-16T12:00:00Z",
   syncedCount: 1,
@@ -33,6 +36,7 @@ describe("sincronização offline com a API existente", () => {
     const store = {
       pending: vi.fn().mockResolvedValue([movement]),
       applyRemote: vi.fn().mockResolvedValue(undefined),
+      applySyncResponse: vi.fn().mockResolvedValue(undefined),
       setLastSync: vi.fn().mockResolvedValue(undefined),
     };
     const transport = vi.fn().mockResolvedValue(response);
@@ -56,7 +60,22 @@ describe("sincronização offline com a API existente", () => {
     expect(transport.mock.calls[0]?.[0]).not.toHaveProperty(
       "lastSyncTimestamp",
     );
-    expect(store.applyRemote).toHaveBeenCalledWith("f", [], [], ["m"]);
+    expect(store.applySyncResponse).toHaveBeenCalledWith(
+      "f",
+      expect.objectContaining({
+        results: [
+          {
+            id: movement.id,
+            status: "ACCEPTED",
+            movement: {
+              ...movement,
+              dataMovimento: new Date(movement.dataMovimento).toISOString(),
+            },
+          },
+        ],
+      }),
+      [movement],
+    );
   });
   it("mantém fila se a rede falhar ou a confirmação do lote for incompleta", async () => {
     const { store, transport, coordinator } = setup();
@@ -64,11 +83,11 @@ describe("sincronização offline com a API existente", () => {
     await expect(coordinator.run(session)).rejects.toThrow("offline");
     transport.mockResolvedValueOnce({ ...response, syncedCount: 0 });
     await expect(coordinator.run(session)).rejects.toThrow(/confirma/i);
-    expect(store.applyRemote).not.toHaveBeenCalled();
+    expect(store.applySyncResponse).not.toHaveBeenCalled();
   });
   it("não confirma nada quando a transação local falha", async () => {
     const { store, coordinator } = setup();
-    store.applyRemote.mockRejectedValue(new Error("disco cheio"));
+    store.applySyncResponse.mockRejectedValue(new Error("disco cheio"));
     await expect(coordinator.run(session)).rejects.toThrow("disco cheio");
     expect(store.setLastSync).not.toHaveBeenCalled();
   });
@@ -85,14 +104,18 @@ describe("sincronização offline com a API existente", () => {
     await expect(coordinator.run(session)).rejects.toThrow(/andamento/i);
     finish(response);
     await first;
-    expect(store.applyRemote.mock.calls[0]?.[3]).toEqual(["m"]);
+    expect(store.applySyncResponse.mock.calls[0]?.[2]).toEqual([movement]);
   });
   it("baixa registros mesmo com fila vazia", async () => {
     const { store, transport, coordinator } = setup();
     store.pending.mockResolvedValue([]);
-    transport.mockResolvedValue({ ...response, syncedCount: 0 });
+    transport.mockResolvedValue({ ...response, syncedCount: 0, results: [] });
     await coordinator.run(session);
-    expect(store.applyRemote).toHaveBeenCalledWith("f", [], [], []);
+    expect(store.applySyncResponse).toHaveBeenCalledWith(
+      "f",
+      expect.objectContaining({ results: [] }),
+      [],
+    );
   });
   it("tenta LAN com timeout e só confirma na nuvem quando LAN está indisponível", async () => {
     const lan = vi.fn().mockRejectedValue(new Error("timeout"));

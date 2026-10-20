@@ -1,12 +1,9 @@
 import createClient from "openapi-fetch";
 import type { paths } from "../types/contract";
 import {
-  date,
-  number,
   object,
-  parseMovement,
-  parseProduct,
   parseSession,
+  parseSyncResponse,
   text,
   type ConnectInput,
   type LoginInput,
@@ -100,9 +97,11 @@ export function createApi(
         deviceId: text(result.deviceId, "dispositivo"),
         localIp: result.localIp,
         localPort: result.localPort,
-        ...(body.tokenOrCode.startsWith("tok_")
-          ? { deviceToken: body.tokenOrCode }
-          : {}),
+        ...(typeof result.deviceToken === "string"
+          ? { deviceToken: text(result.deviceToken, "token do dispositivo") }
+          : body.tokenOrCode.startsWith("tok_")
+            ? { deviceToken: body.tokenOrCode }
+            : {}),
       });
     },
     async pairing(
@@ -116,6 +115,11 @@ export function createApi(
       const result = object(
         await unpack(
           await client.POST("/devices/pairing-token", {
+            params: {
+              header: {
+                authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+              },
+            },
             body,
             headers: headers(session),
             signal: signal(),
@@ -139,41 +143,22 @@ export function createApi(
       };
     },
     async sync(body: SyncPayload, session: Session): Promise<SyncResponse> {
-      // Adaptação restrita às datas incorretamente inferidas no contrato gerado.
-      type GeneratedPayload =
-        paths["/sync"]["post"]["requestBody"]["content"]["application/json"];
       if (body.farmId !== session.farmId)
         throw new Error("Fazenda de sincronização inválida.");
-      const wire = body as unknown as GeneratedPayload;
       const result = object(
         await unpack(
           await client.POST("/sync", {
-            body: wire,
+            body: { ...body, protocolVersion: 2 },
             headers: headers(session),
             signal: signal(),
           }),
         ),
       );
-      if (
-        result.sucesso !== true ||
-        !Array.isArray(result.newProducts) ||
-        !Array.isArray(result.newMovements)
-      )
-        throw new Error("Resposta de sincronização inválida.");
-      const syncedCount = number(result.syncedCount, "confirmações");
-      if (!Number.isInteger(syncedCount))
-        throw new Error("Contagem de confirmações inválida.");
-      return {
-        sucesso: true,
-        serverTimestamp: date(result.serverTimestamp),
-        syncedCount,
-        newProducts: result.newProducts.map((p) =>
-          parseProduct(p, session.farmId),
-        ),
-        newMovements: result.newMovements.map((m) =>
-          parseMovement(m, session.farmId),
-        ),
-      };
+      return parseSyncResponse(
+        result,
+        session.farmId,
+        body.pendingMovements ?? [],
+      );
     },
   };
 }

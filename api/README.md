@@ -25,6 +25,8 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+O protocolo de sincronização, o rollout aditivo do banco e os testes isolados estão em [SYNC.md](SYNC.md).
+
 ## Project setup
 
 ```bash

@@ -98,6 +98,10 @@ const controller: Workspace = {
   analysis,
   movements,
   pendingCount: ref(2),
+  reviews: ref([]),
+  confirmedBalances: ref(
+    Object.fromEntries(analysis.value.products.map((p) => [p.id, p.saldo])),
+  ),
   lastSync: ref(date(-1)),
   error: ref(""),
   syncing: ref(false),

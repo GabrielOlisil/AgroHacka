@@ -12,6 +12,8 @@ const {
   analysis,
   movements,
   pendingCount,
+  reviews,
+  confirmedBalances,
   lastSync,
   error,
   syncing,
@@ -78,6 +80,9 @@ const unitValue = (value: number) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value);
 const urgent = computed(
   () => analysis.value.alerts.filter((a) => a.nivel === "URGENTE").length,
+);
+const hasDeficit = computed(() =>
+  Object.values(confirmedBalances.value).some((saldo) => saldo < 0),
 );
 function localDateTime() {
   const now = new Date();
@@ -507,6 +512,54 @@ onUnmounted(() => {
       <p v-if="feedback" class="notice success" role="status">
         <UiIcon name="circle-check" /><span>{{ feedback }}</span>
       </p>
+      <section
+        v-if="reviews.length"
+        class="panel"
+        data-testid="sync-reviews"
+        aria-label="Registros para revisão"
+      >
+        <h2>Registros para revisão</h2>
+        <p class="muted">
+          As tentativas foram preservadas, mas não compõem o saldo confirmado.
+          Confira com o gestor antes de registrar uma correção.
+        </p>
+        <p v-for="review in reviews" :key="review.id" class="notice error">
+          <UiIcon name="circle-alert" /><span
+            >{{ review.message }} <small>ID: {{ review.id }}</small></span
+          >
+        </p>
+      </section>
+      <section
+        v-if="analysis.products.length"
+        class="panel"
+        data-testid="sync-balances"
+        aria-label="Conciliação do estoque"
+      >
+        <h2>Estoque conhecido e registros locais</h2>
+        <p class="muted">
+          Última atualização da nuvem:
+          {{ lastSync ? formatDate(lastSync) : "ainda não confirmada" }}. Outros
+          aparelhos podem ter registros offline ainda não recebidos.
+        </p>
+        <p v-for="p in analysis.products" :key="p.id">
+          <strong>{{ p.nome }}</strong> · Confirmado conhecido:
+          {{ unitValue(confirmedBalances[p.id] ?? 0) }} {{ p.unidadeMedida }} ·
+          Provisório neste aparelho: {{ unitValue(p.saldo) }}
+          {{ p.unidadeMedida }}
+        </p>
+        <p
+          v-if="hasDeficit"
+          class="notice error"
+          role="alert"
+          data-testid="sync-deficit"
+        >
+          <UiIcon name="circle-alert" /><span
+            >Saldo consolidado negativo. Os registros foram preservados. O
+            gestor deve conferir entradas, retiradas e possíveis duplicidades
+            antes de corrigir o estoque.</span
+          >
+        </p>
+      </section>
       <template v-if="tab === 'overview'">
         <section class="metrics" aria-label="Resumo da propriedade">
           <article>

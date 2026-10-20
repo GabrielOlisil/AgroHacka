@@ -1,14 +1,81 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { RegisterDto, LoginDto, AuthResponse } from './dto/auth.dto';
 
+export interface SyncIdentity {
+  actorId: string;
+  farmId: string;
+  role: 'GESTOR' | 'OPERADOR';
+  nome: string;
+  deviceId?: string;
+}
+
 @Injectable()
 export class AuthService {
-  private readonly jwtSecret = process.env.JWT_SECRET || 'agrohack-jwt-secret-key-2026';
+  private readonly jwtSecret =
+    process.env.JWT_SECRET || 'agrohack-jwt-secret-key-2026';
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async authenticateSync(
+    authorization?: string,
+    deviceToken?: string,
+  ): Promise<SyncIdentity> {
+    if (authorization && deviceToken)
+      throw new UnauthorizedException('Use somente uma credencial.');
+    if (deviceToken) {
+      const device = await this.prisma.device.findUnique({
+        where: { deviceToken },
+      });
+      if (!device?.ativo)
+        throw new UnauthorizedException('Dispositivo inválido ou inativo.');
+      return {
+        actorId: device.id,
+        deviceId: device.id,
+        farmId: device.farmId,
+        role: 'OPERADOR',
+        nome: device.nomeOperador,
+      };
+    }
+    const token = /^Bearer (\S+)$/i.exec(authorization ?? '')?.[1];
+    if (!token)
+      throw new UnauthorizedException(
+        'Credencial de sincronização obrigatória.',
+      );
+    let claims: jwt.JwtPayload;
+    try {
+      const decoded = jwt.verify(token, this.jwtSecret, {
+        algorithms: ['HS256'],
+      });
+      if (typeof decoded === 'string' || typeof decoded.sub !== 'string')
+        throw new Error('Invalid claims');
+      claims = decoded;
+    } catch {
+      throw new UnauthorizedException('Token inválido ou expirado.');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: claims.sub },
+    });
+    if (
+      !user ||
+      user.role !== 'GESTOR' ||
+      !user.farmId ||
+      user.farmId !== claims.farmId
+    )
+      throw new UnauthorizedException('Sessão sem acesso à fazenda.');
+    return {
+      actorId: user.id,
+      farmId: user.farmId,
+      role: 'GESTOR',
+      nome: user.nome,
+    };
+  }
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
     const existingUser = await this.prisma.user.findUnique({

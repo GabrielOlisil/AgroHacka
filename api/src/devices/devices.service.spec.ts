@@ -55,7 +55,10 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
       expect(result).toHaveProperty('pairingCode');
       expect(result.pairingCode).toMatch(/^AGRO-[A-Z0-9]{4}$/);
       expect(result.qrPayload).toHaveProperty('farmId', 'farm-123');
-      expect(result.qrPayload).toHaveProperty('nomeOperador', 'Carlos Silva - Tratorista');
+      expect(result.qrPayload).toHaveProperty(
+        'nomeOperador',
+        'Carlos Silva - Tratorista',
+      );
       expect(result.qrPayload).toHaveProperty('localIp', '192.168.1.100');
     });
 
@@ -127,6 +130,7 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
       expect(result.sucesso).toBe(true);
       expect(result.nomeOperador).toBe('Marcos Souza');
       expect(result.farmNome).toBe('Fazenda Boa Esperança');
+      expect(result.deviceToken).toBe('tok_qualquer');
     });
 
     it('deve rejeitar se o token ou código for inválido', async () => {

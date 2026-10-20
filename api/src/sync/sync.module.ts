@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SyncService } from './sync.service';
 import { SyncController } from './sync.controller';
-import { StockModule } from '../stock/stock.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [StockModule],
+  imports: [AuthModule],
   controllers: [SyncController],
   providers: [SyncService],
   exports: [SyncService],
