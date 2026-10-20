@@ -4,15 +4,8 @@ export type LoginInput = components["schemas"]["LoginDto"];
 export type RegisterInput = components["schemas"]["RegisterDto"];
 export type PairingInput = components["schemas"]["CreatePairingDto"];
 export type ConnectInput = components["schemas"]["ConnectDeviceDto"];
-// O gerador descreve Date | string como objeto. A API efetivamente recebe ISO.
-export type Movement = Omit<
-  components["schemas"]["SyncMovementDto"],
-  "dataMovimento" | "updatedAt"
-> & { dataMovimento: string; updatedAt?: string };
-export type SyncPayload = Omit<
-  components["schemas"]["SyncPayloadDto"],
-  "pendingMovements"
-> & { pendingMovements?: Movement[] };
+export type Movement = components["schemas"]["SyncMovementDto"];
+export type SyncPayload = components["schemas"]["SyncPayloadDto"];
 
 export interface Product {
   id: string;
@@ -40,11 +33,26 @@ export interface Session {
   localPort?: number;
 }
 export interface SyncResponse {
+  protocolVersion: 2;
+  results: SyncReceipt[];
+  divergences: SyncDivergence[];
   sucesso: true;
   serverTimestamp: string;
   syncedCount: number;
   newMovements: Movement[];
   newProducts: Product[];
+}
+
+export type SyncReceipt = Omit<
+  components["schemas"]["SyncReceiptDto"],
+  "movement"
+> & { movement?: Movement };
+export type SyncDivergence = components["schemas"]["SyncDivergenceDto"];
+export interface SyncReview {
+  id: string;
+  status: "ID_PAYLOAD_CONFLICT" | "VALIDATION_REJECTED";
+  message: string;
+  movement: Movement;
 }
 export interface PairingResponse {
   deviceToken: string;
@@ -59,11 +67,112 @@ export interface PairingResponse {
   };
 }
 export interface MovementInput {
+  id?: string;
   productId: string;
   tipo: "ENTRADA" | "SAIDA";
   quantidade: number;
   dataMovimento: string;
   destino?: string;
+}
+
+export function sameMovement(a: Movement, b: Movement): boolean {
+  return (
+    a.id === b.id &&
+    a.farmId === b.farmId &&
+    a.productId === b.productId &&
+    a.tipo === b.tipo &&
+    a.quantidade === b.quantidade &&
+    date(a.dataMovimento) === date(b.dataMovimento) &&
+    (a.destino ?? "") === (b.destino ?? "")
+  );
+}
+
+export function parseSyncResponse(
+  value: unknown,
+  farmId: string,
+  pending?: Movement[],
+): SyncResponse {
+  const response = object(value);
+  if (response.protocolVersion !== 2 || !Array.isArray(response.results))
+    throw new Error(
+      "Versão de sync sem confirmações individuais. Atualize a API antes de sincronizar.",
+    );
+  if (
+    response.sucesso !== true ||
+    !Array.isArray(response.newProducts) ||
+    !Array.isArray(response.newMovements) ||
+    !Array.isArray(response.divergences)
+  )
+    throw new Error("Resposta de sincronização inválida.");
+  const newProducts = response.newProducts.map((p) => parseProduct(p, farmId));
+  const newMovements = response.newMovements.map((m) =>
+    parseMovement(m, farmId),
+  );
+  const results: SyncReceipt[] = response.results.map((value) => {
+    const r = object(value);
+    const id = text(r.id, "confirmação");
+    if (r.status === "ACCEPTED") {
+      const movement = parseMovement(r.movement, farmId);
+      if (movement.id !== id)
+        throw new Error("Confirmação de outro identificador.");
+      return { id, status: r.status, movement };
+    }
+    if (
+      r.status !== "ID_PAYLOAD_CONFLICT" &&
+      r.status !== "VALIDATION_REJECTED"
+    )
+      throw new Error("Confirmação desconhecida.");
+    return {
+      id,
+      status: r.status,
+      message: text(r.message, "motivo da revisão"),
+    };
+  });
+  const resultIds = new Set(results.map((r) => r.id));
+  const syncedCount = number(response.syncedCount, "confirmações");
+  if (
+    !Number.isInteger(syncedCount) ||
+    syncedCount !== results.filter((r) => r.status === "ACCEPTED").length ||
+    resultIds.size !== results.length
+  )
+    throw new Error("Confirmações incompletas ou repetidas.");
+  if (
+    new Set(newProducts.map((p) => p.id)).size !== newProducts.length ||
+    new Set(newMovements.map((m) => m.id)).size !== newMovements.length
+  )
+    throw new Error("Snapshot com registros repetidos.");
+  if (pending) {
+    if (
+      results.length !== pending.length ||
+      pending.some((m) => !resultIds.has(m.id))
+    )
+      throw new Error("Confirmações incompletas do lote.");
+    const submitted = new Map(pending.map((m) => [m.id, m]));
+    for (const r of results)
+      if (
+        r.status === "ACCEPTED" &&
+        (!r.movement || !sameMovement(submitted.get(r.id)!, r.movement))
+      )
+        throw new Error("Confirmação incompatível com a movimentação enviada.");
+  }
+  const divergences = response.divergences.map((value) => {
+    const d = object(value);
+    return {
+      productId: text(d.productId, "produto divergente"),
+      saldo: number(d.saldo, "saldo", -Infinity),
+      message: text(d.message, "divergência"),
+    };
+  });
+  return {
+    protocolVersion: 2,
+    sucesso: true,
+    syncedCount,
+    results,
+    divergences,
+    newProducts,
+    newMovements,
+    serverTimestamp: date(response.serverTimestamp),
+  };
 }
 
 export function object(value: unknown): Record<string, unknown> {

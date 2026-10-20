@@ -1,14 +1,18 @@
 import type { SqlDatabase, Statement } from "./database";
 import {
   date,
+  text,
   object,
   parseMovement,
   parseProduct,
   parseSession,
+  sameMovement,
   type Movement,
   type MovementInput,
   type Product,
   type Session,
+  type SyncResponse,
+  type SyncReview,
 } from "./types";
 
 type PayloadRow = { payload: string };
@@ -26,6 +30,24 @@ export class LocalStore {
   private writeTail: Promise<unknown> = Promise.resolve();
   constructor(database: SqlDatabase) {
     this.database = database;
+  }
+  private draftKey(session: Session) {
+    return `movementDraft:${JSON.stringify([session.farmId, session.deviceId ?? session.userId ?? session.nome, session.role])}`;
+  }
+  async draftId(session: Session): Promise<string> {
+    const safe = parseSession(session);
+    return this.write(async () => {
+      const key = this.draftKey(safe);
+      await this.database.execute(
+        "INSERT INTO app_config(key,value) VALUES (?,?) ON CONFLICT(key) DO NOTHING",
+        [key, crypto.randomUUID()],
+      );
+      const rows = await this.database.select<{ value: string }>(
+        "SELECT value FROM app_config WHERE key=?",
+        [key],
+      );
+      return rows[0]!.value;
+    });
   }
   private write<T>(action: () => Promise<T>): Promise<T> {
     const next = this.writeTail.then(action);
@@ -92,7 +114,10 @@ export class LocalStore {
       const movement = parseMovement(
         {
           ...value,
-          id: crypto.randomUUID(),
+          id:
+            value.id === undefined
+              ? crypto.randomUUID()
+              : text(value.id, "identificador"),
           farmId: safe.farmId,
           responsavel: safe.nome,
           dataMovimento: value.dataMovimento,
@@ -102,6 +127,16 @@ export class LocalStore {
       if (Date.parse(movement.dataMovimento) > Date.now())
         throw new Error("A movimentação não pode estar no futuro.");
       const snapshot = await this.snapshot(safe.farmId);
+      const existing = snapshot.movements.find((m) => m.id === movement.id);
+      if (existing) {
+        if (!sameMovement(existing, movement))
+          throw new Error("Identificador já utilizado com outro conteúdo.");
+        return existing;
+      }
+      if (
+        (await this.syncReviews(safe.farmId)).some((r) => r.id === movement.id)
+      )
+        throw new Error("Identificador em revisão; não recrie a movimentação.");
       if (!snapshot.products.some((p) => p.id === movement.productId))
         throw new Error(
           "Produto não encontrado nesta fazenda. Sincronize o catálogo primeiro.",
@@ -129,8 +164,77 @@ export class LocalStore {
             new Date().toISOString(),
           ],
         },
+        {
+          sql: "DELETE FROM app_config WHERE key=? AND value=?",
+          values: [this.draftKey(safe), movement.id],
+        },
       ]);
       return movement;
+    });
+  }
+  async syncReviews(farmId: string): Promise<SyncReview[]> {
+    const prefix = `syncReview:${encodeURIComponent(farmId)}:`;
+    const rows = await this.database.select<{ value: string }>(
+      "SELECT value FROM app_config WHERE substr(key,1,?)=? ORDER BY key",
+      [prefix.length, prefix],
+    );
+    return rows.map((row) => JSON.parse(row.value) as SyncReview);
+  }
+  async applySyncResponse(
+    farmId: string,
+    response: SyncResponse,
+    submitted: Movement[],
+  ): Promise<void> {
+    return this.write(async () => {
+      const pending = new Set((await this.pending(farmId)).map((m) => m.id));
+      const terminal = new Set(response.results.map((r) => r.id));
+      const statements: Statement[] = response.newProducts.map(upsertProduct);
+      for (const receipt of response.results) {
+        if (receipt.status !== "ACCEPTED") {
+          const original = submitted.find((m) => m.id === receipt.id)!;
+          const review: SyncReview = {
+            id: receipt.id,
+            status: receipt.status,
+            message: receipt.message!,
+            movement: original,
+          };
+          statements.push({
+            sql: "INSERT INTO app_config(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            values: [
+              `syncReview:${encodeURIComponent(farmId)}:${encodeURIComponent(receipt.id)}`,
+              JSON.stringify(review),
+            ],
+          });
+          statements.push({
+            sql: "DELETE FROM sync_outbox WHERE farm_id=? AND id=?",
+            values: [farmId, receipt.id],
+          });
+          statements.push({
+            sql: "DELETE FROM movements WHERE farm_id=? AND id=?",
+            values: [farmId, receipt.id],
+          });
+        }
+      }
+      for (const m of response.newMovements)
+        if (!pending.has(m.id) || terminal.has(m.id))
+          statements.push(upsertMovement(m));
+      for (const receipt of response.results) {
+        if (receipt.status === "ACCEPTED")
+          statements.push(upsertMovement(receipt.movement!));
+        statements.push({
+          sql: "DELETE FROM sync_outbox WHERE farm_id=? AND id=?",
+          values: [farmId, receipt.id],
+        });
+      }
+      for (const [key, value] of [
+        [`lastSync:${farmId}`, date(response.serverTimestamp)],
+        [`syncDivergences:${farmId}`, JSON.stringify(response.divergences)],
+      ])
+        statements.push({
+          sql: "INSERT INTO app_config(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+          values: [key!, value!],
+        });
+      await this.database.transaction(statements);
     });
   }
   async applyRemote(
