@@ -219,26 +219,26 @@
 - [ ] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
   - [x] Validar automaticamente persistência offline, rollback e reenvio idempotente entre dois SQLite e um servidor simulado.
   - [ ] Desligar Wi-Fi/4G, fazer movimentações no celular, reconectar e confirmar a sincronização sem duplicidade.
-- [ ] **6.4. [EM CONJUNTO] Registro de Limitações:**
+- [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `desktop/README.md`.
-  - [ ] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
+  - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
 
 ---
 
 ### ETAPA 7: Documentação Obrigatória (README Anexo II) *(Dia 12)*
 *Critério rigoroso do regulamento do IFRO.*
 
-- [ ] **7.1. [EM CONJUNTO] Redação do README.md oficial com os 10 tópicos obrigatórios:**
-  - [ ] 1. Equipe (nomes dos 2 integrantes, cursos, papéis e responsável ADS).
-  - [ ] 2. Problema e público (contexto rural, Gestores e Operadores).
-  - [ ] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [ ] 4. Como testar (instruções reproduzíveis e links para download do `.exe` e `.apk`).
-  - [ ] 5. Dados e critérios (campos tratados, regras de runout, Curva ABC e anomalias).
-  - [ ] 6. Demonstração (link do vídeo gravado, prints e evidências de reanálise).
-  - [ ] 7. Validação e testes (resultados observados e limitações da solução).
-  - [ ] 8. Tecnologias e declaração de IA (lista de ferramentas e declaração formal do uso de IA).
-  - [ ] 9. Autoria e licença (termos de uso e garantia de nenhuma credencial/token exposto).
-  - [ ] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
+- [x] **7.1. [EM CONJUNTO] Redação do README.md oficial com os 10 tópicos obrigatórios:**
+  - [x] 1. Equipe (nomes dos 2 integrantes, cursos, papéis e responsável ADS).
+  - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
+  - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
+  - [x] 4. Como testar (instruções reproduzíveis e links para download do `.exe` e `.apk`).
+  - [x] 5. Dados e critérios (campos tratados, regras de runout, Curva ABC e anomalias).
+  - [x] 6. Demonstração (link do vídeo gravado, prints e evidências de reanálise).
+  - [x] 7. Validação e testes (resultados observados e limitações da solução).
+  - [x] 8. Tecnologias e declaração de IA (lista de ferramentas e declaração formal do uso de IA).
+  - [x] 9. Autoria e licença (termos de uso e garantia de nenhuma credencial/token exposto).
+  - [x] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
 
 ---
 
