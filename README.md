@@ -27,9 +27,8 @@
 | **Nome da Equipe** | **Oliveira & Oliveira** |
 | **Protocolo de Inscrição** | `AGRO26-F009CD2F9F` |
 | **Instituição** | Instituto Federal de Rondônia (IFRO) — Campus Ariquemes |
-| **Curso / Período** | Tecnologia em Análise e Desenvolvimento de Sistemas (ADS) — 6º Período |
-| **Integrante 1 (Responsável ADS)** | **Gabriel de Oliveira Silva** (Foco: Backend, Dados, Sincronização e Infraestrutura) |
-| **Integrante 2** | **Kauê Rian Silva Conceição Oliveira** (Foco: Frontend, Tauri v2, SQLite Offline e UX) |
+| **Integrante 1 (DEV 1)** | **Kauê Rian Silva Conceição Oliveira** — ADS 6º Período (Foco: Backend, Dados, Sincronização e Infraestrutura) |
+| **Integrante 2 (DEV 2)** | **Gabriel de Oliveira Silva** — ADS 6º Período (Foco: Frontend, Tauri v2, SQLite Offline e UX) |
 
 ---
 
