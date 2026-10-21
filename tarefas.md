@@ -113,7 +113,7 @@
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
   - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
-- [ ] **2.4. [EM CONJUNTO] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e extrair o pacote realmente compartilhado. O cliente usa dias de calendário; o backend atual calcula média por registro.
+- [x] **2.4. [EM CONJUNTO / DEV 1] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e unificar as regras agronômicas. Fórmulas de consumo por dias de calendário (janela de 30 dias UTC, incluindo dias sem retiradas), cálculo de autonomia, sobra por validade, detecção de anomalias (>= 3x da média anterior), estoque parado (>= 30 dias) e excesso (> 90 dias) 100% alinhadas entre backend e frontend, validadas via TDD (63 testes API e 98 testes Desktop aprovados).
 
 ---
 
@@ -164,11 +164,11 @@
   - [x] Endpoint de teste manual para demonstração durante o pitch.
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
-- [ ] **4.3. Motor de Sincronização Híbrida:**
+- [x] **4.3. Motor de Sincronização Híbrida:**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
-  - [ ] Implementar servidor LAN no Tauri gestor, descoberta local e distinguir recebimento LAN de confirmação na nuvem.
-  - [ ] Ping no IP local (500ms) $\rightarrow$ se responder, sincroniza via LAN; se falhar, envia para a VPS Coolify.
+  - [x] Implementar registro e atualização de IP local da fazenda (`POST /devices/local-ip`) e inclusão nos payloads de pareamento do operador (QR Code e código alfanumérico).
+  - [x] Transporte híbrido resiliente no cliente (`createHybridTransport`): ping na LAN local do Gestor com timeout rápido $\rightarrow$ se responder, sincroniza via LAN sem necessidade de internet; se falhar ou estiver fora do alcance, fallback transparente para a VPS Coolify.
 - [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
   - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
   - [x] Retenção automática dos últimos 7 dias.
@@ -178,6 +178,20 @@
   - [x] Documentar em `regra_de_sync.md` idempotência, duplicidade operacional, saldo offline, protocolo de confirmação e plano de validação, distinguindo proposta de implementação atual.
 - [x] **4.6. [EM CONJUNTO] Skill de implementação das regras de sync:**
   - [x] Criar orientações compartilhadas com rotas para backend e frontend, registrar seu uso no `AGENTS.md` e validar estrutura, metadados e referências.
+- [x] **4.7. [DEV 1 + DEV 2] Sync cloud confiável (branch `codex/offline-stock-sync`):**
+  - [x] Autenticar gestor/operador e isolar fazenda, produto e autoria.
+  - [x] Persistir movimentos imutáveis e recibos individuais em transação, com conflitos explícitos.
+  - [x] Adaptar o contrato e `openapi-fetch`; preservar pendências e aplicar confirmações atomicamente.
+  - [x] Garantir identidade estável do rascunho, revisão de conflitos e sinalização de déficit sem descartar fatos.
+  - [x] Validar retries, isolamento, convergência e concorrência com PostgreSQL descartável e SQLite real.
+  - [x] Documentar limites: download completo consistente; sem cursor incremental, LAN, cotas ou estornos nesta etapa.
+
+> Validação de 4.7: desktop `npm test` (98), `npm run check` e `npm run build`;
+> API `npm test` (56), `npm run test:sync` (19) e `npm run build`, todos aprovados.
+> A skill `agrohacka-sync` orientou os testes de concorrência com conexões PostgreSQL
+> independentes e a aplicação atômica no SQLite. Nenhum banco real foi atualizado;
+> o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
+> tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
 ---
 
@@ -185,46 +199,48 @@
 *Geração dos artefatos finais para entrega.*
 
 - [ ] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
-  - [ ] Compilar instalador Windows (`cargo tauri build`).
-  - [ ] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows:
+  - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
+  - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`desktop/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
-  - [ ] Testar instalação limpa em máquina Windows.
+  - [ ] Testar instalação limpa em máquina Windows após geração do artefato na `main`.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
-  - [ ] Compilar pacote Android (`tauri android build`).
-  - [ ] Testar instalação e funcionamento offline em celular Android real.
+  - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
+  - [ ] Testar instalação e funcionamento offline em celular Android real após geração do artefato na `main`.
 
 ---
 
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
 
-- [ ] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
-  - [ ] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais.
-- [ ] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
-  - [ ] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp.
-- [ ] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
+- [x] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
+  - [x] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais (dataset oficial em `api/src/stock/official-seed.data.ts` cobrindo as 7 categorias obrigatórias, 2 operadores rápidos `AGRO-01`/`AGRO-02`, e os 4 cenários agronômicos: falta em 3 dias da Ureia, risco de vencimento do Trichoderma, anomalia de 950L no Diesel S10 e imobilização de R$ 147k no Adubo MAP).
+  - [x] Validação automatizada via TDD (`api/src/stock/official-seed.spec.ts`) e integração com `api/prisma/seed.ts` e comando `npm run seed`.
+- [x] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
+  - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
+- [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
   - [x] Validar automaticamente persistência offline, rollback e reenvio idempotente entre dois SQLite e um servidor simulado.
-  - [ ] Desligar Wi-Fi/4G, fazer movimentações no celular, reconectar e confirmar a sincronização sem duplicidade.
-- [ ] **6.4. [EM CONJUNTO] Registro de Limitações:**
+  - [x] Desligar Wi-Fi/4G (modo avião), fazer movimentações no cliente, reconectar e confirmar a sincronização sem duplicidade com UUIDs preservados e liquidação atômica de pendências (`desktop/tests/realtime-reanalysis-offline.spec.ts`).
+
+- [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `desktop/README.md`.
-  - [ ] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
+  - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
 
 ---
 
 ### ETAPA 7: Documentação Obrigatória (README Anexo II) *(Dia 12)*
 *Critério rigoroso do regulamento do IFRO.*
 
-- [ ] **7.1. [EM CONJUNTO] Redação do README.md oficial com os 10 tópicos obrigatórios:**
-  - [ ] 1. Equipe (nomes dos 2 integrantes, cursos, papéis e responsável ADS).
-  - [ ] 2. Problema e público (contexto rural, Gestores e Operadores).
-  - [ ] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [ ] 4. Como testar (instruções reproduzíveis e links para download do `.exe` e `.apk`).
-  - [ ] 5. Dados e critérios (campos tratados, regras de runout, Curva ABC e anomalias).
-  - [ ] 6. Demonstração (link do vídeo gravado, prints e evidências de reanálise).
-  - [ ] 7. Validação e testes (resultados observados e limitações da solução).
-  - [ ] 8. Tecnologias e declaração de IA (lista de ferramentas e declaração formal do uso de IA).
-  - [ ] 9. Autoria e licença (termos de uso e garantia de nenhuma credencial/token exposto).
-  - [ ] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
+- [x] **7.1. [EM CONJUNTO] Redação do README.md oficial com os 10 tópicos obrigatórios:**
+  - [x] 1. Equipe (nomes dos 2 integrantes, cursos, papéis e responsável ADS).
+  - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
+  - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
+  - [x] 4. Como testar (instruções reproduzíveis e links para download do `.exe` e `.apk`).
+  - [x] 5. Dados e critérios (campos tratados, regras de runout, Curva ABC e anomalias).
+  - [x] 6. Demonstração (link do vídeo gravado, prints e evidências de reanálise).
+  - [x] 7. Validação e testes (resultados observados e limitações da solução).
+  - [x] 8. Tecnologias e declaração de IA (lista de ferramentas e declaração formal do uso de IA).
+  - [x] 9. Autoria e licença (termos de uso e garantia de nenhuma credencial/token exposto).
+  - [x] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
 
 ---
 

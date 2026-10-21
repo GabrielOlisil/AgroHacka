@@ -78,9 +78,17 @@ e Android real.
   token pela API não apaga a sessão offline, os registros ou a fila local.
 - O cliente sincroniza manualmente, ao recuperar conexão e a cada 30 segundos
   enquanto o aplicativo estiver aberto. Falhas preservam as pendências.
-- A API recebe `pendingMovements`; uma resposta válida precisa confirmar a
-  quantidade exata enviada. Somente os UUIDs daquele lote saem da fila, na mesma
-  transação que incorpora os registros recebidos. Downloads não geram outbox.
+- A API recebe `protocolVersion: 2` e até 100 `pendingMovements`. O cliente exige
+  recibos individuais completos, únicos e compatíveis com os IDs enviados;
+  `syncedCount` sozinho não confirma nada. Dados, recibos, revisão e horário da
+  última rodada são aplicados juntos. Downloads não geram outbox.
+- O ID do rascunho persiste em `app_config` antes do salvamento. Retries do mesmo
+  ID não criam outro fato; o workspace bloqueia salvamentos simultâneos e conserva
+  o ID capturado se a resposta nativa falhar. A migration 001 não foi alterada.
+- Recusas definitivas guardam tentativa e motivo para revisão, saindo da fila de
+  reenvio e do saldo provisório. Não há exclusão silenciosa da tentativa nem tela
+  que autorize estorno. A interface distingue saldo confirmado conhecido e local
+  provisório e sinaliza déficit consolidado sem zerá-lo.
 - Até o backend oferecer um cursor seguro, o cliente **não envia
   `lastSyncTimestamp`**. Baixa o conjunto completo e incorpora por ID. O horário
   da última sincronização é informativo. Isso evita a janela de perda do
@@ -114,7 +122,7 @@ para atualizar os resultados.
 As fórmulas locais estão isoladas no cliente: o cálculo temporal do motor atual
 da API usa outro critério (média por registro). O DEV 1 precisa alinhar as regras
 ou extrair o pacote compartilhado antes de prometer resultados idênticos nas
-duas pontas. Nenhum arquivo do backend foi alterado.
+duas pontas. As alterações atuais de backend limitam-se à sincronização e sua autenticação.
 
 ## Pareamento e backups
 
@@ -139,14 +147,17 @@ baixá-los novamente.
 - O servidor LAN no aparelho gestor, mDNS, heartbeat do gestor e encaminhamento
   LAN → nuvem não estão implementados. Existe um helper de fallback testado,
   mas ele não é ativado como se o gestor já tivesse um servidor HTTP.
-- O backend ainda precisa de confirmação individual/cursor consistente,
-  autenticação efetiva do `/sync`, regras de conflitos e exclusões.
-- Pareamento por código manual não devolve um token de dispositivo no contrato
-  atual. O QR fornece esse token, que o cliente pode preservar; não se inventa
-  uma credencial que a API não retornou.
+- O backend desta branch implementa autenticação de `/sync`, recibos individuais
+  e conflitos imutáveis. Exige a atualização aditiva do banco descrita em
+  `../api/SYNC.md`, ainda não aplicada a bancos reais. Cursor seguro, tombstones,
+  referências físicas e resolução auditada de conflitos continuam pendentes.
+- A API atualizada devolve o token também por código manual. Sessões antigas sem
+  credencial precisam reconectar; erro de autenticação não apaga pendências.
 - O SQLite e os snapshots não estão criptografados. A senha de login nunca é
   persistida, mas os tokens ficam no diretório local do aplicativo. Proteção por
   cofre nativo é uma pendência antes de tratar o armazenamento como seguro.
-- Ainda faltam a extração do motor compartilhado, testes contra a API real,
+- O fluxo HTTP da API real com PostgreSQL descartável e dois SQLite é testado por
+  `npm run test:sync` na pasta `api`. Isso não substitui testes no dispositivo.
+- Ainda faltam a extração do motor compartilhado,
   WhatsApp ponta a ponta, validação física offline/câmera, instalador/firewall e
   empacotamento Android.

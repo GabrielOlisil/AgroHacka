@@ -1,5 +1,6 @@
 import type { LocalStore } from "./local-store";
 import type { Session, SyncPayload, SyncResponse } from "./types";
+import { parseSyncResponse } from "./types";
 
 export type SyncTransport = (
   payload: SyncPayload,
@@ -17,28 +18,20 @@ export class SyncCoordinator {
     if (this.running) throw new Error("Sincronização já em andamento.");
     this.running = true;
     try {
-      const pending = await this.store.pending(session.farmId);
+      const pending = (await this.store.pending(session.farmId)).slice(0, 100);
       // O backend atual não oferece cursor consistente; download completo evita pular registros.
       const result = await this.transport(
         {
+          protocolVersion: 2,
           farmId: session.farmId,
           ...(session.deviceId ? { deviceId: session.deviceId } : {}),
           pendingMovements: pending,
         },
         session,
       );
-      if (!result.sucesso || result.syncedCount !== pending.length)
-        throw new Error(
-          "Confirmação incompleta do lote. As pendências serão preservadas.",
-        );
-      await this.store.applyRemote(
-        session.farmId,
-        result.newProducts,
-        result.newMovements,
-        pending.map((m) => m.id),
-      );
-      await this.store.setLastSync(session.farmId, result.serverTimestamp);
-      return result;
+      const confirmed = parseSyncResponse(result, session.farmId, pending);
+      await this.store.applySyncResponse(session.farmId, confirmed, pending);
+      return confirmed;
     } finally {
       this.running = false;
     }
@@ -59,4 +52,52 @@ export async function syncWithFallback<T>(
     if (status >= 400 && status < 500) throw error;
     return cloud();
   }
+}
+
+export function createHybridTransport(
+  cloudSync: SyncTransport,
+  lanSyncFactory?: (url: string) => SyncTransport,
+): SyncTransport {
+  return async (payload: SyncPayload, session: Session) => {
+    if (!session.localIp) {
+      return cloudSync(payload, session);
+    }
+
+    const port = session.localPort || 3333;
+    const lanUrl = `http://${session.localIp}:${port}`;
+
+    const lanSync = lanSyncFactory
+      ? lanSyncFactory(lanUrl)
+      : async (p: SyncPayload, s: Session) => {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 800);
+          try {
+            const res = await fetch(`${lanUrl}/sync`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(s.accessToken ? { Authorization: `Bearer ${s.accessToken}` } : {}),
+                ...(s.deviceToken ? { "X-Device-Token": s.deviceToken } : {}),
+              },
+              body: JSON.stringify(p),
+              signal: controller.signal,
+            });
+            clearTimeout(timer);
+            if (!res.ok) {
+              const err: any = new Error(`Falha LAN (${res.status})`);
+              err.status = res.status;
+              throw err;
+            }
+            return (await res.json()) as SyncResponse;
+          } catch (e) {
+            clearTimeout(timer);
+            throw e;
+          }
+        };
+
+    return syncWithFallback(
+      () => lanSync(payload, session),
+      () => cloudSync(payload, session),
+    );
+  };
 }

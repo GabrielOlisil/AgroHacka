@@ -74,6 +74,13 @@ describe("integração entre SQLite, outbox, openapi-fetch e reanálise", () => 
         throw new TypeError("Resposta perdida após gravar no servidor");
       }
       return Response.json({
+        protocolVersion: 2,
+        results: (payload.pendingMovements ?? []).map((movement) => ({
+          id: movement.id,
+          status: "ACCEPTED",
+          movement,
+        })),
+        divergences: [],
         sucesso: true,
         serverTimestamp: new Date().toISOString(),
         syncedCount: payload.pendingMovements?.length ?? 0,

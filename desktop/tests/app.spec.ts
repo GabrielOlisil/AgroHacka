@@ -32,6 +32,8 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     }),
     movements: ref([]),
     pendingCount: ref(0),
+    reviews: ref([]),
+    confirmedBalances: ref({}),
     lastSync: ref(null),
     error: ref(""),
     syncing: ref(false),
@@ -50,6 +52,44 @@ function controller(role?: "GESTOR" | "OPERADOR") {
   };
 }
 describe("telas responsivas dos perfis", () => {
+  it("labels provisional and confirmed balances and surfaces a negative consolidated balance without clamping it", async () => {
+    const state = controller("GESTOR");
+    state.confirmedBalances.value = { p: -20 };
+    state.analysis.value.products = [
+      { id: "p", nome: "Diesel", unidadeMedida: "L", saldo: -25 },
+    ] as never;
+    state.pendingCount.value = 1;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
+      "Confirmado conhecido: -20 L",
+    );
+    expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
+      "Provisório neste aparelho: -25 L",
+    );
+    expect(wrapper.get('[data-testid="sync-deficit"]').text()).toMatch(
+      /gestor/i,
+    );
+    wrapper.unmount();
+  });
+  it("shows rejected local attempts as preserved review items, not as unsent or confirmed stock", async () => {
+    const state = controller("GESTOR");
+    state.reviews.value = [
+      {
+        id: "rejected-id",
+        status: "VALIDATION_REJECTED",
+        message: "Produto indisponível",
+        movement: { quantidade: 5 },
+      },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(wrapper.get('[data-testid="sync-reviews"]').text()).toContain(
+      "Produto indisponível",
+    );
+    expect(wrapper.get('[data-testid="sync-reviews"]').text()).toContain(
+      "rejected-id",
+    );
+    wrapper.unmount();
+  });
   it("identifica a página atual na navegação para leitores de tela", async () => {
     const wrapper = mount(App, {
       props: { controller: controller("GESTOR") as never },

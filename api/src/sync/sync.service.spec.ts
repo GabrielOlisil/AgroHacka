@@ -1,132 +1,165 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SyncService } from './sync.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { StockService } from '../stock/stock.service';
+import type { SyncIdentity } from '../auth/auth.service';
 
-describe('SyncService - Sincronização Híbrida e Heartbeat', () => {
-  let syncService: SyncService;
-  let prismaService: any;
-  let stockService: any;
-
+const identity: SyncIdentity = {
+  actorId: 'user-1',
+  farmId: 'farm-1',
+  role: 'GESTOR',
+  nome: 'Ana',
+};
+describe('SyncService - authenticated sync and heartbeat', () => {
+  const update = vi.fn();
+  const create = vi.fn();
+  const receipt = vi.fn();
+  const log = vi.fn();
+  const lock = vi.fn();
+  const product = {
+    id: 'prod-1',
+    farmId: identity.farmId,
+    nome: 'Diesel',
+    categoria: 'Combustível',
+    unidadeMedida: 'L',
+    estoqueMinimo: 0,
+    precoAquisicao: null,
+    validade: null,
+    lote: null,
+    fornecedor: null,
+    updatedAt: new Date(),
+  };
+  let service: SyncService;
+  let mockStockService: any;
   beforeEach(() => {
-    prismaService = {
-      farm: {
-        update: vi.fn(),
-        findUnique: vi.fn(),
-      },
-      stockMovement: {
-        upsert: vi.fn(),
-        findMany: vi.fn(),
-      },
-      product: {
-        findMany: vi.fn(),
-      },
-      syncLog: {
-        create: vi.fn(),
-      },
-      $transaction: vi.fn((callbacks) => Promise.all(callbacks)),
-    };
 
-    stockService = {
-      analyzeStock: vi.fn(),
+    vi.resetAllMocks();
+    lock.mockResolvedValue([{ id: identity.farmId }]);
+    create.mockImplementation(async ({ data }) => ({
+      ...data,
+      updatedAt: new Date('2026-10-01T12:00:00Z'),
+    }));
+    const tx = {
+      $queryRawUnsafe: lock,
+      product: { findFirst: vi.fn().mockResolvedValue(product) },
+      stockMovement: { findUnique: vi.fn().mockResolvedValue(null), create },
+      syncReceipt: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: receipt,
+      },
+      syncLog: { create: log },
     };
-
-    syncService = new SyncService(prismaService as PrismaService, stockService as StockService);
+    const prisma = {
+      farm: { update },
+      $transaction: vi.fn(async (work) =>
+        typeof work === 'function' ? work(tx) : Promise.all(work),
+      ),
+      product: { findMany: vi.fn().mockResolvedValue([product]) },
+      stockMovement: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    mockStockService = {
+      reanalyzeAndPersistAlerts: vi.fn().mockResolvedValue({}),
+    };
+    service = new SyncService(prisma as never, mockStockService as never);
   });
 
-  describe('heartbeat', () => {
-    it('deve atualizar o IP e porta local da fazenda', async () => {
-      const mockFarm = {
-        id: 'farm-1',
-        nome: 'Fazenda Modelo',
-        localIp: '192.168.1.55',
-        localPort: 3333,
-      };
-
-      prismaService.farm.update.mockResolvedValue(mockFarm);
-
-      const result = await syncService.updateHeartbeat({
-        farmId: 'farm-1',
-        localIp: '192.168.1.55',
-        localPort: 3333,
-      });
-
-      expect(prismaService.farm.update).toHaveBeenCalledWith({
-        where: { id: 'farm-1' },
-        data: {
-          localIp: '192.168.1.55',
-          localPort: 3333,
-        },
-      });
-
-      expect(result.sucesso).toBe(true);
-      expect(result.localIp).toBe('192.168.1.55');
+  it('updates heartbeat only for the authenticated manager farm', async () => {
+    update.mockResolvedValue({
+      id: identity.farmId,
+      localIp: '192.168.1.55',
+      localPort: 3333,
     });
+    const result = await service.updateHeartbeat(
+      { farmId: identity.farmId, localIp: '192.168.1.55' },
+      identity,
+    );
+    expect(update).toHaveBeenCalledWith({
+      where: { id: identity.farmId },
+      data: { localIp: '192.168.1.55', localPort: 3333 },
+    });
+    expect(result.sucesso).toBe(true);
+    await expect(
+      service.updateHeartbeat(
+        { farmId: 'foreign', localIp: '127.0.0.1' },
+        identity,
+      ),
+    ).rejects.toThrow();
+    await expect(
+      service.updateHeartbeat(
+        { farmId: identity.farmId, localIp: '127.0.0.1' },
+        { ...identity, role: 'OPERADOR' },
+      ),
+    ).rejects.toThrow();
+    expect(update).toHaveBeenCalledOnce();
+  });
+  it('creates an immutable movement and its individual receipt using verified authorship', async () => {
+    const item = {
+      id: 'm-1',
+      farmId: identity.farmId,
+      productId: product.id,
+      tipo: 'SAIDA' as const,
+      quantidade: 5,
+      dataMovimento: '2026-10-01T12:00:00Z',
+      responsavel: 'forged',
+    };
+    const result = await service.syncData(
+      { farmId: identity.farmId, pendingMovements: [item] },
+      identity,
+    );
+    expect(lock).toHaveBeenCalledWith(
+      expect.stringContaining('FOR UPDATE'),
+      identity.farmId,
+    );
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: item.id,
+        quantidade: 5,
+        responsavel: identity.nome,
+      }),
+    });
+    expect(receipt).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        movementId: item.id,
+        actorId: identity.actorId,
+        result: expect.objectContaining({ status: 'ACCEPTED' }),
+      }),
+    });
+    expect(result.syncedCount).toBe(1);
+    expect(result.results[0].id).toBe(item.id);
+    expect(result.protocolVersion).toBe(2);
+    expect(mockStockService.reanalyzeAndPersistAlerts).toHaveBeenCalledWith(identity.farmId);
   });
 
-  describe('syncData', () => {
-    it('deve processar movimentações pendentes locais e retornar atualizações do servidor', async () => {
-      const farmId = 'farm-1';
-      const lastSyncTimestamp = new Date('2026-10-15T00:00:00Z');
-
-      const pendingMovements = [
-        {
-          id: 'mov-uuid-1',
-          farmId,
-          productId: 'prod-1',
-          tipo: 'SAIDA' as const,
-          quantidade: 5,
-          dataMovimento: new Date('2026-10-16T10:00:00Z'),
-          destino: 'Talhão 02',
-          responsavel: 'Carlos - Operador',
-          updatedAt: new Date('2026-10-16T10:00:00Z'),
-        },
-      ];
-
-      prismaService.stockMovement.upsert.mockResolvedValue({ id: 'mov-uuid-1' });
-      prismaService.stockMovement.findMany.mockResolvedValue([]);
-      prismaService.product.findMany.mockResolvedValue([]);
-      prismaService.syncLog.create.mockResolvedValue({ id: 'sync-1' });
-
-      stockService.analyzeStock.mockResolvedValue({
-        resumo: { totalInsumos: 1 },
-        alertas: [{ id: 'a1', nivel: 'URGENTE', titulo: 'Estoque baixo' }],
-      });
-
-      const result = await syncService.syncData({
-        farmId,
-        deviceId: 'dev-1',
-        lastSyncTimestamp: lastSyncTimestamp.toISOString(),
-        pendingMovements,
-      });
-
-      expect(prismaService.stockMovement.upsert).toHaveBeenCalled();
-      expect(stockService.analyzeStock).toHaveBeenCalledWith(farmId);
-      expect(result.syncedCount).toBe(1);
-      expect(result).toHaveProperty('serverTimestamp');
-      expect(result.alerts).toHaveLength(1);
-    });
-
-    it('deve sincronizar com sucesso mesmo se a lista de movimentações pendentes for vazia', async () => {
-      const farmId = 'farm-1';
-
-      prismaService.stockMovement.findMany.mockResolvedValue([]);
-      prismaService.product.findMany.mockResolvedValue([]);
-      prismaService.syncLog.create.mockResolvedValue({ id: 'sync-1' });
-
-      stockService.analyzeStock.mockResolvedValue({
-        resumo: { totalInsumos: 0 },
-        alertas: [],
-      });
-
-      const result = await syncService.syncData({
-        farmId,
+  it('downloads the full catalog for an empty batch even if a legacy timestamp is supplied', async () => {
+    const result = await service.syncData(
+      {
+        farmId: identity.farmId,
         pendingMovements: [],
-      });
-
-      expect(prismaService.stockMovement.upsert).not.toHaveBeenCalled();
-      expect(result.syncedCount).toBe(0);
-      expect(result).toHaveProperty('serverTimestamp');
-    });
+        lastSyncTimestamp: '2099-01-01T00:00:00Z',
+      },
+      identity,
+    );
+    expect(result.newProducts).toHaveLength(1);
+    expect(result.newMovements).toEqual([]);
+    expect(result.results).toEqual([]);
+    expect(result.syncedCount).toBe(0);
+    expect(create).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledOnce();
+  });
+  it('rejects absent identity, forged device, unsupported protocol and oversized batches before database writes', async () => {
+    const body = { farmId: identity.farmId };
+    await expect(service.syncData(body, undefined as never)).rejects.toThrow();
+    await expect(
+      service.syncData({ ...body, deviceId: 'forged' }, identity),
+    ).rejects.toThrow();
+    await expect(
+      service.syncData({ ...body, protocolVersion: 3 } as never, identity),
+    ).rejects.toThrow();
+    await expect(
+      service.syncData(
+        { ...body, pendingMovements: Array(101).fill({}) },
+        identity,
+      ),
+    ).rejects.toThrow();
+    expect(lock).not.toHaveBeenCalled();
+    expect(receipt).not.toHaveBeenCalled();
   });
 });
