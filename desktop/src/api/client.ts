@@ -160,6 +160,23 @@ export function createApi(
         body.pendingMovements ?? [],
       );
     },
+    async updateLocalIp(
+      body: { farmId: string; localIp: string; localPort?: number },
+      session: Session,
+    ) {
+      if (session.role !== "GESTOR" || body.farmId !== session.farmId)
+        throw new Error("Somente o gestor pode atualizar o IP da fazenda.");
+      const result = object(
+        await unpack(
+          await (client as any).POST("/devices/local-ip", {
+            body,
+            headers: headers(session),
+            signal: signal(),
+          }),
+        ),
+      );
+      return result;
+    },
   };
 }
 export type Api = ReturnType<typeof createApi>;

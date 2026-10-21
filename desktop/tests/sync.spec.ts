@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { SyncCoordinator, syncWithFallback } from "../src/offline/sync";
+import {
+  SyncCoordinator,
+  syncWithFallback,
+  createHybridTransport,
+} from "../src/offline/sync";
 import { createApi } from "../src/api/client";
 
 const session = {
@@ -258,6 +262,68 @@ describe("cliente HTTP openapi-fetch", () => {
       role: "OPERADOR",
       nome: "Ana",
       deviceId: "d",
+    });
+  });
+
+  describe("transporte híbrido LAN e Cloud (Tarefa 4.3)", () => {
+    const payload = {
+      protocolVersion: 2 as const,
+      farmId: "f",
+      pendingMovements: [],
+    };
+
+    it("sincroniza via LAN primeiro quando a fazenda possui localIp e LAN responde", async () => {
+      const lanSync = vi.fn().mockResolvedValue({ ...response, serverTimestamp: "lan" });
+      const cloudSync = vi.fn().mockResolvedValue({ ...response, serverTimestamp: "cloud" });
+
+      const transport = createHybridTransport(cloudSync, () => lanSync);
+      const sessionWithLan = { ...session, localIp: "192.168.1.100", localPort: 3333 };
+
+      const res = await transport(payload, sessionWithLan);
+
+      expect(lanSync).toHaveBeenCalledWith(payload, sessionWithLan);
+      expect(cloudSync).not.toHaveBeenCalled();
+      expect(res.serverTimestamp).toBe("lan");
+    });
+
+    it("faz fallback transparente para cloud quando a LAN falha por timeout ou queda de conexao", async () => {
+      const lanSync = vi.fn().mockRejectedValue(new Error("Timeout de 800ms excedido"));
+      const cloudSync = vi.fn().mockResolvedValue({ ...response, serverTimestamp: "cloud" });
+
+      const transport = createHybridTransport(cloudSync, () => lanSync);
+      const sessionWithLan = { ...session, localIp: "192.168.1.100", localPort: 3333 };
+
+      const res = await transport(payload, sessionWithLan);
+
+      expect(lanSync).toHaveBeenCalled();
+      expect(cloudSync).toHaveBeenCalledWith(payload, sessionWithLan);
+      expect(res.serverTimestamp).toBe("cloud");
+    });
+
+    it("envia direto para a cloud quando a sessao nao possui localIp", async () => {
+      const lanSync = vi.fn();
+      const cloudSync = vi.fn().mockResolvedValue(response);
+
+      const transport = createHybridTransport(cloudSync, () => lanSync);
+      const sessionSemLan = { ...session, localIp: undefined, localPort: undefined };
+
+      const res = await transport(payload, sessionSemLan);
+
+      expect(lanSync).not.toHaveBeenCalled();
+      expect(cloudSync).toHaveBeenCalledWith(payload, sessionSemLan);
+      expect(res.sucesso).toBe(true);
+    });
+
+    it("nao masca erro 4xx de credencial mesmo vindo da LAN", async () => {
+      const authError = { status: 401, message: "Token de operador invalido" };
+      const lanSync = vi.fn().mockRejectedValue(authError);
+      const cloudSync = vi.fn();
+
+      const transport = createHybridTransport(cloudSync, () => lanSync);
+      const sessionWithLan = { ...session, localIp: "192.168.1.100" };
+
+      await expect(transport(payload, sessionWithLan)).rejects.toMatchObject({ status: 401 });
+      expect(cloudSync).not.toHaveBeenCalled();
     });
   });
 });

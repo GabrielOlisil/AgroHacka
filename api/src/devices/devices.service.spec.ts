@@ -14,6 +14,7 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
       },
       farm: {
         findUnique: vi.fn(),
+        update: vi.fn(),
       },
     };
 
@@ -141,6 +142,45 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
           tokenOrCode: 'CODIGO_INVALIDO',
         }),
       ).rejects.toThrow('Código ou Token de pareamento inválido');
+    });
+  });
+
+  describe('updateLocalIp', () => {
+    it('deve atualizar o IP e porta locais da fazenda com sucesso', async () => {
+      prismaService.farm.findUnique.mockResolvedValue({ id: 'farm-1', nome: 'Fazenda Boa Vista' });
+      prismaService.farm.update.mockResolvedValue({
+        id: 'farm-1',
+        localIp: '192.168.1.50',
+        localPort: 3333,
+      });
+
+      const result = await devicesService.updateLocalIp({
+        farmId: 'farm-1',
+        localIp: '192.168.1.50',
+        localPort: 3333,
+      });
+
+      expect(prismaService.farm.update).toHaveBeenCalledWith({
+        where: { id: 'farm-1' },
+        data: {
+          localIp: '192.168.1.50',
+          localPort: 3333,
+        },
+      });
+      expect(result.sucesso).toBe(true);
+      expect(result.localIp).toBe('192.168.1.50');
+      expect(result.localPort).toBe(3333);
+    });
+
+    it('deve lançar erro se a fazenda não existir', async () => {
+      prismaService.farm.findUnique.mockResolvedValue(null);
+
+      await expect(
+        devicesService.updateLocalIp({
+          farmId: 'farm-invalida',
+          localIp: '192.168.1.50',
+        }),
+      ).rejects.toThrow('Fazenda não encontrada');
     });
   });
 });

@@ -9,7 +9,7 @@ import {
 import { openDatabase } from "./offline/database";
 import { LocalStore } from "./offline/local-store";
 import { pairingCredential } from "./offline/pairing";
-import { SyncCoordinator } from "./offline/sync";
+import { SyncCoordinator, createHybridTransport } from "./offline/sync";
 import {
   text,
   type LoginInput,
@@ -94,7 +94,10 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         ? dependencies.openStore()
         : openDatabase().then((db) => new LocalStore(db)));
       store = openedStore;
-      coordinator = new SyncCoordinator(openedStore, api.sync);
+      coordinator = new SyncCoordinator(
+        openedStore,
+        createHybridTransport(api.sync),
+      );
       session.value = await openedStore.loadSession();
       await refresh();
       try {
@@ -255,6 +258,20 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       } finally {
         restoring = false;
       }
+    },
+    async updateLocalIp(localIp: string, localPort = 3333) {
+      if (!session.value || session.value.role !== "GESTOR")
+        throw new Error("Somente o gestor pode atualizar o IP local da fazenda.");
+      const current = session.value;
+      const res = await api.updateLocalIp(
+        { farmId: current.farmId, localIp, localPort },
+        current,
+      );
+      current.localIp = localIp;
+      current.localPort = localPort;
+      await requireStore().saveSession(current);
+      session.value = { ...current };
+      return res;
     },
     dispose() {
       disposed = true;
