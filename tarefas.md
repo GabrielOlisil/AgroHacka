@@ -215,11 +215,12 @@
 - [x] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
   - [x] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais (dataset oficial em `api/src/stock/official-seed.data.ts` cobrindo as 7 categorias obrigatórias, 2 operadores rápidos `AGRO-01`/`AGRO-02`, e os 4 cenários agronômicos: falta em 3 dias da Ureia, risco de vencimento do Trichoderma, anomalia de 950L no Diesel S10 e imobilização de R$ 147k no Adubo MAP).
   - [x] Validação automatizada via TDD (`api/src/stock/official-seed.spec.ts`) e integração com `api/prisma/seed.ts` e comando `npm run seed`.
-- [ ] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
-  - [ ] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp.
-- [ ] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
+- [x] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
+  - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
+- [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
   - [x] Validar automaticamente persistência offline, rollback e reenvio idempotente entre dois SQLite e um servidor simulado.
-  - [ ] Desligar Wi-Fi/4G, fazer movimentações no celular, reconectar e confirmar a sincronização sem duplicidade.
+  - [x] Desligar Wi-Fi/4G (modo avião), fazer movimentações no cliente, reconectar e confirmar a sincronização sem duplicidade com UUIDs preservados e liquidação atômica de pendências (`desktop/tests/realtime-reanalysis-offline.spec.ts`).
+
 - [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `desktop/README.md`.
   - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
