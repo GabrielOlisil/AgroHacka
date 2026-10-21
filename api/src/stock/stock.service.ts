@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AlertType, UrgencyLevel } from '@prisma/client';
 import {
   calculateRunoutTime,
   checkExpiryRisk,
@@ -11,7 +13,11 @@ import {
 
 @Injectable()
 export class StockService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notificationsService?: NotificationsService,
+  ) {}
+
 
   async analyzeStock(farmId: string) {
     // 1. Busca todos os produtos da fazenda com suas movimentações
@@ -128,4 +134,62 @@ export class StockService {
       produtos: productsWithBalances,
     };
   }
+
+  async reanalyzeAndPersistAlerts(farmId: string) {
+    const analysis = await this.analyzeStock(farmId);
+
+    const criticalAlerts = analysis.alertas.filter(
+      (a) => a.nivel === 'URGENTE' || a.nivel === 'ATENCAO',
+    );
+
+    const existingAlerts = await this.prisma.alert.findMany({
+      where: {
+        farmId,
+        resolvido: false,
+      },
+    });
+
+    const existingKeys = new Set(
+      existingAlerts.map((e) => `${e.productId}-${e.tipo}`),
+    );
+
+    for (const alert of criticalAlerts) {
+      const productId = alert.id.replace(/^(alert-runout-|alert-expiry-|alert-anomaly-)/, '');
+      let tipo: AlertType = AlertType.ESTOQUE_CRITICO;
+      if (alert.id.startsWith('alert-expiry-')) {
+        tipo = AlertType.RISCO_VENCIMENTO;
+      } else if (alert.id.startsWith('alert-anomaly-')) {
+        tipo = AlertType.CONSUMO_ANOMALO;
+      }
+
+      const key = `${productId}-${tipo}`;
+      if (!existingKeys.has(key)) {
+        await this.prisma.alert.create({
+          data: {
+            farmId,
+            productId,
+            tipo,
+            nivelUrgencia: alert.nivel === 'URGENTE' ? UrgencyLevel.ALTA : UrgencyLevel.MEDIA,
+            justificativa: alert.justificativa || 'Alerta gerado pela análise de estoque.',
+            resolvido: false,
+            notificadoWhatsapp: false,
+
+          },
+        });
+        existingKeys.add(key);
+      }
+    }
+
+    let notificacoesResult: any = null;
+    if (this.notificationsService) {
+      notificacoesResult = await this.notificationsService.dispatchCriticalAlerts(farmId);
+    }
+
+    return {
+      analise: analysis,
+      alertas: criticalAlerts,
+      notificacoes: notificacoesResult,
+    };
+  }
 }
+

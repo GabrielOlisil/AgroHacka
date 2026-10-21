@@ -2,11 +2,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma, StockMovement } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { StockService } from '../stock/stock.service';
 import type { SyncIdentity } from '../auth/auth.service';
+
 import {
   HeartbeatDto,
   SyncMovementDto,
@@ -70,7 +73,12 @@ function valid(m: SyncMovementDto, identity: SyncIdentity): SyncMovementDto {
 
 @Injectable()
 export class SyncService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly stockService?: StockService,
+  ) {}
+
+
 
   async updateHeartbeat(dto: HeartbeatDto, identity: SyncIdentity) {
     if (dto.farmId !== identity.farmId || identity.role !== 'GESTOR')
@@ -238,7 +246,17 @@ export class SyncService {
       },
     );
 
+    if (results.some((r) => r.status === 'ACCEPTED')) {
+      try {
+        await this.stockService?.reanalyzeAndPersistAlerts(identity.farmId);
+      } catch {
+        // Falha na reanálise de alertas não deve impedir a conclusão do sync
+      }
+    }
+
+
     // A timestamp is informational only. Both full tables are read from one
+
     // consistent snapshot, including catalog changes made outside this endpoint.
     const [products, stored] = await this.prisma.$transaction(
       [

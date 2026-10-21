@@ -28,7 +28,9 @@ describe('SyncService - authenticated sync and heartbeat', () => {
     updatedAt: new Date(),
   };
   let service: SyncService;
+  let mockStockService: any;
   beforeEach(() => {
+
     vi.resetAllMocks();
     lock.mockResolvedValue([{ id: identity.farmId }]);
     create.mockImplementation(async ({ data }) => ({
@@ -53,8 +55,12 @@ describe('SyncService - authenticated sync and heartbeat', () => {
       product: { findMany: vi.fn().mockResolvedValue([product]) },
       stockMovement: { findMany: vi.fn().mockResolvedValue([]) },
     };
-    service = new SyncService(prisma as never);
+    mockStockService = {
+      reanalyzeAndPersistAlerts: vi.fn().mockResolvedValue({}),
+    };
+    service = new SyncService(prisma as never, mockStockService as never);
   });
+
   it('updates heartbeat only for the authenticated manager farm', async () => {
     update.mockResolvedValue({
       id: identity.farmId,
@@ -119,7 +125,9 @@ describe('SyncService - authenticated sync and heartbeat', () => {
     expect(result.syncedCount).toBe(1);
     expect(result.results[0].id).toBe(item.id);
     expect(result.protocolVersion).toBe(2);
+    expect(mockStockService.reanalyzeAndPersistAlerts).toHaveBeenCalledWith(identity.farmId);
   });
+
   it('downloads the full catalog for an empty batch even if a legacy timestamp is supplied', async () => {
     const result = await service.syncData(
       {
