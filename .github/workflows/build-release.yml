@@ -74,13 +74,22 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configurar Android SDK e NDK Nativos
+        run: |
+          yes | sdkmanager --licenses || true
+          NDK_PATH=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$NDK_PATH" ] && [ -n "$ANDROID_NDK_LATEST_HOME" ]; then
+            NDK_PATH="$ANDROID_NDK_LATEST_HOME"
+          fi
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
 
       - name: Configurar Rust Toolchain para Android
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
 
       - name: Instalar Dependências do Desktop
         working-directory: desktop
@@ -111,17 +120,22 @@ jobs:
   create-release:
     name: Publicar Release Oficial no GitHub
     needs: [build-desktop-windows, build-mobile-android]
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+    if: |
+      always() &&
+      (needs.build-desktop-windows.result == 'success' || needs.build-mobile-android.result == 'success') &&
+      (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
 
     steps:
       - name: Baixar Artefatos do Windows
+        if: needs.build-desktop-windows.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: agrohacka-desktop-windows
           path: release-assets/windows
 
       - name: Baixar Artefatos do Android
+        if: needs.build-mobile-android.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: agrohacka-mobile-android
@@ -136,7 +150,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            release-assets/windows/*
-            release-assets/android/*
+            release-assets/**/*
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
