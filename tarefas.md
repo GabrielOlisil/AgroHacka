@@ -212,8 +212,9 @@
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
 
-- [ ] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
-  - [ ] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais.
+- [x] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
+  - [x] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais (dataset oficial em `api/src/stock/official-seed.data.ts` cobrindo as 7 categorias obrigatórias, 2 operadores rápidos `AGRO-01`/`AGRO-02`, e os 4 cenários agronômicos: falta em 3 dias da Ureia, risco de vencimento do Trichoderma, anomalia de 950L no Diesel S10 e imobilização de R$ 147k no Adubo MAP).
+  - [x] Validação automatizada via TDD (`api/src/stock/official-seed.spec.ts`) e integração com `api/prisma/seed.ts` e comando `npm run seed`.
 - [ ] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
   - [ ] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp.
 - [ ] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
