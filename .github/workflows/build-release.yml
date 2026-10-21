@@ -130,8 +130,8 @@ jobs:
       - name: Publicar Release no GitHub
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: AgroHacka - Versão Oficial ${{ github.ref_name }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.0.0-entrega' }}
+          name: AgroHacka - Versão Oficial ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v1.0.0' }}
           draft: false
           prerelease: false
           generate_release_notes: true
