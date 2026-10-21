@@ -148,6 +148,9 @@ const controller: Workspace = {
   },
   async createBackup() {},
   async restoreBackup() {},
+  async updateLocalIp() {
+    return { sucesso: true };
+  },
   dispose() {},
 };
 createApp(App, { controller }).mount("#app");

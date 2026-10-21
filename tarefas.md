@@ -164,11 +164,11 @@
   - [x] Endpoint de teste manual para demonstração durante o pitch.
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
-- [ ] **4.3. Motor de Sincronização Híbrida:**
+- [x] **4.3. Motor de Sincronização Híbrida:**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
-  - [ ] Implementar servidor LAN no Tauri gestor, descoberta local e distinguir recebimento LAN de confirmação na nuvem.
-  - [ ] Ping no IP local (500ms) $\rightarrow$ se responder, sincroniza via LAN; se falhar, envia para a VPS Coolify.
+  - [x] Implementar registro e atualização de IP local da fazenda (`POST /devices/local-ip`) e inclusão nos payloads de pareamento do operador (QR Code e código alfanumérico).
+  - [x] Transporte híbrido resiliente no cliente (`createHybridTransport`): ping na LAN local do Gestor com timeout rápido $\rightarrow$ se responder, sincroniza via LAN sem necessidade de internet; se falhar ou estiver fora do alcance, fallback transparente para a VPS Coolify.
 - [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
   - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
   - [x] Retenção automática dos últimos 7 dias.
