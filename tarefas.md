@@ -113,7 +113,7 @@
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
   - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
-- [ ] **2.4. [EM CONJUNTO] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e extrair o pacote realmente compartilhado. O cliente usa dias de calendário; o backend atual calcula média por registro.
+- [x] **2.4. [EM CONJUNTO / DEV 1] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e unificar as regras agronômicas. Fórmulas de consumo por dias de calendário (janela de 30 dias UTC, incluindo dias sem retiradas), cálculo de autonomia, sobra por validade, detecção de anomalias (>= 3x da média anterior), estoque parado (>= 30 dias) e excesso (> 90 dias) 100% alinhadas entre backend e frontend, validadas via TDD (63 testes API e 98 testes Desktop aprovados).
 
 ---
 

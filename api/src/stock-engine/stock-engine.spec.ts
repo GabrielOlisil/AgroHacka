@@ -6,6 +6,8 @@ import {
   calculateAbcCurve,
   prioritizeAlerts,
   normalizeUnitAndName,
+  checkStagnantAndExcess,
+  analyzeStockInventory,
 } from './stock-engine';
 
 describe('StockEngine - Motor Híbrido de Inteligência de Estoque', () => {
@@ -24,22 +26,61 @@ describe('StockEngine - Motor Híbrido de Inteligência de Estoque', () => {
   });
 
   describe('calculateRunoutTime (Risco de Falta e Autonomia)', () => {
+    it('deve calcular o consumo médio por dias de calendário incluindo dias sem saídas, e não por quantidade de saídas', () => {
+      const saldoAtual = 80;
+      const estoqueMinimo = 10;
+      const now = new Date('2026-10-16T12:00:00Z');
+      // 2 saídas de 10 unidades: uma no dia 07/10 e outra no dia 16/10 (10 dias de calendário de 07 a 16 inclusive)
+      const saidas = [
+        { quantidade: 10, data: new Date('2026-10-07T12:00:00Z') },
+        { quantidade: 10, data: new Date('2026-10-16T10:00:00Z') },
+      ];
+
+      const result = calculateRunoutTime(saldoAtual, estoqueMinimo, saidas, now);
+
+      // Total consumido: 20 unidades em 10 dias = 2 un/dia (se dividisse por 2 saídas daria 10 un/dia, o que é errado!)
+      expect(result.consumoMedioDiario).toBe(2);
+      expect(result.diasRestantes).toBe(40);
+      expect(result.diasAmostra).toBe(10);
+      expect(result.justificativa).toContain('2.0');
+      expect(result.justificativa).toContain('40');
+    });
+
+    it('deve considerar janela máxima de 30 dias de calendário em relação à data informada', () => {
+      const saldoAtual = 50;
+      const estoqueMinimo = 10;
+      const now = new Date('2026-10-31T12:00:00Z');
+      // Saída muito antiga (60 dias atrás) deve ser desconsiderada da janela recente
+      const saidas = [
+        { quantidade: 1000, data: new Date('2026-08-01T12:00:00Z') },
+        { quantidade: 15, data: new Date('2026-10-21T12:00:00Z') },
+        { quantidade: 15, data: new Date('2026-10-31T12:00:00Z') },
+      ];
+
+      const result = calculateRunoutTime(saldoAtual, estoqueMinimo, saidas, now);
+
+      // De 21/10 a 31/10 = 11 dias de calendário, 30 unidades consumidas = ~2.73 un/dia
+      expect(result.diasAmostra).toBe(11);
+      expect(result.consumoMedioDiario).toBeCloseTo(30 / 11, 2);
+    });
+
     it('deve calcular corretamente a autonomia de estoque com justificativa clara', () => {
       const saldoAtual = 15; // sacas
       const estoqueMinimo = 40;
-      // 3 saídas de 5 sacas nos últimos 3 dias = média de 5 sacas/dia
+      const now = new Date('2026-10-15T12:00:00Z');
+      // 3 saídas de 5 sacas de 13 a 15 de outubro = 3 dias de calendário, média de 5 sacas/dia
       const saidas = [
-        { quantidade: 5, data: new Date('2026-10-13') },
-        { quantidade: 5, data: new Date('2026-10-14') },
-        { quantidade: 5, data: new Date('2026-10-15') },
+        { quantidade: 5, data: new Date('2026-10-13T10:00:00Z') },
+        { quantidade: 5, data: new Date('2026-10-14T10:00:00Z') },
+        { quantidade: 5, data: new Date('2026-10-15T10:00:00Z') },
       ];
 
-      const result = calculateRunoutTime(saldoAtual, estoqueMinimo, saidas);
+      const result = calculateRunoutTime(saldoAtual, estoqueMinimo, saidas, now);
 
       expect(result.diasRestantes).toBe(3);
       expect(result.consumoMedioDiario).toBe(5);
       expect(result.status).toBe('CRITICO');
-      expect(result.justificativa).toContain('3 dias');
+      expect(result.justificativa).toContain('3');
       expect(result.confiabilidade).toBe('MEDIA'); // 3 amostras
     });
 
@@ -95,19 +136,65 @@ describe('StockEngine - Motor Híbrido de Inteligência de Estoque', () => {
       expect(result.sobraEstimada).toBe(0);
     });
 
+    it('deve aceitar parâmetro now para conferência determinística e calcular sobra com consumo por dia de calendário', () => {
+      const saldoAtual = 50;
+      const consumoMedioDiario = 1;
+      const now = new Date('2026-10-16T12:00:00Z');
+      const validade = new Date('2026-10-26T00:00:00Z'); // 10 dias até vencer
+
+      const result = checkExpiryRisk(saldoAtual, consumoMedioDiario, validade, now);
+
+      expect(result.temRisco).toBe(true);
+      expect(result.diasAteVencimento).toBe(10);
+      expect(result.sobraEstimada).toBe(40); // 50 - (10 * 1) = 40 sobrando
+      expect(result.jaVenceu).toBe(false);
+    });
+
+    it('não deve alertar risco quando o produto for vencer mas o saldo for zerado', () => {
+      const result = checkExpiryRisk(0, 2, new Date('2026-10-20'), new Date('2026-10-16'));
+      expect(result.temRisco).toBe(false);
+    });
+
     it('deve retornar sem risco se o produto não tiver data de validade', () => {
       const result = checkExpiryRisk(100, 2, null);
       expect(result.temRisco).toBe(false);
       expect(result.diasAteVencimento).toBeNull();
     });
 
-    it('deve alertar imediatamente se o produto já estiver vencido', () => {
-      const dataValidadePassada = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // venceu há 2 dias
-      const result = checkExpiryRisk(20, 1, dataValidadePassada);
+    it('deve alertar imediatamente se o produto já estiver vencido em relação a now', () => {
+      const now = new Date('2026-10-16T12:00:00Z');
+      const validadePassada = new Date('2026-10-14T00:00:00Z'); // venceu há 2 dias
+      const result = checkExpiryRisk(20, 1, validadePassada, now);
 
       expect(result.temRisco).toBe(true);
       expect(result.jaVenceu).toBe(true);
+      expect(result.diasAteVencimento).toBeLessThan(0);
       expect(result.justificativa).toContain('vencido');
+    });
+  });
+
+  describe('checkStagnantAndExcess (Estoque Parado e Excesso)', () => {
+    it('deve detectar estoque parado quando houver saldo positivo sem saídas há pelo menos 30 dias', () => {
+      const now = new Date('2026-10-31T12:00:00Z');
+      const primeiraEntrada = new Date('2026-08-01T12:00:00Z');
+      const ultimaSaida = new Date('2026-09-15T12:00:00Z'); // há 46 dias sem saída
+
+      const result = checkStagnantAndExcess(50, 200, ultimaSaida, primeiraEntrada, now);
+
+      expect(result.isStagnant).toBe(true);
+      expect(result.isExcess).toBe(true); // 200 dias de autonomia > 90 dias
+      expect(result.justificativaParado).toContain('30 dias');
+      expect(result.justificativaExcesso).toContain('90 dias');
+    });
+
+    it('não deve marcar estoque parado quando houver saída recente dentro de 30 dias', () => {
+      const now = new Date('2026-10-31T12:00:00Z');
+      const ultimaSaida = new Date('2026-10-20T12:00:00Z'); // 11 dias atrás
+
+      const result = checkStagnantAndExcess(50, 40, ultimaSaida, null, now);
+
+      expect(result.isStagnant).toBe(false);
+      expect(result.isExcess).toBe(false); // 40 dias de autonomia <= 90 dias
     });
   });
 
@@ -207,4 +294,64 @@ describe('StockEngine - Motor Híbrido de Inteligência de Estoque', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('analyzeStockInventory (Motor Integrado com Paridade Total)', () => {
+    it('deve realizar análise integrada de produtos e movimentos com paridade ao desktop', () => {
+      const now = new Date('2026-10-16T12:00:00Z');
+      const products = [
+        {
+          id: 'p1',
+          farmId: 'f1',
+          nome: 'Diesel S10',
+          categoria: 'Combustível',
+          unidadeMedida: 'L',
+          estoqueMinimo: 10,
+          precoAquisicao: 6,
+          validade: null,
+        },
+      ];
+      const movements = [
+        {
+          id: 'm1',
+          farmId: 'f1',
+          productId: 'p1',
+          tipo: 'ENTRADA' as const,
+          quantidade: 100,
+          dataMovimento: '2026-10-01T12:00:00Z',
+          responsavel: 'Ana',
+        },
+        {
+          id: 'm2',
+          farmId: 'f1',
+          productId: 'p1',
+          tipo: 'SAIDA' as const,
+          quantidade: 10,
+          dataMovimento: '2026-10-07T12:00:00Z',
+          responsavel: 'Carlos',
+        },
+        {
+          id: 'm3',
+          farmId: 'f1',
+          productId: 'p1',
+          tipo: 'SAIDA' as const,
+          quantidade: 10,
+          dataMovimento: '2026-10-16T10:00:00Z',
+          responsavel: 'Carlos',
+        },
+      ];
+
+      const result = analyzeStockInventory(products, movements, now);
+
+      expect(result.products[0]).toMatchObject({
+        saldo: 80,
+        consumoMedioDiario: 2,
+        diasRestantes: 40,
+        valorEstoque: 480,
+        classeAbc: 'A', // 100% do valor do estoque concentra-se no produto
+      });
+      expect(result.totalValue).toBe(480);
+      expect(result.balancesByUnit['L']).toBe(80);
+    });
+  });
 });
+
