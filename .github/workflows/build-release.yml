@@ -74,13 +74,22 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configurar Android SDK e NDK Nativos
+        run: |
+          yes | sdkmanager --licenses || true
+          NDK_PATH=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$NDK_PATH" ] && [ -n "$ANDROID_NDK_LATEST_HOME" ]; then
+            NDK_PATH="$ANDROID_NDK_LATEST_HOME"
+          fi
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
 
       - name: Configurar Rust Toolchain para Android
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
 
       - name: Instalar Dependências do Desktop
         working-directory: desktop
