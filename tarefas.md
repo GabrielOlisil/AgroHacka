@@ -199,13 +199,13 @@
 *Geração dos artefatos finais para entrega.*
 
 - [ ] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
-  - [ ] Compilar instalador Windows (`cargo tauri build`).
-  - [ ] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows:
+  - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
+  - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`desktop/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
-  - [ ] Testar instalação limpa em máquina Windows.
+  - [ ] Testar instalação limpa em máquina Windows após geração do artefato na `main`.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
-  - [ ] Compilar pacote Android (`tauri android build`).
-  - [ ] Testar instalação e funcionamento offline em celular Android real.
+  - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
+  - [ ] Testar instalação e funcionamento offline em celular Android real após geração do artefato na `main`.
 
 ---
 
