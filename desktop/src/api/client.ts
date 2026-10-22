@@ -15,8 +15,10 @@ import {
   type SyncResponse,
 } from "../offline/types";
 
-// URL explícita, como o script OpenAPI existente. Nenhuma variável de ambiente.
-export const API_URL = "http://localhost:3000";
+// URL base da API. Configurável via VITE_API_URL no arquivo .env do desktop.
+// Produção: https://api.arikem.qzz.io  |  Local: http://localhost:3000
+export const API_URL: string =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3000";
 export class ApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
