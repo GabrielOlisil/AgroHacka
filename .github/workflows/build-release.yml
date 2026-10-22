@@ -76,18 +76,15 @@ jobs:
 
       - name: Instalar Dependências de Sistema Linux (para o Tauri CLI no host)
         run: |
+          export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
+            ca-certificates \
+            curl \
             pkg-config \
             build-essential \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libssl-dev \
-            libayatana-appindicator3-dev || true
+            libglib2.0-dev
+          pkg-config --libs --cflags glib-2.0
           echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
 
       - name: Configurar Android SDK e NDK
