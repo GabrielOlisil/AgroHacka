@@ -34,14 +34,15 @@ describe("configuração da URL da API via variável de ambiente", () => {
     });
   });
 
-  it("API_URL é uma string válida e usa VITE_API_URL do ambiente ou fallback para localhost:3000", () => {
-    // API_URL é avaliada no momento do import do módulo.
-    // O valor correto é: VITE_API_URL (se definida) ou "http://localhost:3000".
-    // Em ambiente de testes o .env pode ou não estar carregado — validamos apenas
-    // que o valor resultante é uma URL válida e não está vazia.
+  it("API_URL é uma URL válida injetada pelo Vite — não pode ser vazia ou indefinida", () => {
+    // O Vite injeta VITE_API_URL em tempo de build via .env.development ou .env.production.
+    // Se chegou até aqui sem lançar erro, a variável estava definida corretamente.
+    // Validamos que o valor resultante é uma URL HTTP válida.
     expect(typeof API_URL).toBe("string");
     expect(API_URL.length).toBeGreaterThan(0);
     expect(API_URL).toMatch(/^https?:\/\//);
+    // Garante que não é o placeholder do .env.example
+    expect(API_URL).not.toBe("");
   });
 
   it("createApi() sem argumento usa a URL do ambiente e não localhost hardcoded quando VITE_API_URL está presente", async () => {

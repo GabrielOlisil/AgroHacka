@@ -15,10 +15,18 @@ import {
   type SyncResponse,
 } from "../offline/types";
 
-// URL base da API. Configurável via VITE_API_URL no arquivo .env do desktop.
-// Produção: https://api.arikem.qzz.io  |  Local: http://localhost:3000
-export const API_URL: string =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3000";
+// URL da API injetada pelo Vite em tempo de build a partir de:
+//   .env.development  → dev  (`npm run dev` / `tauri dev`)
+//   .env.production   → prod (`npm run build` / `tauri build`)
+// Em produção este valor é embutido no binário — não há leitura de arquivo em runtime.
+const _apiUrl = import.meta.env.VITE_API_URL as string | undefined;
+if (!_apiUrl) {
+  throw new Error(
+    "VITE_API_URL não definida. Crie desktop/.env.development ou desktop/.env.production antes de compilar.",
+  );
+}
+export const API_URL: string = _apiUrl;
+
 export class ApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
