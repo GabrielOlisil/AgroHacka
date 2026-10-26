@@ -219,7 +219,7 @@
 > o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
 > tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
-- [ ] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
+- [x] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
   > Auditoria de 26/10: as tarefas 4.1, 4.2 e 6.2 entregaram o backend (envio pela Twilio com modo simulação; após um `/sync` que aceita movimentações, a reanálise grava o alerta e avisa o gestor dos alertas urgentes ainda não notificados). Faltavam a interface do gestor (a branch `feat/whatsapp-manager-ui` nunca foi mergeada), a proteção dos endpoints e a validação real.
   - [x] Auditar o que existe e o que falta (backend `NotificationsService`, `StockService.reanalyzeAndPersistAlerts`, gatilho em `SyncService`).
   - [x] Segurança: `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT de um gestor; o teste só vai ao WhatsApp cadastrado do gestor da própria fazenda e o disparo só vale para a fazenda da identidade (`api/src/notifications/*.spec.ts`, 28 testes).
@@ -229,7 +229,7 @@
   - [x] Roteiro da demonstração: o alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem. Para repetir a demonstração, marcar os alertas da fazenda como resolvidos (`UPDATE alerts SET resolvido = true WHERE "farmId" = '<id>'`); a próxima sincronização os recria e notifica (README §4.4).
   - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, conexão do celular de teste, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4; atualizado na 4.9 para o fluxo *Try out WhatsApp*).
 
-- [ ] **4.9. [EM CONJUNTO] Twilio no fluxo novo *Try out WhatsApp* e o nono dígito dos celulares brasileiros:**
+- [x] **4.9. [EM CONJUNTO] Twilio no fluxo novo *Try out WhatsApp* e o nono dígito dos celulares brasileiros:**
   > Descoberto em 26/10 ao conectar o celular do gestor: a conta usa o fluxo novo da Twilio, com remetente próprio (`+1 737 250 8034`) e código `join twilio-trial`; o Sandbox antigo compartilhado (`+1 415 523 8886`) recusa o código. O `join` só foi reconhecido com o número de teste verificado **sem o 9 depois do DDD**, que é como o WhatsApp identifica esse celular.
   - [x] Diagnóstico do fluxo novo e do nono dígito (confirmado pelo usuário em 26/10).
   - [x] API exige `TWILIO_PHONE`: sem ele, ou com valor inválido, roda em modo de simulação com aviso no log, em vez de usar o Sandbox antigo como padrão (`api/src/notifications/notifications.config.spec.ts`).
@@ -239,7 +239,7 @@
   - [x] Conta trial exige modelo: o envio de texto livre falhou com `ContentSid Required` (26/10). A API passa a enviar o modelo quando `TWILIO_CONTENT_SID` está definido, com `TWILIO_CONTENT_VARIABLES` opcional; sem eles, segue o texto formatado (`api/src/notifications/notifications.template.spec.ts`). Nesse modo o WhatsApp leva o texto do modelo da Twilio e o detalhe do alerta fica no app.
   - [x] Coolify: definir `TWILIO_CONTENT_SID` com o `ContentSid` de um modelo pronto do *Try out WhatsApp* (os modelos disponíveis não têm variáveis, então `TWILIO_CONTENT_VARIABLES` fica vazio) e refazer o deploy. Sem avisos de valor ignorado no log (26/10).
   - [x] No app, entrar como gestor, salvar o WhatsApp **no mesmo formato do número de teste verificado** (sem o 9) e tocar em *Testar envio de alerta*: a mensagem do modelo chegou ao celular e o app confirmou o envio real, sem "modo de simulação" (26/10).
-  - [ ] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp.
+  - [x] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp. Validado em 26/10: a sincronização com uma saída gerou 4 alertas, 2 de `ESTOQUE_CRITICO` (`ALTA`, `notificadoWhatsapp = true`, um WhatsApp para cada) e 2 de atenção (`CONSUMO_ANOMALO` e `RISCO_VENCIMENTO`, `MEDIA`, só no app). Para repetir na gravação, rodar o `UPDATE` do README §4.4 antes.
 
 ---
 
