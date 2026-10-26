@@ -24,9 +24,16 @@ describe('.env.example da API: variáveis da Twilio', () => {
     expect(example).not.toMatch(/TWILIO_FROM_NUMBER/);
   });
 
-  it('explica que TWILIO_PHONE é opcional e assume o número do Sandbox', () => {
+  it('explica que TWILIO_PHONE é o remetente do Console da Twilio, obrigatório para envio real', () => {
     expect(example).toMatch(/TWILIO_PHONE/);
-    expect(example).toMatch(/\+?1\s?415\s?523\s?8886|\+14155238886/);
+    expect(example).toMatch(/Try out WhatsApp/);
+    expect(example).toMatch(/obrigatóri[oa]s?/i);
+    // o Sandbox antigo compartilhado não vale para contas novas: não sugerir como padrão
+    expect(example).not.toMatch(/14155238886|415\s?523\s?8886/);
+  });
+
+  it('avisa sobre o nono dígito dos celulares brasileiros no número de teste', () => {
+    expect(example).toMatch(/nono dígito|sem o 9/i);
   });
 });
 
