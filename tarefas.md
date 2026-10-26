@@ -20,9 +20,9 @@
 | **Perfis de Dispositivo** | **Nó Gestor** vs. **Nó Operador** | **Central Dinâmica:** qualquer aparelho pode ser Gestor (com login) ou Operador (via pareamento) |
 | **Banco Local** | **SQLite local** (Tauri SQL Plugin) | Funcionamento **100% Offline-First** em todos os dispositivos |
 | **Backup Automático** | **Snapshots SQLite (Estilo Anki)** | Snapshots atômicos diários (`VACUUM INTO`), retenção de 7 dias e restauração em 1 clique |
-| **Sincronização Híbrida** | **Local (LAN) primeiro $\rightarrow$ Nuvem depois** | Tenta rota Wi-Fi local (timeout 500ms); se falhar, envia para a VPS |
-| **Descoberta de IP** | **Heartbeat na VPS + mDNS local** | Atualização automática de IP local sem intervenção do usuário |
-| **Firewall do Windows** | **Regra nativa no instalador do .exe** | Liberação automática da porta TCP de sincronização local em redes privadas |
+| **Sincronização Híbrida** | **Nuvem (HTTPS); LAN não implementada** | O app sincroniza **pela nuvem**. A rota Wi-Fi local (LAN) primeiro foi planejada e **não será implementada a tempo** (ver 5.6) |
+| **Descoberta de IP** | **Não implementada** (heartbeat e mDNS planejados) | Os endpoints de IP local existem na API, mas nenhum aparelho publica o IP; depende do servidor LAN (5.6) |
+| **Firewall do Windows** | **Script pronto, sem uso** | A regra da porta 3333 só serviria ao servidor LAN, não implementado (5.6); o instalador não a executa |
 | **Pareamento Flexível** | **QR Code + Código Manual Alternativo** | Pareamento com nome do operador; funciona com ou sem câmera |
 | **Inteligência de Estoque** | **Motor Híbrido (TypeScript puro)** | Regras de alertas executam localmente no SQLite e também no Backend |
 | **Notificações Críticas** | **Twilio API (WhatsApp)** | Envio automático de alertas urgentes para o WhatsApp do Gestor |
@@ -128,21 +128,22 @@
   - [x] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
   - [x] Retorna registros novos/atualizados e recalcula alertas.
 - [x] **3.3. Endpoint de Descoberta de IP (`PUT /farm/heartbeat`):**
-  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador.
+  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador. *Somente o endpoint na API: nenhum cliente o chama, pois a LAN não será implementada a tempo (ver 5.6).*
 
 #### 🔹 [DEV 2] Interface do Usuário (Vue 3 Responsivo)
 - [x] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
   - [x] Botão 🏢 *"Criar Nova Fazenda"* (Login/Cadastro do Gestor).
   - [x] Botão 📱 *"Conectar a uma Fazenda Existente"* (Fluxo do Operador).
-- [ ] **3.5. Pareamento Duplo (QR Code + Código Manual):**
+- [x] **3.5. Pareamento Duplo (QR Code + Código Manual):**
   - [x] Modal no Gestor: digita nome do operador $\rightarrow$ exibe QR Code + Código alfanumérico (`AGRO-88`).
-  - [ ] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
+  - [x] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
     - [x] Conexão por código manual ou conteúdo do QR Code, com validação automatizada.
     - [x] Implementar leitura por câmera e imagem QR na interface.
     - [x] Tratar negação de permissão, câmera ausente/em uso e falhas desconhecidas: fecha o vídeo e orienta usar código manual ou imagem do QR (`client/tests/app.spec.ts`).
     - [x] Garantir `CAMERA` (e câmera opcional) no `AndroidManifest.xml` gerado no CI (`client/src/scripts/garantir-permissao-camera.ts`, passo no `build-release.yml`; `client/tests/android-camera-permission.spec.ts`).
     - [x] Permissão `Câmera` aparece nas configurações do app em Android real (APK debug, 26/10): o patch do manifest funciona.
-    - [ ] Validar a leitura do QR Code pela câmera na WebView em aparelho Android real (ainda não testada).
+    - [x] Leitura do QR Code pela câmera validada em aparelho Android real (Motorola g75 5G, Android 16, 26/10): o QR lido conecta o aparelho.
+    - [x] Conectar automaticamente ao ler o QR (câmera ou imagem), sem precisar tocar em *Conectar aparelho* (`client/tests/app.spec.ts`).
 - [x] **3.6. Painéis e Paridade de Recursos:**
   - [x] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
   - [x] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
@@ -152,6 +153,27 @@
   - [x] Validar navegação acessível, regressões e layouts desktop/mobile.
 
 > Revisão visual no navegador com dados simulados: autenticação, painéis, estoque, histórico, backups e pareamento; larguras desktop e mobile de 390/360 px. Validação final: 75 testes Vitest, checagem TypeScript e build aprovados. WebView e Android real continuam nas pendências específicas abaixo.
+
+- [x] **3.8. [DEV 2] Integrar operadores ao fluxo de pareamento existente:**
+  - [x] Listar os mesmos dispositivos criados em **Conectar operador**, em aba exclusiva do gestor, com busca e filtro de situação.
+  - [x] Consultar e ocultar o código original sem criar outro operador, gerar outra credencial ou alterar o histórico.
+  - [x] Usar `openapi-fetch` com o contrato gerado pelo comando do projeto; atualizar a lista após novo pareamento.
+  - [x] Validar erros de rede, carregamento, permissões, respostas atrasadas e troca de sessão com testes.
+
+- [x] **3.9. [DEV 1 + DEV 2] Consulta autenticada de operadores e recuperação do código pela API:**
+  - [x] Publicar `GET /devices`, limitado à fazenda da identidade autenticada de gestor; rejeitar operador e ausência de autenticação.
+  - [x] Retornar somente os campos administrativos necessários, sem `deviceToken`, com `Cache-Control: no-store` e código nulo para dispositivos inativos.
+  - [x] Validar isolamento entre fazendas e consulta sem efeitos colaterais em testes de serviço, controller e HTTP.
+  - [x] Integrar o contrato OpenAPI regenerado pelo usuário, sem edição manual do arquivo gerado.
+
+> Escopo simplificado por decisão do usuário: o CRUD administrativo local separado
+> e sua futura sincronização foram substituídos pela consulta dos pareamentos reais.
+> Esta consulta exige API acessível e não persiste os códigos no SQLite. Nenhum dado
+> local foi apagado nem migration alterada. Edição, revogação e rotação de credenciais
+> não fazem parte desta entrega. Testes em WebView e aparelho real seguem pendentes.
+> Validação: desktop `npm test` (134), `npm run check` e `npm run build`;
+> API `npm test` (87) e `npm run build`, todos aprovados. Revisão visual no navegador
+> com operadores fictícios; testes HTTP com repositório simulado, sem banco real.
 
 ---
 
@@ -170,8 +192,9 @@
 - [x] **4.3. Motor de Sincronização Híbrida:**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
-  - [x] Implementar registro e atualização de IP local da fazenda (`POST /devices/local-ip`) e inclusão nos payloads de pareamento do operador (QR Code e código alfanumérico).
-  - [x] Transporte híbrido resiliente no cliente (`createHybridTransport`): ping na LAN local do Gestor com timeout rápido $\rightarrow$ se responder, sincroniza via LAN sem necessidade de internet; se falhar ou estiver fora do alcance, fallback transparente para a VPS Coolify.
+  - [x] Endpoints de IP local da fazenda (`POST /devices/local-ip`) e inclusão do IP nos payloads de pareamento, **somente no lado da API**: nenhum aparelho publica o IP, então ele sempre chega vazio (ver 5.6).
+  - [x] Transporte híbrido no cliente (`createHybridTransport`) com fallback transparente para a nuvem (VPS Coolify), testado: sem IP local, ou se a LAN falhar, o app sincroniza pela nuvem.
+  - [ ] Caminho LAN do transporte (ping rápido no gestor e sincronização sem internet): depende do servidor LAN do gestor, que **não será implementado a tempo** (ver 5.6).
 - [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
   - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
   - [x] Retenção automática dos últimos 7 dias.
@@ -196,6 +219,16 @@
 > o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
 > tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
+- [ ] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
+  > Auditoria de 26/10: as tarefas 4.1, 4.2 e 6.2 entregaram o backend (envio pela Twilio com modo simulação; após um `/sync` que aceita movimentações, a reanálise grava o alerta e avisa o gestor dos alertas urgentes ainda não notificados). Faltavam a interface do gestor (a branch `feat/whatsapp-manager-ui` nunca foi mergeada), a proteção dos endpoints e a validação real.
+  - [x] Auditar o que existe e o que falta (backend `NotificationsService`, `StockService.reanalyzeAndPersistAlerts`, gatilho em `SyncService`).
+  - [x] Segurança: `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT de um gestor; o teste só vai ao WhatsApp cadastrado do gestor da própria fazenda e o disparo só vale para a fazenda da identidade (`api/src/notifications/*.spec.ts`, 28 testes).
+  - [x] Interface do gestor: painel *"Alertas de emergência via WhatsApp"* na Visão geral (status Ativo/Não configurado e *Testar envio de alerta*), com a sessão trazendo o `telefone` (login, cadastro e SQLite local). O teste distingue envio real, **modo de simulação** (servidor sem Twilio configurada, nada é enviado) e falha com o motivo; a API responde HTTP 200 mesmo quando a Twilio recusa (`client/tests/whatsapp-alerts*.spec.ts`).
+  - [x] Número do gestor: o gestor cadastra, troca ou desativa o WhatsApp depois do registro (`PATCH /auth/telefone` e campo no painel). O número é normalizado para `+<dígitos>` no cadastro, na edição e no envio; antes um número digitado como `+55 69 99999-9999` chegava inválido à Twilio. **O gestor do seed continua com o número fictício `+5569999999999` até ser trocado pelo painel.**
+  - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), número do gestor dentro do Sandbox da Twilio e recebimento real de uma mensagem.
+  - [x] Roteiro da demonstração: o alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem. Para repetir a demonstração, marcar os alertas da fazenda como resolvidos (`UPDATE alerts SET resolvido = true WHERE "farmId" = '<id>'`); a próxima sincronização os recria e notifica (README §4.4).
+  - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, Sandbox da Twilio válido por 3 dias, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4).
+
 ---
 
 ### ETAPA 5: Empacotamento do .exe e .apk *(Dia 11)*
@@ -205,20 +238,36 @@
   - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
   - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
-  - [ ] Testar instalação limpa em máquina Windows após geração do artefato na `main`.
+    > O script existe, mas o instalador não o executa, e a porta 3333 só seria usada pelo servidor LAN, que não será implementado a tempo (ver 5.6).
+  - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
+  - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
+  - [ ] Testar instalação limpa em máquina Windows sem versão anterior instalada.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
   - [ ] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
-  - [ ] Conferir visualmente no aparelho que o app respeita as barras do sistema e o teclado (correção de insets mergeada em `dev`).
-  - [ ] Testar o `.apk` gerado pelo GitHub Actions na `main` (os testes acima usaram um APK montado em container).
-- [ ] **5.3. [DEV 2] Corrigir falha do build do .apk no GitHub Actions (job `Build Mobile Android (.apk)`):**
+  - [x] App respeita as barras do sistema no aparelho real (insets), confirmado em 26/10.
+  - [x] `.apk` da release gerado pelo GitHub Actions instalado e funcionando no aparelho (26/10). O download direto pelo navegador do celular corrompeu o arquivo de 155 MB ("problem parsing the package"); o mesmo arquivo enviado pelo WhatsApp instalou. Baixar no PC e transferir.
+- [x] **5.3. [DEV 2] Corrigir falha do build do .apk no GitHub Actions (job `Build Mobile Android (.apk)`):**
   - [x] Diagnosticar o erro do log de 22/10 (`errobuildnadroid.txt`): a compilação Android já passava; o Gradle executa `npm run tauri android android-studio-script` e o script `tauri` era `tauri dev`, que subia o Vite e rodava `cargo run` do app desktop no host Linux, onde o `gdk-sys` quebrava sem `gdk-3.0.pc`. O GTK era só o sintoma.
   - [x] Corrigir na origem: `"tauri": "tauri"` e novo `tauri:dev` para o fluxo de desenvolvimento; removido o passo paliativo de `libglib2.0-dev`/`pkg-config` do workflow.
   - [x] Gerar `.apk` instalável: build em modo `--debug` (o release sai sem assinatura e o Android recusa instalar).
   - [x] Injetar `VITE_API_URL` de produção no workflow: `.env.production` não é versionado e, sem a URL, o `client.ts` lançava erro no import e o app abria em branco.
   - [x] Tratar o modo edge-to-edge: `client/src/scripts/aplicar-insets-android.ts` aplica na `MainActivity` gerada o padding das barras do sistema, recorte e teclado.
-  - [ ] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release (só roda na `main`; a validação foi feita em container Ubuntu 24.04 sem GTK).
+  - [x] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release: run da `main` (26/10) com Windows, Android e publicação em `success`; o APK do CI foi inspecionado (`com.agrohack.desktop.debug`, assinado, `arm64-v8a`, com `CAMERA`) e está na release `v1.0.0-entrega`.
+- [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
+- [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
+- [ ] **5.6. [EM CONJUNTO] Servidor LAN mínimo no gestor (relay, conforme `regra_de_sync.md` §12) — NÃO SERÁ IMPLEMENTADO A TEMPO (decisão de 26/10; fora do escopo do MVP):**
+  > Decisão: a sincronização por rede local (LAN) **não será entregue na apresentação de 29/10**. O app sincroniza **somente pela nuvem**; sem internet, os registros ficam salvos no SQLite do aparelho e são enviados ao reconectar, sem duplicidade. As subtarefas abaixo ficam como **backlog para uma versão futura**.
+  >
+  > Premissas do desenho: o gestor **recebe de forma durável e encaminha à nuvem**; um recibo LAN não equivale a `ACCEPTED` da nuvem e o operador mantém sua cópia até a confirmação da nuvem; os IDs e as credenciais originais do operador são preservados (proveniência verificável, idempotência independente da rota). Servidor só no gestor **desktop**. O tráfego LAN é HTTP sem TLS: limitação a documentar.
+  - [ ] Servidor HTTP no gestor (Rust/Tauri) em `0.0.0.0:3333` com `GET /health` e `POST /sync`; recebimento durável em SQLite (nova migration local, sem editar a 001); recibo `LAN_RECEIVED` distinto de `ACCEPTED`.
+  - [ ] Encaminhamento do gestor para a nuvem preservando credenciais e IDs do operador, de forma idempotente.
+  - [ ] Cliente do operador: estado *recebido pelo gestor* na outbox, mantendo a cópia até a confirmação da nuvem (nova migration local).
+  - [ ] Descobrir e publicar o IP local do gestor (`POST /devices/local-ip`) e incluí-lo no QR de pareamento.
+  - [ ] Android: permitir HTTP em texto claro para a LAN (patch no manifest gerado pelo CI) e validar que o WebView alcança o gestor.
+  - [ ] Windows: ligar a regra de firewall da porta 3333 ao instalador (hoje `client/scripts/liberar-firewall.bat` existe, mas não é executado pelo instalador).
+  - [ ] Teste ponta a ponta: celular e PC na mesma Wi-Fi sem internet, sincronização por LAN e depois pela nuvem, sem duplicidade.
 
 ---
 
@@ -237,6 +286,7 @@
 - [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `client/README.md`.
   - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
+  - [x] Registrar que a sincronização por LAN não será implementada a tempo (README §7.2, `client/README.md`, `regra_de_sync.md` §12 e roteiros do vídeo), mantendo a nuvem como único caminho de sincronização.
 
 ---
 

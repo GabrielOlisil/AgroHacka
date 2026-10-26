@@ -13,6 +13,7 @@ describe('DevicesController', () => {
       createPairingToken: vi.fn(),
       connectDevice: vi.fn(),
       updateLocalIp: vi.fn(),
+      listOperators: vi.fn(),
     };
     auth = { authenticateSync: vi.fn().mockResolvedValue(identity) };
     devicesController = new DevicesController(
@@ -31,6 +32,32 @@ describe('DevicesController', () => {
     expect(devicesService.updateLocalIp).toHaveBeenCalledWith(dto);
     expect(result).toEqual(mockRes);
   });
+  it('derives the listing scope from the authenticated manager instead of request data', async () => {
+    devicesService.listOperators.mockResolvedValue({
+      farmId: 'farm-1',
+      operators: [],
+    });
+    expect(await devicesController.listOperators('Bearer signed')).toEqual({
+      farmId: 'farm-1',
+      operators: [],
+    });
+    expect(auth.authenticateSync).toHaveBeenCalledWith('Bearer signed');
+    expect(devicesService.listOperators).toHaveBeenCalledWith('farm-1');
+  });
+  it('does not expose pairing codes to an operator or an unauthenticated request', async () => {
+    auth.authenticateSync.mockResolvedValueOnce({
+      role: 'OPERADOR',
+      farmId: 'farm-1',
+    });
+    await expect(
+      devicesController.listOperators('Bearer operator'),
+    ).rejects.toThrow();
+    auth.authenticateSync.mockRejectedValueOnce(new Error('Unauthorized'));
+    await expect(devicesController.listOperators()).rejects.toThrow(
+      'Unauthorized',
+    );
+    expect(devicesService.listOperators).not.toHaveBeenCalled();
+  });
 
   it('deve rejeitar updateLocalIp se usuario for operador ou de outra fazenda', async () => {
     auth.authenticateSync.mockResolvedValueOnce({
@@ -38,7 +65,10 @@ describe('DevicesController', () => {
       farmId: 'farm-1',
     });
     await expect(
-      devicesController.updateLocalIp({ farmId: 'farm-1', localIp: '1.2.3.4' }, 'Bearer token'),
+      devicesController.updateLocalIp(
+        { farmId: 'farm-1', localIp: '1.2.3.4' },
+        'Bearer token',
+      ),
     ).rejects.toThrow();
 
     auth.authenticateSync.mockResolvedValueOnce({
@@ -46,7 +76,10 @@ describe('DevicesController', () => {
       farmId: 'outra-fazenda',
     });
     await expect(
-      devicesController.updateLocalIp({ farmId: 'farm-1', localIp: '1.2.3.4' }, 'Bearer token'),
+      devicesController.updateLocalIp(
+        { farmId: 'farm-1', localIp: '1.2.3.4' },
+        'Bearer token',
+      ),
     ).rejects.toThrow();
   });
 

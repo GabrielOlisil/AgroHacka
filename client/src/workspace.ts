@@ -18,6 +18,7 @@ import {
   type RegisterInput,
   type Session,
   type SyncReview,
+  type PairedOperator,
 } from "./offline/types";
 
 interface WorkspaceDependencies {
@@ -47,6 +48,45 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const syncing = ref(false);
   const error = ref("");
   const backups = ref<Backup[]>([]);
+  const operators = ref<PairedOperator[]>([]);
+  const operatorsLoading = ref(false);
+  const operatorsError = ref("");
+  let operatorsVersion = 0;
+  function clearOperators() {
+    operatorsVersion++;
+    operators.value = [];
+    operatorsLoading.value = false;
+    operatorsError.value = "";
+  }
+  async function loadOperators(force = false) {
+    const current = session.value;
+    if (current?.role !== "GESTOR")
+      throw new Error("Somente o gestor pode consultar operadores.");
+    if (disposed || restoring || (operatorsLoading.value && force !== true))
+      return;
+    const version = ++operatorsVersion;
+    operatorsLoading.value = true;
+    operatorsError.value = "";
+    operators.value = [];
+    try {
+      const result = await api.listOperators(current);
+      if (
+        !disposed &&
+        version === operatorsVersion &&
+        session.value === current
+      )
+        operators.value = result;
+    } catch (cause) {
+      if (
+        !disposed &&
+        version === operatorsVersion &&
+        session.value === current
+      )
+        operatorsError.value = `Não foi possível consultar operadores: ${message(cause)} Conecte-se à API e tente novamente.`;
+    } finally {
+      if (version === operatorsVersion) operatorsLoading.value = false;
+    }
+  }
   const requireStore = () => {
     if (!store)
       throw new Error(
@@ -116,6 +156,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     if (syncing.value || restoring)
       throw new Error("Aguarde a operação atual antes de trocar a sessão.");
     await requireStore().saveSession(value);
+    clearOperators();
     session.value = value;
     error.value = "";
     await refresh();
@@ -173,6 +214,10 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     syncing,
     error,
     backups,
+    operators,
+    operatorsLoading,
+    operatorsError,
+    loadOperators,
     initialize,
     refresh,
     sync,
@@ -195,6 +240,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       if (syncing.value)
         throw new Error("Aguarde a sincronização terminar antes de sair.");
       await requireStore().clearSession();
+      clearOperators();
       session.value = null;
       analysis.value = analyzeInventory([], []);
       movements.value = [];
@@ -241,6 +287,27 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         session.value,
       );
     },
+    async testWhatsApp() {
+      const current = session.value;
+      if (current?.role !== "GESTOR")
+        throw new Error("Somente o gestor pode testar os alertas de WhatsApp.");
+      if (!current.telefone)
+        throw new Error("Cadastre o WhatsApp do gestor para testar o envio.");
+      return api.testWhatsApp(current, current.telefone);
+    },
+    async updateTelefone(raw: string) {
+      const current = session.value;
+      if (current?.role !== "GESTOR")
+        throw new Error("Somente o gestor pode alterar o WhatsApp dos alertas.");
+      const telefone = await api.updateTelefone(current, raw);
+      // Saiu ou trocou de sessão enquanto aguardava: não recria a sessão antiga.
+      if (session.value !== current) return telefone;
+      const { telefone: _anterior, ...rest } = current;
+      const updated: Session = telefone ? { ...rest, telefone } : rest;
+      await requireStore().saveSession(updated);
+      session.value = updated;
+      return telefone;
+    },
     async createBackup() {
       if (syncing.value) throw new Error("Aguarde a sincronização.");
       await backupService.create();
@@ -261,7 +328,9 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     },
     async updateLocalIp(localIp: string, localPort = 3333) {
       if (!session.value || session.value.role !== "GESTOR")
-        throw new Error("Somente o gestor pode atualizar o IP local da fazenda.");
+        throw new Error(
+          "Somente o gestor pode atualizar o IP local da fazenda.",
+        );
       const current = session.value;
       const res = await api.updateLocalIp(
         { farmId: current.farmId, localIp, localPort },
@@ -275,6 +344,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     },
     dispose() {
       disposed = true;
+      clearOperators();
     },
   };
 }

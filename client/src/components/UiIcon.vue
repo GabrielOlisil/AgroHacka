@@ -9,6 +9,8 @@ import {
   CircleAlert,
   CircleCheck,
   DatabaseBackup,
+  Eye,
+  EyeOff,
   HardDrive,
   History,
   Image,
@@ -24,6 +26,7 @@ import {
   Search,
   Tractor,
   User,
+  Users,
   WifiOff,
   X,
 } from "lucide-vue-next";
@@ -38,6 +41,8 @@ const icons = {
   "circle-alert": CircleAlert,
   "circle-check": CircleCheck,
   "database-backup": DatabaseBackup,
+  eye: Eye,
+  "eye-off": EyeOff,
   "hard-drive": HardDrive,
   history: History,
   image: Image,
@@ -53,6 +58,7 @@ const icons = {
   search: Search,
   tractor: Tractor,
   user: User,
+  users: Users,
   "wifi-off": WifiOff,
   x: X,
 } as const;

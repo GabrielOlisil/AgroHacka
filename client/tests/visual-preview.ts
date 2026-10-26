@@ -9,6 +9,7 @@ import App from "../src/App.vue";
 import { analyzeInventory } from "../src/offline/analysis";
 import type { Movement, Product, Session } from "../src/offline/types";
 import type { Workspace } from "../src/workspace";
+import type { PairedOperator } from "../src/offline/types";
 
 const now = new Date();
 const date = (days: number) =>
@@ -80,6 +81,7 @@ const gestor: Session = {
   farmNome: "Fazenda Boa Vista",
   nome: "Ana Oliveira",
   userId: "u",
+  telefone: "+5569999999999",
 };
 const operador: Session = {
   ...gestor,
@@ -92,7 +94,37 @@ const session = ref<Session | null>(
   profile === "guest" ? null : profile === "operador" ? operador : gestor,
 );
 const analysis = ref(analyzeInventory(products, movements.value, now));
+const operators = ref<PairedOperator[]>([
+  {
+    id: "ana",
+    farmId: "f",
+    nomeOperador: "Ana Oliveira",
+    ativo: true,
+    pairingCode: "AGRO-TEST",
+    createdAt: date(-3),
+  },
+  {
+    id: "carlos",
+    farmId: "f",
+    nomeOperador: "Carlos Oliveira",
+    ativo: true,
+    pairingCode: "AGRO-DEMO",
+    createdAt: date(-2),
+  },
+  {
+    id: "bruno",
+    farmId: "f",
+    nomeOperador: "Bruno Santos",
+    ativo: false,
+    pairingCode: null,
+    createdAt: date(-5),
+  },
+]);
 const controller: Workspace = {
+  operators,
+  operatorsLoading: ref(false),
+  operatorsError: ref(""),
+  async loadOperators() {},
   ready: ref(true),
   session,
   analysis,
@@ -125,6 +157,12 @@ const controller: Workspace = {
   async logout() {
     session.value = null;
   },
+  async testWhatsApp() {
+    return { simulado: true };
+  },
+  async updateTelefone(value: string) {
+    return value.trim() || undefined;
+  },
   async record(input) {
     movements.value.push({
       ...input,
@@ -135,6 +173,14 @@ const controller: Workspace = {
     analysis.value = analyzeInventory(products, movements.value);
   },
   async pair(nomeOperador) {
+    operators.value.push({
+      id: crypto.randomUUID(),
+      farmId: "f",
+      nomeOperador,
+      ativo: true,
+      pairingCode: "AGRO-DEMO",
+      createdAt: date(0),
+    });
     return {
       pairingCode: "AGRO-DEMO",
       deviceToken: "visual-test-token",

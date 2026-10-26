@@ -3,6 +3,7 @@ import type { paths } from "../types/contract";
 import {
   object,
   parseSession,
+  parsePairedOperators,
   parseSyncResponse,
   text,
   type ConnectInput,
@@ -74,9 +75,73 @@ export function createApi(
       farmNome: user.farmNome,
       nome: user.nome,
       accessToken: text(response.accessToken, "token de acesso"),
+      telefone: user.telefone,
     });
   }
   return {
+    async testWhatsApp(
+      session: Session,
+      paraTelefone: string,
+    ): Promise<{ simulado: boolean }> {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode testar os alertas de WhatsApp.");
+      const result = object(
+        await unpack(
+          await client.POST("/notifications/test-whatsapp", {
+            body: { paraTelefone: text(paraTelefone, "WhatsApp") },
+            headers: {
+              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+            },
+            signal: signal(),
+          }),
+        ),
+      );
+      // A API responde HTTP 200 mesmo quando a Twilio recusa a mensagem.
+      if (result.sucesso !== true)
+        throw new Error(
+          typeof result.erro === "string" && result.erro
+            ? result.erro
+            : "A mensagem de teste não foi enviada.",
+        );
+      return { simulado: result.modo === "SIMULADO" };
+    },
+    async updateTelefone(
+      session: Session,
+      telefone: string,
+    ): Promise<string | undefined> {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode alterar o WhatsApp dos alertas.");
+      const trimmed = telefone.trim();
+      const result = object(
+        await unpack(
+          await (client as any).PATCH("/auth/telefone", {
+            body: { telefone: trimmed || null },
+            headers: {
+              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+            },
+            signal: signal(),
+          }),
+        ),
+      );
+      return result.telefone === undefined
+        ? undefined
+        : text(result.telefone, "WhatsApp");
+    },
+    async listOperators(session: Session) {
+      if (session.role !== "GESTOR")
+        throw new Error(
+          "Somente o gestor pode consultar códigos de operadores.",
+        );
+      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
+      const result = await unpack(
+        await client.GET("/devices", {
+          params: { header: { authorization } },
+          cache: "no-store",
+          signal: signal(),
+        }),
+      );
+      return parsePairedOperators(result, session.farmId);
+    },
     async login(body: LoginInput): Promise<Session> {
       return auth(
         await unpack(

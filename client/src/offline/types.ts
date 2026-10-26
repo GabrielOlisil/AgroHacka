@@ -6,6 +6,41 @@ export type PairingInput = components["schemas"]["CreatePairingDto"];
 export type ConnectInput = components["schemas"]["ConnectDeviceDto"];
 export type Movement = components["schemas"]["SyncMovementDto"];
 export type SyncPayload = components["schemas"]["SyncPayloadDto"];
+export type PairedOperator = components["schemas"]["PairedOperatorDto"];
+
+export function parsePairedOperators(
+  value: unknown,
+  farmId: string,
+): PairedOperator[] {
+  const response = object(value);
+  if (response.farmId !== farmId || !Array.isArray(response.operators))
+    throw new Error("Listagem de operadores inválida ou de outra fazenda.");
+  const ids = new Set<string>();
+  return response.operators.map((value) => {
+    const operator = object(value);
+    const id = text(operator.id, "dispositivo");
+    if (
+      ids.has(id) ||
+      operator.farmId !== farmId ||
+      typeof operator.ativo !== "boolean"
+    )
+      throw new Error("Operadores repetidos, inválidos ou de outra fazenda.");
+    ids.add(id);
+    const pairingCode = operator.ativo
+      ? text(operator.pairingCode, "código de pareamento")
+      : null;
+    if (!operator.ativo && operator.pairingCode !== null)
+      throw new Error("Código de dispositivo inativo não deve ser exposto.");
+    return {
+      id,
+      farmId,
+      nomeOperador: text(operator.nomeOperador, "nome do operador"),
+      ativo: operator.ativo,
+      pairingCode,
+      createdAt: date(operator.createdAt),
+    };
+  });
+}
 
 export interface Product {
   id: string;
@@ -31,6 +66,7 @@ export interface Session {
   deviceToken?: string;
   localIp?: string | null;
   localPort?: number;
+  telefone?: string;
 }
 export interface SyncResponse {
   protocolVersion: 2;
@@ -227,6 +263,8 @@ export function parseSession(value: unknown): Session {
       throw new Error("Porta inválida.");
     result.localPort = port;
   }
+  if (typeof s.telefone === "string" && s.telefone.trim())
+    result.telefone = s.telefone.trim();
   return result;
 }
 export function parseProduct(value: unknown, farmId?: string): Product {

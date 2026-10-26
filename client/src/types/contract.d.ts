@@ -63,6 +63,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/test-whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_sendTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/dispatch-critical": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_dispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DevicesController_listOperators"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/devices/pairing-token": {
         parameters: {
             query?: never;
@@ -73,6 +121,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["DevicesController_createPairing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices/local-ip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController_updateLocalIp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -127,38 +191,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/notifications/test-whatsapp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["NotificationsController_sendTest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/notifications/dispatch-critical": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["NotificationsController_dispatch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -176,9 +208,33 @@ export interface components {
             password?: string;
         };
         AnalyzeStockDto: Record<string, never>;
+        SendTestWhatsAppDto: {
+            paraTelefone: string;
+            mensagem?: string;
+        };
+        DispatchAlertsDto: {
+            farmId: string;
+        };
+        PairedOperatorDto: {
+            id: string;
+            farmId: string;
+            nomeOperador: string;
+            ativo: boolean;
+            pairingCode: string | null;
+            createdAt: string;
+        };
+        OperatorsResponseDto: {
+            farmId: string;
+            operators: components["schemas"]["PairedOperatorDto"][];
+        };
         CreatePairingDto: {
             farmId: string;
             nomeOperador: string;
+        };
+        UpdateLocalIpDto: {
+            farmId: string;
+            localIp: string;
+            localPort?: number;
         };
         ConnectDeviceDto: {
             tokenOrCode: string;
@@ -243,13 +299,6 @@ export interface components {
             farmId: string;
             localIp: string;
             localPort?: number;
-        };
-        SendTestWhatsAppDto: {
-            paraTelefone: string;
-            mensagem?: string;
-        };
-        DispatchAlertsDto: {
-            farmId: string;
         };
     };
     responses: never;
@@ -346,6 +395,74 @@ export interface operations {
             };
         };
     };
+    NotificationsController_sendTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendTestWhatsAppDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    NotificationsController_dispatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispatchAlertsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    DevicesController_listOperators: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description JWT do gestor da fazenda. */
+                authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorsResponseDto"];
+                };
+            };
+        };
+    };
     DevicesController_createPairing: {
         parameters: {
             query?: never;
@@ -362,6 +479,29 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DevicesController_updateLocalIp: {
+        parameters: {
+            query?: never;
+            header: {
+                authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocalIpDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -438,52 +578,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    NotificationsController_sendTest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendTestWhatsAppDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-        };
-    };
-    NotificationsController_dispatch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DispatchAlertsDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": Record<string, never>;
-                };
             };
         };
     };

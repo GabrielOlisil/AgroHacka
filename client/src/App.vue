@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
+import OperatorsPanel from "./components/OperatorsPanel.vue";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -18,6 +19,9 @@ const {
   error,
   syncing,
   backups,
+  operators,
+  operatorsLoading,
+  operatorsError,
 } = workspace;
 const mode = ref<"login" | "register" | "connect">("login");
 const tab = ref("overview");
@@ -41,6 +45,18 @@ const qrImage = ref("");
 const showPairing = ref(false);
 const video = ref<HTMLVideoElement | null>(null);
 const camera = ref(false);
+const testingWhatsApp = ref(false);
+const savingPhone = ref(false);
+const phoneDraft = ref(session.value?.telefone ?? "");
+watch(
+  () => session.value?.telefone,
+  (telefone) => {
+    phoneDraft.value = telefone ?? "";
+  },
+);
+const whatsappFeedback = ref("");
+const whatsappSimulated = ref(false);
+const whatsappError = ref("");
 let stopScanner: (() => void) | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
 let backupTimer: ReturnType<typeof setInterval> | undefined;
@@ -56,6 +72,9 @@ watch(session, () => {
   tab.value = "overview";
   code.value = "";
   password.value = "";
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
   stopScanner?.();
   camera.value = false;
 });
@@ -83,6 +102,13 @@ const urgent = computed(
 );
 const hasDeficit = computed(() =>
   Object.values(confirmedBalances.value).some((saldo) => saldo < 0),
+);
+// Conciliação só importa na aba Estoque e quando há o que conciliar.
+const showReconciliation = computed(
+  () =>
+    tab.value === "stock" &&
+    analysis.value.products.length > 0 &&
+    (pendingCount.value > 0 || hasDeficit.value || reviews.value.length > 0),
 );
 function localDateTime() {
   const now = new Date();
@@ -138,12 +164,58 @@ async function record() {
 async function generatePairing() {
   await act(async () => {
     pairing.value = await workspace.pair(operatorName.value);
+    if (tab.value === "operators") void workspace.loadOperators(true);
     const { default: QRCode } = await import("qrcode");
     qrImage.value = await QRCode.toDataURL(
       JSON.stringify(pairing.value.qrPayload),
       { width: 280, margin: 2, errorCorrectionLevel: "M" },
     );
   });
+}
+async function sendWhatsAppTest() {
+  if (testingWhatsApp.value) return;
+  const phone = session.value?.telefone;
+  testingWhatsApp.value = true;
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
+  try {
+    const { simulado } = await workspace.testWhatsApp();
+    whatsappSimulated.value = simulado;
+    whatsappFeedback.value = simulado
+      ? "Teste em modo de simulação: o serviço de WhatsApp do servidor não está configurado, então nenhuma mensagem real foi enviada."
+      : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
+  } catch (cause) {
+    whatsappError.value = `Não foi possível enviar o teste: ${describeWhatsAppFailure(cause)}`;
+  } finally {
+    testingWhatsApp.value = false;
+  }
+}
+async function saveWhatsAppNumber() {
+  if (savingPhone.value) return;
+  savingPhone.value = true;
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
+  try {
+    const telefone = await workspace.updateTelefone(phoneDraft.value);
+    whatsappFeedback.value = telefone
+      ? `WhatsApp atualizado. Os alertas serão enviados para ${telefone}.`
+      : "Alertas de WhatsApp desativados.";
+  } catch (cause) {
+    whatsappError.value = `Não foi possível salvar o número: ${describeWhatsAppFailure(cause)}`;
+  } finally {
+    savingPhone.value = false;
+  }
+}
+function describeWhatsAppFailure(cause: unknown) {
+  const offline =
+    cause instanceof TypeError ||
+    (cause instanceof Error &&
+      (cause.name === "TimeoutError" || cause.name === "AbortError"));
+  if (offline)
+    return "sem conexão com o servidor. Verifique a internet e tente novamente.";
+  return cause instanceof Error ? cause.message : String(cause);
 }
 const cameraFallback =
   " Digite o código ou escolha uma imagem do QR Code.";
@@ -156,6 +228,10 @@ const cameraErrors: Record<string, string> = {
     "A câmera está em uso por outro aplicativo ou não pôde ser aberta." +
     cameraFallback,
 };
+function openOperators() {
+  tab.value = "operators";
+  void workspace.loadOperators();
+}
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
@@ -167,11 +243,11 @@ async function scanCamera() {
         undefined,
         video.value,
         (result) => {
-          if (result) {
-            code.value = result.getText();
-            stopScanner?.();
-            camera.value = false;
-          }
+          if (!result || !camera.value) return;
+          code.value = result.getText();
+          stopScanner?.();
+          camera.value = false;
+          void authenticate();
         },
       );
       stopScanner = () => controls.stop();
@@ -186,6 +262,7 @@ async function scanCamera() {
 async function scanImage(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  let scanned = false;
   await act(async () => {
     const url = URL.createObjectURL(file);
     try {
@@ -193,10 +270,12 @@ async function scanImage(event: Event) {
       code.value = (
         await new BrowserQRCodeReader().decodeFromImageUrl(url)
       ).getText();
+      scanned = true;
     } finally {
       URL.revokeObjectURL(url);
     }
   });
+  if (scanned) await authenticate();
 }
 async function restore(name: string) {
   if (
@@ -335,13 +414,17 @@ onUnmounted(() => {
                 required
             /></label>
             <label v-if="mode === 'register'"
-              >WhatsApp do gestor <span class="muted">(opcional)</span
+              >WhatsApp para alertas de emergência
+              <span class="muted">(opcional)</span
               ><input
                 v-model="telefone"
                 type="tel"
                 autocomplete="tel"
                 placeholder="+55 69 …"
-            /></label>
+              /><small class="muted"
+                >Receba avisos automáticos caso falte insumo ou lote vença.
+                Deixe em branco se preferir não receber.</small
+              ></label>
           </template>
           <template v-else>
             <label
@@ -436,6 +519,14 @@ onUnmounted(() => {
         >
           <UiIcon name="history" :size="18" /><span>Histórico</span></button
         ><button
+          v-if="session.role === 'GESTOR'"
+          data-testid="operators-nav"
+          :class="{ active: tab === 'operators' }"
+          :aria-current="tab === 'operators' ? 'page' : undefined"
+          @click="openOperators"
+        >
+          <UiIcon name="users" :size="18" /><span>Operadores</span></button
+        ><button
           :class="{ active: tab === 'backups' }"
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
@@ -503,7 +594,9 @@ onUnmounted(() => {
                   ? "Estoque de insumos"
                   : tab === "history"
                     ? "Histórico de movimentações"
-                    : "Backups e recuperação"
+                    : tab === "operators"
+                      ? "Operadores da fazenda"
+                      : "Backups e recuperação"
             }}
           </h1>
           <p class="muted">
@@ -547,7 +640,7 @@ onUnmounted(() => {
         </p>
       </section>
       <section
-        v-if="analysis.products.length"
+        v-if="showReconciliation"
         class="panel"
         data-testid="sync-balances"
         aria-label="Conciliação do estoque"
@@ -720,6 +813,75 @@ onUnmounted(() => {
             <p class="helper">
               O responsável é vinculado à sessão. Não é necessário ter conexão
               para salvar.
+            </p>
+          </section>
+          <section
+            v-if="session.role === 'GESTOR'"
+            class="panel whatsapp-panel"
+            data-testid="whatsapp-alerts"
+            aria-label="Alertas de emergência via WhatsApp"
+          >
+            <div class="section-heading">
+              <h2>Alertas de emergência via WhatsApp</h2>
+              <span class="badge" :class="{ success: session.telefone }">{{
+                session.telefone ? "Ativo" : "Não configurado"
+              }}</span>
+            </div>
+            <p class="muted">
+              {{
+                session.telefone
+                  ? `Notificações automáticas ativadas para o número ${session.telefone}. Em caso de risco crítico de estoque ou validade, um aviso é enviado ao gestor.`
+                  : "Nenhum número cadastrado. Os alertas de emergência não serão enviados ao celular."
+              }}
+            </p>
+            <div class="whatsapp-number">
+              <label
+                >Número do WhatsApp
+                <input
+                  v-model="phoneDraft"
+                  type="tel"
+                  autocomplete="tel"
+                  placeholder="+55 69 99999-9999"
+                  :disabled="savingPhone"
+                  @keydown.enter.prevent="saveWhatsAppNumber"
+              /></label>
+              <small class="muted"
+                >Informe com o código do país. Deixe em branco para desativar os
+                alertas.</small
+              >
+              <button
+                type="button"
+                class="secondary"
+                :disabled="busy || savingPhone"
+                @click="saveWhatsAppNumber"
+              >
+                {{ savingPhone ? "Salvando…" : "Salvar número" }}
+              </button>
+            </div>
+            <button
+              v-if="session.telefone"
+              type="button"
+              class="secondary"
+              :disabled="busy || testingWhatsApp"
+              @click="sendWhatsAppTest"
+            >
+              <UiIcon name="circle-check" />
+              {{
+                testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
+              }}
+            </button>
+            <p
+              v-if="whatsappFeedback"
+              class="notice"
+              :class="{ success: !whatsappSimulated }"
+              role="status"
+            >
+              <UiIcon :name="whatsappSimulated ? 'info' : 'circle-check'" /><span
+                >{{ whatsappFeedback }}</span
+              >
+            </p>
+            <p v-if="whatsappError" class="notice error" role="alert">
+              <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
             </p>
           </section>
         </div>
@@ -927,6 +1089,19 @@ onUnmounted(() => {
           Nenhum backup disponível ainda.
         </p>
       </section>
+      <OperatorsPanel
+        v-if="tab === 'operators' && session.role === 'GESTOR'"
+        :key="session.farmId"
+        :operators="operators"
+        :loading="operatorsLoading"
+        :error="operatorsError"
+        :refresh="workspace.loadOperators"
+        :connect="
+          () => {
+            showPairing = true;
+          }
+        "
+      />
       <footer class="page-footer">
         AgroHacka · Decisões fundamentadas nos registros da propriedade.<span
           >Estimativas dependem da qualidade e da quantidade do histórico.</span

@@ -6,6 +6,11 @@ export class RegisterDto {
   telefone?: string;
 }
 
+export class UpdateTelefoneDto {
+  // Vazio ou nulo desativa os alertas de WhatsApp.
+  telefone?: string | null;
+}
+
 export class LoginDto {
   email!: string;
   senha?: string;
@@ -21,5 +26,6 @@ export interface AuthResponse {
     role: string;
     farmId: string | null;
     farmNome?: string;
+    telefone?: string;
   };
 }
