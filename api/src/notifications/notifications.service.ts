@@ -18,6 +18,9 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   private twilioClient: any = null;
   private readonly twilioPhone: string;
+  // Conta trial (Try out WhatsApp) só aceita modelos prontos da Twilio.
+  private readonly contentSid?: string;
+  private readonly contentVariables?: string;
 
   constructor(private readonly prisma: PrismaService) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -30,6 +33,30 @@ export class NotificationsService {
       phone = null;
     }
     this.twilioPhone = phone ?? '';
+
+    const contentSid = process.env.TWILIO_CONTENT_SID?.trim();
+    if (contentSid && /^HX[0-9a-f]{32}$/i.test(contentSid)) {
+      this.contentSid = contentSid;
+      const variables = process.env.TWILIO_CONTENT_VARIABLES?.trim();
+      if (variables) {
+        let parsed: unknown = null;
+        try {
+          parsed = JSON.parse(variables);
+        } catch {
+          parsed = null;
+        }
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+          this.contentVariables = variables;
+        else
+          this.logger.warn(
+            'TWILIO_CONTENT_VARIABLES ignorado: use um objeto JSON, por exemplo {"1":"12/1","2":"3pm"}.',
+          );
+      }
+    } else if (contentSid) {
+      this.logger.warn(
+        'TWILIO_CONTENT_SID ignorado: use o ContentSid (HX...) mostrado no Console da Twilio. Enviando texto livre.',
+      );
+    }
 
     if (accountSid && authToken && !accountSid.startsWith('mock') && !phone) {
       this.logger.warn(
@@ -79,11 +106,18 @@ export class NotificationsService {
     }
 
     try {
-      const message = await this.twilioClient.messages.create({
-        from: fromPhone,
-        to: cleanPhone,
-        body: dto.mensagem,
-      });
+      const message = await this.twilioClient.messages.create(
+        this.contentSid
+          ? {
+              from: fromPhone,
+              to: cleanPhone,
+              contentSid: this.contentSid,
+              ...(this.contentVariables
+                ? { contentVariables: this.contentVariables }
+                : {}),
+            }
+          : { from: fromPhone, to: cleanPhone, body: dto.mensagem },
+      );
 
       return {
         sucesso: true,
