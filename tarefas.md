@@ -134,15 +134,16 @@
 - [x] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
   - [x] Botão 🏢 *"Criar Nova Fazenda"* (Login/Cadastro do Gestor).
   - [x] Botão 📱 *"Conectar a uma Fazenda Existente"* (Fluxo do Operador).
-- [ ] **3.5. Pareamento Duplo (QR Code + Código Manual):**
+- [x] **3.5. Pareamento Duplo (QR Code + Código Manual):**
   - [x] Modal no Gestor: digita nome do operador $\rightarrow$ exibe QR Code + Código alfanumérico (`AGRO-88`).
-  - [ ] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
+  - [x] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
     - [x] Conexão por código manual ou conteúdo do QR Code, com validação automatizada.
     - [x] Implementar leitura por câmera e imagem QR na interface.
     - [x] Tratar negação de permissão, câmera ausente/em uso e falhas desconhecidas: fecha o vídeo e orienta usar código manual ou imagem do QR (`client/tests/app.spec.ts`).
     - [x] Garantir `CAMERA` (e câmera opcional) no `AndroidManifest.xml` gerado no CI (`client/src/scripts/garantir-permissao-camera.ts`, passo no `build-release.yml`; `client/tests/android-camera-permission.spec.ts`).
     - [x] Permissão `Câmera` aparece nas configurações do app em Android real (APK debug, 26/10): o patch do manifest funciona.
-    - [ ] Validar a leitura do QR Code pela câmera na WebView em aparelho Android real (ainda não testada).
+    - [x] Leitura do QR Code pela câmera validada em aparelho Android real (Motorola g75 5G, Android 16, 26/10): o QR lido conecta o aparelho.
+    - [x] Conectar automaticamente ao ler o QR (câmera ou imagem), sem precisar tocar em *Conectar aparelho* (`client/tests/app.spec.ts`).
 - [x] **3.6. Painéis e Paridade de Recursos:**
   - [x] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
   - [x] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
@@ -206,13 +207,14 @@
   - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
   - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
-  - [ ] Testar instalação limpa em máquina Windows com o `.exe` da release.
+  - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
+  - [ ] Testar instalação limpa em máquina Windows sem versão anterior instalada.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
   - [ ] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
-  - [ ] Conferir visualmente no aparelho que o app respeita as barras do sistema e o teclado (correção de insets mergeada em `dev`).
-  - [ ] Instalar e testar o `.apk` da release gerado pelo GitHub Actions (os testes acima usaram um APK montado em container). Ele usa outra chave de debug: desinstalar o app antigo antes de instalar.
+  - [x] App respeita as barras do sistema no aparelho real (insets), confirmado em 26/10.
+  - [x] `.apk` da release gerado pelo GitHub Actions instalado e funcionando no aparelho (26/10). O download direto pelo navegador do celular corrompeu o arquivo de 155 MB ("problem parsing the package"); o mesmo arquivo enviado pelo WhatsApp instalou. Baixar no PC e transferir.
 - [x] **5.3. [DEV 2] Corrigir falha do build do .apk no GitHub Actions (job `Build Mobile Android (.apk)`):**
   - [x] Diagnosticar o erro do log de 22/10 (`errobuildnadroid.txt`): a compilação Android já passava; o Gradle executa `npm run tauri android android-studio-script` e o script `tauri` era `tauri dev`, que subia o Vite e rodava `cargo run` do app desktop no host Linux, onde o `gdk-sys` quebrava sem `gdk-3.0.pc`. O GTK era só o sintoma.
   - [x] Corrigir na origem: `"tauri": "tauri"` e novo `tauri:dev` para o fluxo de desenvolvimento; removido o passo paliativo de `libglib2.0-dev`/`pkg-config` do workflow.
@@ -220,6 +222,17 @@
   - [x] Injetar `VITE_API_URL` de produção no workflow: `.env.production` não é versionado e, sem a URL, o `client.ts` lançava erro no import e o app abria em branco.
   - [x] Tratar o modo edge-to-edge: `client/src/scripts/aplicar-insets-android.ts` aplica na `MainActivity` gerada o padding das barras do sistema, recorte e teclado.
   - [x] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release: run da `main` (26/10) com Windows, Android e publicação em `success`; o APK do CI foi inspecionado (`com.agrohack.desktop.debug`, assinado, `arm64-v8a`, com `CAMERA`) e está na release `v1.0.0-entrega`.
+- [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
+- [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
+- [ ] **5.6. [EM CONJUNTO] Servidor LAN mínimo no gestor (relay, conforme `regra_de_sync.md` §12):**
+  > Premissas: o gestor **recebe de forma durável e encaminha à nuvem**; um recibo LAN não equivale a `ACCEPTED` da nuvem e o operador mantém sua cópia até a confirmação da nuvem; os IDs e as credenciais originais do operador são preservados (proveniência verificável, idempotência independente da rota). Servidor só no gestor **desktop**. O tráfego LAN é HTTP sem TLS: limitação a documentar.
+  - [ ] Servidor HTTP no gestor (Rust/Tauri) em `0.0.0.0:3333` com `GET /health` e `POST /sync`; recebimento durável em SQLite (nova migration local, sem editar a 001); recibo `LAN_RECEIVED` distinto de `ACCEPTED`.
+  - [ ] Encaminhamento do gestor para a nuvem preservando credenciais e IDs do operador, de forma idempotente.
+  - [ ] Cliente do operador: estado *recebido pelo gestor* na outbox, mantendo a cópia até a confirmação da nuvem (nova migration local).
+  - [ ] Descobrir e publicar o IP local do gestor (`POST /devices/local-ip`) e incluí-lo no QR de pareamento.
+  - [ ] Android: permitir HTTP em texto claro para a LAN (patch no manifest gerado pelo CI) e validar que o WebView alcança o gestor.
+  - [ ] Windows: ligar a regra de firewall da porta 3333 ao instalador (hoje `client/scripts/liberar-firewall.bat` existe, mas não é executado pelo instalador).
+  - [ ] Teste ponta a ponta: celular e PC na mesma Wi-Fi sem internet, sincronização por LAN e depois pela nuvem, sem duplicidade.
 
 ---
 
