@@ -8,10 +8,10 @@ import { PrismaClient } from '@prisma/client';
 import { SyncService } from '../src/sync/sync.service';
 import { SyncController } from '../src/sync/sync.controller';
 import { AuthService } from '../src/auth/auth.service';
-import { LocalStore } from '../../desktop/src/offline/local-store';
-import { SyncCoordinator } from '../../desktop/src/offline/sync';
-import { createApi } from '../../desktop/src/api/client';
-import type { SqlDatabase, SqlValue } from '../../desktop/src/offline/database';
+import { LocalStore } from '../../client/src/offline/local-store';
+import { SyncCoordinator } from '../../client/src/offline/sync';
+import { createApi } from '../../client/src/api/client';
+import type { SqlDatabase, SqlValue } from '../../client/src/offline/database';
 
 // No DATABASE_URL or real application database is read. This suite owns its
 // loopback-only container, temporary volume and credentials from start to stop.
@@ -203,7 +203,7 @@ describe('PostgreSQL sync transactions', () => {
       const sqlite = new DatabaseSync(':memory:');
       locals.push(sqlite);
       sqlite.exec(
-        readFileSync('../desktop/src-tauri/migrations/001_offline.sql', 'utf8'),
+        readFileSync('../client/src-tauri/migrations/001_offline.sql', 'utf8'),
       );
       const adapter: SqlDatabase = {
         async select<T>(sql: string, values: SqlValue[] = []) {

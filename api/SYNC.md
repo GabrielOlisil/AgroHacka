@@ -16,7 +16,7 @@ Antes de usar este endpoint atualizado com um banco existente:
    A pasta `sync-migrations` **não** é executada por `prisma migrate deploy`.
 3. Execute `npx prisma generate`, compile e reinicie a API.
 4. Com a API atualizada disponível em `localhost:3000`, gere o contrato pelo
-   fluxo existente: `cd ../desktop` e `npm run openapi`. Não edite os tipos à mão.
+   fluxo existente: `cd ../client` e `npm run openapi`. Não edite os tipos à mão.
 
 A tabela `sync_receipts` armazena fazenda, ID, autor verificado, hash versionado
 e decisão JSON. Não apague recibos ao compactar backups: IDs antigos podem voltar.
@@ -67,7 +67,7 @@ com clientes antigos, que não sabem encaminhar conflitos por item para revisão
 
 ## Testes reproduzíveis
 
-Na pasta `api`, com dependências de `api` **e** `desktop` instaladas, Node com
+Na pasta `api`, com dependências de `api` **e** `client` instaladas, Node com
 `node:sqlite`, Docker ativo e a imagem `postgres:16-alpine` disponível:
 
 ```powershell

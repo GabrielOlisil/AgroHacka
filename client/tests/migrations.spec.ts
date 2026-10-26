@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const migrationPath = "desktop/src-tauri/migrations/001_offline.sql";
+const migrationPath = "client/src-tauri/migrations/001_offline.sql";
 // SQLx hashes the exact SQL bytes with SHA-384, including line endings.
 // This is the checksum of migration 1 originally applied with LF endings.
 // Future schema changes must use a new migration, not update this checksum.
@@ -51,7 +51,7 @@ describe("immutable SQLite migrations", () => {
         "text",
         "eol",
         "--",
-        "desktop/src-tauri/migrations/002_future.sql",
+        "client/src-tauri/migrations/002_future.sql",
       ],
       { cwd: root, encoding: "utf8" },
     );

@@ -72,7 +72,7 @@ Siga o padrão **Conventional Commits**:
 Exemplos:
 feat(api): adicionar endpoint POST /stock/analyze
 fix(stock-engine): corrigir cálculo de dias de calendário
-test(desktop): cobrir edge cases de runout com lista vazia
+test(client): cobrir edge cases de runout com lista vazia
 docs(readme): atualizar seção de limitações
 ```
 

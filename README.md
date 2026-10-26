@@ -121,8 +121,8 @@ A API estará acessível em `http://localhost:3000` (documentação Swagger em `
 ### 4.3. Executando o Cliente (Desktop / Mobile - Vue 3 + Tauri)
 
 ```bash
-# 1. Acesse o diretório desktop
-cd AgroHacka/desktop
+# 1. Acesse o diretório client
+cd AgroHacka/client
 
 # 2. Instale as dependências
 npm install
@@ -152,7 +152,7 @@ npm run tauri:dev
 
 ## 5. Dados e Critérios Agronômicos
 
-O motor analítico do AgroHacka responde diretamente às **7 perguntas oficiais** do desafio, implementado com estrita paridade matemática entre o backend (`api/src/stock-engine`) e o SQLite local (`desktop/src/offline/analysis.ts`).
+O motor analítico do AgroHacka responde diretamente às **7 perguntas oficiais** do desafio, implementado com estrita paridade matemática entre o backend (`api/src/stock-engine`) e o SQLite local (`client/src/offline/analysis.ts`).
 
 ### 5.1. Critérios de Cálculo e Fórmulas
 
@@ -187,7 +187,7 @@ O motor analítico do AgroHacka responde diretamente às **7 perguntas oficiais*
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 63 testes unitários e de integração aprovados com Vitest ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
-- **Desktop/Mobile (Tauri + Vue):** 98 testes aprovados com Vitest e SQLite real via `node:sqlite` ([`local-store.spec.ts`](desktop/tests/local-store.spec.ts), [`analysis.spec.ts`](desktop/tests/analysis.spec.ts), [`migrations.spec.ts`](desktop/tests/migrations.spec.ts), [`sync.spec.ts`](desktop/tests/sync.spec.ts), etc.).
+- **Desktop/Mobile (Tauri + Vue):** 98 testes aprovados com Vitest e SQLite real via `node:sqlite` ([`local-store.spec.ts`](client/tests/local-store.spec.ts), [`analysis.spec.ts`](client/tests/analysis.spec.ts), [`migrations.spec.ts`](client/tests/migrations.spec.ts), [`sync.spec.ts`](client/tests/sync.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
