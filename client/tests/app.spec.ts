@@ -55,7 +55,80 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     dispose: vi.fn(),
   };
 }
+async function goToTab(
+  wrapper: ReturnType<typeof mount>,
+  label: string,
+) {
+  await wrapper
+    .get('nav[aria-label="Navegação principal"]')
+    .findAll("button")
+    .find((button) => button.text().includes(label))!
+    .trigger("click");
+}
+const balancesPanel = '[data-testid="sync-balances"]';
+function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
+  state.analysis.value.products = [
+    { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },
+  ] as never;
+  return state;
+}
 describe("telas responsivas dos perfis", () => {
+  it("só mostra o painel de conciliação na aba Estoque, mesmo com pendência e saldo negativo", async () => {
+    const state = withDiesel(controller("GESTOR"), -25);
+    state.confirmedBalances.value = { p: -20 };
+    state.pendingCount.value = 1;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    for (const label of ["Visão geral", "Histórico", "Backups"]) {
+      await goToTab(wrapper, label);
+      expect(wrapper.find(balancesPanel).exists(), label).toBe(false);
+    }
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("mostra o painel na aba Estoque quando há registros pendentes neste aparelho", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    state.pendingCount.value = 2;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("mostra o painel na aba Estoque quando o saldo confirmado é negativo, mesmo sem pendências", async () => {
+    const state = withDiesel(controller("GESTOR"));
+    state.confirmedBalances.value = { p: -5 };
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(true);
+    expect(wrapper.find('[data-testid="sync-deficit"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("mostra o painel na aba Estoque quando há registros para revisão", async () => {
+    const state = withDiesel(controller("GESTOR"));
+    state.reviews.value = [
+      { id: "r1", status: "VALIDATION_REJECTED", message: "x", movement: {} },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("esconde o painel quando está tudo conciliado: sem pendências, saldo negativo ou revisões", async () => {
+    const state = withDiesel(controller("GESTOR"));
+    state.confirmedBalances.value = { p: 10 };
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(false);
+    wrapper.unmount();
+  });
+  it("esconde o painel quando não há produtos, mesmo com pendências", async () => {
+    const state = controller("GESTOR");
+    state.pendingCount.value = 3;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    expect(wrapper.find(balancesPanel).exists()).toBe(false);
+    wrapper.unmount();
+  });
   it("labels provisional and confirmed balances and surfaces a negative consolidated balance without clamping it", async () => {
     const state = controller("GESTOR");
     state.confirmedBalances.value = { p: -20 };
@@ -64,6 +137,7 @@ describe("telas responsivas dos perfis", () => {
     ] as never;
     state.pendingCount.value = 1;
     const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
     expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
       "Confirmado conhecido: -20 L",
     );
