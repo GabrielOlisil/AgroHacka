@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import twilio from 'twilio';
 
@@ -70,6 +75,34 @@ export class NotificationsService {
         erro: error.message,
       };
     }
+  }
+
+  async sendTestMessage(dto: {
+    farmId: string;
+    paraTelefone?: string | null;
+    mensagem: string;
+  }) {
+    const requested = dto.paraTelefone?.replace(/\D/g, '');
+    if (!requested)
+      throw new BadRequestException('Informe o número de WhatsApp do teste.');
+
+    const gestor = await this.prisma.user.findFirst({
+      where: { farmId: dto.farmId, role: 'GESTOR' },
+    });
+    const registered = gestor?.telefone?.replace(/\D/g, '');
+    if (!gestor?.telefone || !registered)
+      throw new BadRequestException(
+        'O gestor da fazenda não tem WhatsApp cadastrado.',
+      );
+    if (requested !== registered)
+      throw new ForbiddenException(
+        'O teste só pode ser enviado ao WhatsApp cadastrado do gestor.',
+      );
+
+    return this.sendWhatsAppMessage({
+      paraTelefone: gestor.telefone,
+      mensagem: dto.mensagem,
+    });
   }
 
   async dispatchCriticalAlerts(farmId: string) {
