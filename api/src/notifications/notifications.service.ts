@@ -22,9 +22,20 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    this.twilioPhone = process.env.TWILIO_PHONE || '+14155238886'; // Sandbox oficial da Twilio
+    // Remetente é da conta (Console → Try out WhatsApp); não há padrão seguro.
+    let phone: string | null = null;
+    try {
+      phone = normalizeWhatsappNumber(process.env.TWILIO_PHONE);
+    } catch {
+      phone = null;
+    }
+    this.twilioPhone = phone ?? '';
 
-    if (accountSid && authToken && !accountSid.startsWith('mock')) {
+    if (accountSid && authToken && !accountSid.startsWith('mock') && !phone) {
+      this.logger.warn(
+        'TWILIO_PHONE ausente ou inválido: defina o número remetente mostrado no Console da Twilio (Try out WhatsApp). Notificações WhatsApp em modo simulação.',
+      );
+    } else if (accountSid && authToken && !accountSid.startsWith('mock')) {
       try {
         this.twilioClient = twilio(accountSid, authToken);
         this.logger.log('Twilio WhatsApp Client inicializado com sucesso.');
