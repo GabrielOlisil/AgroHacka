@@ -226,8 +226,8 @@
   - [x] Interface do gestor: painel *"Alertas de emergência via WhatsApp"* na Visão geral (status Ativo/Não configurado e *Testar envio de alerta*), com a sessão trazendo o `telefone` (login, cadastro e SQLite local). O teste distingue envio real, **modo de simulação** (servidor sem Twilio configurada, nada é enviado) e falha com o motivo; a API responde HTTP 200 mesmo quando a Twilio recusa (`client/tests/whatsapp-alerts*.spec.ts`).
   - [x] Número do gestor: o gestor cadastra, troca ou desativa o WhatsApp depois do registro (`PATCH /auth/telefone` e campo no painel). O número é normalizado para `+<dígitos>` no cadastro, na edição e no envio; antes um número digitado como `+55 69 99999-9999` chegava inválido à Twilio. **O gestor do seed continua com o número fictício `+5569999999999` até ser trocado pelo painel.**
   - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), número do gestor dentro do Sandbox da Twilio e recebimento real de uma mensagem.
-  - [ ] Roteiro da demonstração: usar um insumo que ainda não tenha alerta. O alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem.
-  - [ ] Documentar no README os pré-requisitos (Sandbox da Twilio) e os limites (um aviso por alerta, só nível urgente).
+  - [x] Roteiro da demonstração: o alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem. Para repetir a demonstração, marcar os alertas da fazenda como resolvidos (`UPDATE alerts SET resolvido = true WHERE "farmId" = '<id>'`); a próxima sincronização os recria e notifica (README §4.4).
+  - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, Sandbox da Twilio válido por 3 dias, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4).
 
 ---
 
