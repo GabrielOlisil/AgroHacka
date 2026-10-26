@@ -50,7 +50,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const requireStore = () => {
     if (!store)
       throw new Error(
-        "SQLite indisponível. Abra o aplicativo com npm run tauri.",
+        "SQLite indisponível. Abra o aplicativo com npm run tauri:dev.",
       );
     return store;
   };

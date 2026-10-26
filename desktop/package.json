@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "tauri": "tauri dev",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "build": "vue-tsc -b && vite build",
     "test": "vitest run --configLoader runner --pool=threads",

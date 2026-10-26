@@ -28,6 +28,30 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(content).toContain("netsh advfirewall firewall add rule");
   });
 
+  it("script npm 'tauri' deve ser a CLI pura: o Gradle do Android executa `npm run tauri android android-studio-script`", () => {
+    const pkg = JSON.parse(
+      readFileSync(resolve(root, "package.json"), "utf-8"),
+    );
+    // Com "tauri dev", o build do .apk sobe o Vite e compila o app desktop no
+    // host (cargo run), quebrando no Linux por falta do GTK (Tarefa 5.3).
+    expect(pkg.scripts.tauri).toBe("tauri");
+    expect(pkg.scripts["tauri:dev"]).toBe("tauri dev");
+    expect(pkg.scripts["tauri:build"]).toBe("tauri build");
+  });
+
+  it("documentação e mensagem de erro apontam para npm run tauri:dev", () => {
+    const docs = [
+      resolve(repoRoot, "README.md"),
+      resolve(root, "README.md"),
+      resolve(root, "src/workspace.ts"),
+    ];
+    for (const file of docs) {
+      const content = readFileSync(file, "utf-8");
+      expect(content, file).not.toMatch(/npm run tauri(?![:\w-])/);
+      expect(content, file).toContain("npm run tauri:dev");
+    }
+  });
+
   it("workflow do GitHub Actions deve disparar apenas na main ou tags e conter jobs de build Windows e Android", () => {
     const workflowPath = resolve(repoRoot, ".github/workflows/build-release.yml");
     expect(existsSync(workflowPath)).toBe(true);
