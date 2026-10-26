@@ -287,6 +287,14 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         session.value,
       );
     },
+    async testWhatsApp() {
+      const current = session.value;
+      if (current?.role !== "GESTOR")
+        throw new Error("Somente o gestor pode testar os alertas de WhatsApp.");
+      if (!current.telefone)
+        throw new Error("Cadastre o WhatsApp do gestor para testar o envio.");
+      return api.testWhatsApp(current, current.telefone);
+    },
     async createBackup() {
       if (syncing.value) throw new Error("Aguarde a sincronização.");
       await backupService.create();

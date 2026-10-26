@@ -350,6 +350,12 @@ small {
   background: rgba(74, 91, 46, 0.06);
   border-left-color: var(--color-secondary);
 }
+.whatsapp-panel > button {
+  margin-top: var(--space-4);
+}
+.whatsapp-panel .notice {
+  margin: var(--space-4) 0 0;
+}
 .welcome {
   display: grid;
   grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);

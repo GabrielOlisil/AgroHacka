@@ -66,6 +66,7 @@ export interface Session {
   deviceToken?: string;
   localIp?: string | null;
   localPort?: number;
+  telefone?: string;
 }
 export interface SyncResponse {
   protocolVersion: 2;
@@ -262,6 +263,8 @@ export function parseSession(value: unknown): Session {
       throw new Error("Porta inválida.");
     result.localPort = port;
   }
+  if (typeof s.telefone === "string" && s.telefone.trim())
+    result.telefone = s.telefone.trim();
   return result;
 }
 export function parseProduct(value: unknown, farmId?: string): Product {
