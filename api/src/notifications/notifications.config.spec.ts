@@ -39,12 +39,12 @@ describe('NotificationsService: configuração do remetente da Twilio', () => {
 
     const create = vi.fn().mockResolvedValue({ sid: 'SM_1', status: 'queued' });
     service.twilioClient = { messages: { create } };
-    await service.sendWhatsAppMessage({ paraTelefone: '+556993418565', mensagem: 'oi' });
+    await service.sendWhatsAppMessage({ paraTelefone: '+5569999999999', mensagem: 'oi' });
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'whatsapp:+17372508034',
-        to: 'whatsapp:+556993418565',
+        to: 'whatsapp:+5569999999999',
       }),
     );
   });
@@ -61,7 +61,7 @@ describe('NotificationsService: configuração do remetente da Twilio', () => {
       expect(service.twilioClient).toBeNull();
       expect(warn).toHaveBeenCalledWith(expect.stringMatching(/TWILIO_PHONE/));
       const result = await service.sendWhatsAppMessage({
-        paraTelefone: '+556993418565',
+        paraTelefone: '+5569999999999',
         mensagem: 'oi',
       });
       expect(result).toMatchObject({ sucesso: true, modo: 'SIMULADO' });

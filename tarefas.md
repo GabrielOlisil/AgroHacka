@@ -183,7 +183,7 @@
 #### 🔹 [DEV 1] Integração Twilio WhatsApp & Sync Backend
 - [x] **4.1. Configuração da Conta Twilio:**
   - [x] Criar conta gratuita na Twilio e ativar a WhatsApp Sandbox.
-  - [x] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`).
+  - [ ] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`). *Reaberta em 26/10: o log da API em produção mostra "Twilio não configurado" e o teste do app responde em modo de simulação, então as variáveis não estão no ambiente da API (ver 4.9).*
 - [x] **4.2. Módulo de Disparo Automático:**
   - [x] Disparar mensagem WhatsApp para o número cadastrado do Gestor sempre que um alerta atingir nível CRÍTICO.
   - [x] Endpoint de teste manual para demonstração durante o pitch.
@@ -234,8 +234,8 @@
   - [x] Diagnóstico do fluxo novo e do nono dígito (confirmado pelo usuário em 26/10).
   - [x] API exige `TWILIO_PHONE`: sem ele, ou com valor inválido, roda em modo de simulação com aviso no log, em vez de usar o Sandbox antigo como padrão (`api/src/notifications/notifications.config.spec.ts`).
   - [x] `.env.example` e README §4.4 atualizados: remetente do Console, um número de teste por vez, 100 mensagens grátis e a regra do nono dígito (`api/src/notifications/env-example.spec.ts`).
-  - [ ] Coolify: configurar `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE=+17372508034` e refazer o deploy da API.
-  - [ ] Levar `dev` para a `main` para publicar a API que exige `TWILIO_PHONE`, os endpoints de telefone e de teste e o app com o painel.
+  - [ ] Coolify: configurar `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE=+17372508034` e refazer o deploy da API. Diagnóstico de 26/10: a API publicada inicia com *"Twilio não configurado"*; o painel do app já salva o número no formato verificado (sem o 9) e o teste chega à API, mas fica em simulação até as variáveis existirem. Depois do deploy, o log deve mostrar *"Twilio WhatsApp Client inicializado com sucesso"*.
+  - [x] Levar `dev` para a `main` para publicar a API que exige `TWILIO_PHONE`, os endpoints de telefone e de teste e o app com o painel (PRs #47 e #51; release `v1.0.0-entrega` recompilada em 26/10 com Windows, Android e publicação em `success`). O deploy da API no Coolify ainda precisa ser confirmado.
   - [ ] No app, entrar como gestor, salvar o WhatsApp **no mesmo formato do número de teste verificado** (sem o 9) e tocar em *Testar envio de alerta*: a mensagem deve chegar (e não aparecer "modo de simulação").
   - [ ] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp.
 
