@@ -21,5 +21,6 @@ export interface AuthResponse {
     role: string;
     farmId: string | null;
     farmNome?: string;
+    telefone?: string;
   };
 }
