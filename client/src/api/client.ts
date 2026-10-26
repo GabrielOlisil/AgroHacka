@@ -3,6 +3,7 @@ import type { paths } from "../types/contract";
 import {
   object,
   parseSession,
+  parsePairedOperators,
   parseSyncResponse,
   text,
   type ConnectInput,
@@ -77,6 +78,21 @@ export function createApi(
     });
   }
   return {
+    async listOperators(session: Session) {
+      if (session.role !== "GESTOR")
+        throw new Error(
+          "Somente o gestor pode consultar códigos de operadores.",
+        );
+      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
+      const result = await unpack(
+        await client.GET("/devices", {
+          params: { header: { authorization } },
+          cache: "no-store",
+          signal: signal(),
+        }),
+      );
+      return parsePairedOperators(result, session.farmId);
+    },
     async login(body: LoginInput): Promise<Session> {
       return auth(
         await unpack(

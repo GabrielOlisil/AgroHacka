@@ -11,6 +11,7 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
       device: {
         create: vi.fn(),
         findUnique: vi.fn(),
+        findMany: vi.fn(),
       },
       farm: {
         findUnique: vi.fn(),
@@ -73,6 +74,84 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
         }),
       ).rejects.toThrow('Fazenda não encontrada');
     });
+  });
+
+  describe('listOperators', () => {
+    it('lists existing devices for one farm without creating or rotating credentials', async () => {
+      const createdAt = new Date('2026-10-01T12:00:00Z');
+      prismaService.device.findMany.mockResolvedValue([
+        {
+          id: 'd-1',
+          farmId: 'farm-1',
+          nomeOperador: 'Ana',
+          ativo: true,
+          pairingCode: 'AGRO-1234',
+          createdAt,
+          deviceToken: 'must-not-leak',
+        },
+        {
+          id: 'd-2',
+          farmId: 'farm-1',
+          nomeOperador: 'Bruno',
+          ativo: false,
+          pairingCode: 'AGRO-5678',
+          createdAt,
+          deviceToken: 'must-not-leak',
+        },
+      ]);
+      const result = await devicesService.listOperators('farm-1');
+      expect(prismaService.device.findMany).toHaveBeenCalledWith({
+        where: { farmId: 'farm-1' },
+        select: {
+          id: true,
+          farmId: true,
+          nomeOperador: true,
+          ativo: true,
+          pairingCode: true,
+          createdAt: true,
+        },
+        orderBy: [{ nomeOperador: 'asc' }, { id: 'asc' }],
+      });
+      expect(result).toEqual({
+        farmId: 'farm-1',
+        operators: [
+          {
+            id: 'd-1',
+            farmId: 'farm-1',
+            nomeOperador: 'Ana',
+            ativo: true,
+            pairingCode: 'AGRO-1234',
+            createdAt: createdAt.toISOString(),
+          },
+          {
+            id: 'd-2',
+            farmId: 'farm-1',
+            nomeOperador: 'Bruno',
+            ativo: false,
+            pairingCode: null,
+            createdAt: createdAt.toISOString(),
+          },
+        ],
+      });
+      expect(prismaService.device.create).not.toHaveBeenCalled();
+      expect(JSON.stringify(result)).not.toContain('must-not-leak');
+    });
+    it('returns an empty list without inventing operator records', async () => {
+      prismaService.device.findMany.mockResolvedValue([]);
+      expect(await devicesService.listOperators('farm-1')).toEqual({
+        farmId: 'farm-1',
+        operators: [],
+      });
+    });
+    it.each([null, undefined, '', '   ', 0])(
+      'rejects an invalid farm scope %s before querying credentials',
+      async (farmId) => {
+        await expect(
+          devicesService.listOperators(farmId as never),
+        ).rejects.toThrow();
+        expect(prismaService.device.findMany).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('connectDevice', () => {
@@ -147,7 +226,10 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
 
   describe('updateLocalIp', () => {
     it('deve atualizar o IP e porta locais da fazenda com sucesso', async () => {
-      prismaService.farm.findUnique.mockResolvedValue({ id: 'farm-1', nome: 'Fazenda Boa Vista' });
+      prismaService.farm.findUnique.mockResolvedValue({
+        id: 'farm-1',
+        nome: 'Fazenda Boa Vista',
+      });
       prismaService.farm.update.mockResolvedValue({
         id: 'farm-1',
         localIp: '192.168.1.50',

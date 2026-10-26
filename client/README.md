@@ -1,8 +1,9 @@
 # AgroHacka — cliente Desktop e Mobile
 
 Cliente Vue 3 + Tauri v2, com SQLite local e integração HTTP via `openapi-fetch`.
-O contrato existente em `src/types/contract.d.ts` é usado sem alterações. A API e
-o script que gera o OpenAPI não foram modificados por esta implementação.
+O contrato em `src/types/contract.d.ts` é gerado por `npm run openapi`, a partir
+da API em execução. Não edite esse arquivo manualmente. A consulta de operadores
+usa a rota `GET /devices` da API atualizada, sem alterar o gerador existente.
 
 ## Executar
 
@@ -161,3 +162,31 @@ baixá-los novamente.
 - Ainda faltam a extração do motor compartilhado,
   WhatsApp ponta a ponta, validação física offline/câmera, instalador/firewall e
   empacotamento Android.
+
+## Operadores pareados e recuperação do código
+
+O gestor cria um pareamento em **Conectar operador** e pode voltar à aba
+**Operadores**, buscar o nome e clicar em **Ver código**. É o mesmo código
+original: consultar não cria outro dispositivo nem troca sua credencial.
+**Ocultar código** recolhe a informação; atualizar a lista também a oculta.
+Depois de gerar um pareamento com essa aba aberta, a listagem é atualizada.
+
+Os registros vêm de `GET /devices`, autenticado com o JWT do gestor e limitado
+à sua fazenda. A resposta não contém `deviceToken`; dispositivos inativos têm
+código nulo. Códigos permitem conectar aparelhos e devem ser compartilhados
+somente com os responsáveis. Não há edição, revogação ou rotação nesta tela.
+
+A consulta exige API acessível. Falhas mostram um aviso sem apagar a sessão,
+movimentações ou pendências offline. A lista não é salva no SQLite e usa
+`no-store` no cliente e no servidor. O CRUD local separado foi substituído por
+este fluxo; possíveis registros antigos em `app_config` não são utilizados
+nem apagados. Nenhuma alteração de schema ou migration é necessária.
+
+Testes específicos no desktop: `npm test -- tests/operators-http.spec.ts
+tests/operators-panel.spec.ts tests/workspace.spec.ts tests/app.spec.ts`.
+Na API: `npm test -- src/devices/devices.service.spec.ts
+src/devices/devices.controller.spec.ts src/devices/devices.http.spec.ts`.
+Cobrem validação do contrato, autorização, isolamento, ausência de credenciais
+na resposta, consulta sem criação e a recuperação do mesmo código na interface.
+Os testes HTTP da rota usam um repositório simulado, sem alterar PostgreSQL real;
+isso não substitui a validação no aplicativo Tauri instalado.
