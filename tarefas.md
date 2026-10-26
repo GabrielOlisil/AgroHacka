@@ -139,7 +139,10 @@
   - [ ] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
     - [x] Conexão por código manual ou conteúdo do QR Code, com validação automatizada.
     - [x] Implementar leitura por câmera e imagem QR na interface.
-    - [ ] Validar permissões e leitura da câmera na WebView e em aparelho Android real.
+    - [x] Tratar negação de permissão, câmera ausente/em uso e falhas desconhecidas: fecha o vídeo e orienta usar código manual ou imagem do QR (`desktop/tests/app.spec.ts`).
+    - [x] Garantir `CAMERA` (e câmera opcional) no `AndroidManifest.xml` gerado no CI (`desktop/src/scripts/garantir-permissao-camera.ts`, passo no `build-release.yml`; `desktop/tests/android-camera-permission.spec.ts`).
+    - [x] Permissão `Câmera` aparece nas configurações do app em Android real (APK debug, 26/10): o patch do manifest funciona.
+    - [ ] Validar a leitura do QR Code pela câmera na WebView em aparelho Android real (ainda não testada).
 - [x] **3.6. Painéis e Paridade de Recursos:**
   - [x] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
   - [x] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
@@ -205,7 +208,17 @@
   - [ ] Testar instalação limpa em máquina Windows após geração do artefato na `main`.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
-  - [ ] Testar instalação e funcionamento offline em celular Android real após geração do artefato na `main`.
+  - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
+  - [ ] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
+  - [ ] Conferir visualmente no aparelho que o app respeita as barras do sistema e o teclado (correção de insets mergeada em `dev`).
+  - [ ] Testar o `.apk` gerado pelo GitHub Actions na `main` (os testes acima usaram um APK montado em container).
+- [ ] **5.3. [DEV 2] Corrigir falha do build do .apk no GitHub Actions (job `Build Mobile Android (.apk)`):**
+  - [x] Diagnosticar o erro do log de 22/10 (`errobuildnadroid.txt`): a compilação Android já passava; o Gradle executa `npm run tauri android android-studio-script` e o script `tauri` era `tauri dev`, que subia o Vite e rodava `cargo run` do app desktop no host Linux, onde o `gdk-sys` quebrava sem `gdk-3.0.pc`. O GTK era só o sintoma.
+  - [x] Corrigir na origem: `"tauri": "tauri"` e novo `tauri:dev` para o fluxo de desenvolvimento; removido o passo paliativo de `libglib2.0-dev`/`pkg-config` do workflow.
+  - [x] Gerar `.apk` instalável: build em modo `--debug` (o release sai sem assinatura e o Android recusa instalar).
+  - [x] Injetar `VITE_API_URL` de produção no workflow: `.env.production` não é versionado e, sem a URL, o `client.ts` lançava erro no import e o app abria em branco.
+  - [x] Tratar o modo edge-to-edge: `desktop/src/scripts/aplicar-insets-android.ts` aplica na `MainActivity` gerada o padding das barras do sistema, recorte e teclado.
+  - [ ] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release (só roda na `main`; a validação foi feita em container Ubuntu 24.04 sem GTK).
 
 ---
 
