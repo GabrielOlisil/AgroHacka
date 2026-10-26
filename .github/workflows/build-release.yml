@@ -116,6 +116,10 @@ jobs:
             npx @tauri-apps/cli android init --ci
           fi
 
+      - name: Garantir permissão de câmera no AndroidManifest
+        working-directory: desktop
+        run: node ./src/scripts/garantir-permissao-camera.ts src-tauri/gen/android/app/src/main/AndroidManifest.xml
+
       - name: Aplicar insets das barras do sistema na MainActivity
         working-directory: desktop
         run: node ./src/scripts/aplicar-insets-android.ts src-tauri/gen/android/app/src/main/java/com/agrohack/desktop/MainActivity.kt
