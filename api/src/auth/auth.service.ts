@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { RegisterDto, LoginDto, AuthResponse } from './dto/auth.dto';
+import { normalizeWhatsappNumber } from '../notifications/whatsapp-number';
 
 export interface SyncIdentity {
   actorId: string;
@@ -77,7 +78,20 @@ export class AuthService {
     };
   }
 
+  async updateTelefone(
+    userId: string,
+    telefone: unknown,
+  ): Promise<{ telefone?: string }> {
+    const normalized = normalizeWhatsappNumber(telefone);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { telefone: normalized },
+    });
+    return normalized ? { telefone: normalized } : {};
+  }
+
   async register(dto: RegisterDto): Promise<AuthResponse> {
+    const telefone = normalizeWhatsappNumber(dto.telefone);
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -102,7 +116,7 @@ export class AuthService {
           nome: dto.nome,
           email: dto.email,
           senhaHash,
-          telefone: dto.telefone,
+          telefone: telefone ?? undefined,
           role: 'GESTOR',
           farmId: farm.id,
         },
