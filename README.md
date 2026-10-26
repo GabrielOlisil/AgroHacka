@@ -84,7 +84,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
 - **Protocolo de Sincronização Confiável (v2):** Outbox transacional com UUIDs imutáveis, recibos individuais auditáveis, idempotência e tratamento explícito de divergências de saldo sem descartar fatos físicos.
 - **Backup Automático Estilo Anki:** Snapshots atômicos locais via `VACUUM INTO`, retenção automática de 7 dias e restauração garantida em 1 clique.
-- **Alertas WhatsApp (Twilio API):** Notificações automáticas para o WhatsApp do Gestor quando o nível de urgência atingir estado crítico.
+- **Alertas WhatsApp (Twilio API):** Notificações automáticas para o WhatsApp do Gestor quando uma sincronização gera um alerta de nível urgente. O Gestor cadastra, troca ou desativa o número e testa o envio no painel *Alertas de emergência via WhatsApp* (pré-requisitos e limites na seção 4.4).
 
 ---
 
@@ -148,6 +148,27 @@ npm run dev
 npm run tauri:dev
 ```
 
+### 4.4. Alertas de Emergência via WhatsApp (Twilio)
+
+O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta **urgente** (estoque crítico, insumo vencido).
+
+**Pré-requisitos**
+1. **Variáveis de ambiente no servidor:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE` (padrão: número do Sandbox, `+14155238886`). Sem elas a API roda em **modo de simulação** e nada é enviado. O botão *Testar envio de alerta* do app avisa quando isso acontece.
+2. **Sandbox da Twilio:** o celular do Gestor precisa enviar `join <código do sandbox>` para **+1 415 523 8886** no WhatsApp. Esse registro vale **3 dias**; repita-o antes de gravar o vídeo e antes da apresentação.
+3. **Número do Gestor** em formato internacional (`+5569999999999`), informado no cadastro ou em *Visão geral → Alertas de emergência via WhatsApp*. Aceita espaços e hífens; em branco desativa os alertas. O Gestor do seed usa um número fictício e precisa ser trocado.
+
+**Como funciona e limites**
+- O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
+- **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto não for resolvido, e a versão atual não resolve alertas sozinha. Um novo lançamento no mesmo insumo **não reenvia** a mensagem.
+- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base oficial, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
+- Os endpoints `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT do Gestor.
+
+**Para repetir a demonstração:** marque como resolvidos os alertas da fazenda, sem apagar o histórico. A próxima sincronização os recria e notifica de novo.
+
+```sql
+UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';
+```
+
 ---
 
 ## 5. Dados e Critérios Agronômicos
@@ -177,7 +198,7 @@ O motor analítico do AgroHacka responde diretamente às **7 perguntas oficiais*
 4. **Operação no Campo 100% Offline:** Em modo avião, o operador dá baixa de 60 litros de Diesel S10. O saldo local é decrementado imediatamente e o histórico é gravado.
 5. **Detecção de Anomalia:** Um lançamento atípico de 950 litros de Diesel gera imediatamente um alerta de desvio estatístico.
 6. **Convergência e Sincronização:** Ao restabelecer conexão (ou via botão *Sincronizar*), as transações locais sobem para a VPS sem duplicidade e recebem recibos individuais confirmados.
-7. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor.
+7. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor (pré-requisitos e como reiniciar os alertas na seção 4.4).
 8. **Segurança de Dados:** Demonstração do backup automático no SQLite com restauração atômica em 1 clique.
 
 ---
@@ -186,8 +207,8 @@ O motor analítico do AgroHacka responde diretamente às **7 perguntas oficiais*
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 63 testes unitários e de integração aprovados com Vitest ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
-- **Desktop/Mobile (Tauri + Vue):** 98 testes aprovados com Vitest e SQLite real via `node:sqlite` ([`local-store.spec.ts`](client/tests/local-store.spec.ts), [`analysis.spec.ts`](client/tests/analysis.spec.ts), [`migrations.spec.ts`](client/tests/migrations.spec.ts), [`sync.spec.ts`](client/tests/sync.spec.ts), etc.).
+- **API NestJS:** 174 testes unitários e de integração aprovados com Vitest, mais 19 de concorrência contra PostgreSQL descartável (`npm run test:sync`) ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
+- **Desktop/Mobile (Tauri + Vue):** 254 testes aprovados com Vitest e SQLite real via `node:sqlite` ([`local-store.spec.ts`](client/tests/local-store.spec.ts), [`analysis.spec.ts`](client/tests/analysis.spec.ts), [`migrations.spec.ts`](client/tests/migrations.spec.ts), [`sync.spec.ts`](client/tests/sync.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
@@ -195,7 +216,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 1. **Catálogo de Produtos Centralizado:** O cadastro de novos produtos deve ser realizado na interface do Gestor ou disponibilizado pelo backend; operadores em campo registram movimentações sobre o catálogo sincronizado, não criando novos SKUs offline.
 2. **Proteção por Cofre Nativo do SO:** Tokens JWT e backups locais SQLite residem em arquivos do usuário; a criptografia em repouso por cofre nativo (Windows DPAPI / Android Keystore) está mapeada para a próxima versão de produção.
 3. **Sincronização por Download Completo:** Enquanto um cursor seguro de CDC (Change Data Capture) não for disponibilizado na API, o cliente baixa o catálogo consistente integral e mescla por UUID, mitigando riscos de janelas temporais cegas.
-4. **Câmera em Dispositivos Físicos:** O leitor de QR Code funciona perfeitamente via imagem ou webcam de computador; em aparelhos Android específicos, a permissão de câmera deve ser concedida pelo manifesto da WebView. O código alfanumérico manual serve como alternativa de alta resiliência para qualquer situação sem câmera.
+4. **Câmera em Dispositivos Físicos:** A leitura do QR Code pela câmera foi validada em aparelho Android real (Motorola g75 5G, Android 16): ao ler o QR, o aparelho conecta sozinho. Se a permissão for negada ou não houver câmera, o app orienta usar uma imagem do QR ou o código alfanumérico manual, alternativa de alta resiliência para qualquer situação sem câmera. Outros modelos de aparelho não foram testados.
 5. **Sincronização por Rede Local (LAN) não implementada:** a sincronização direta entre aparelhos na mesma Wi-Fi, sem internet, **não será implementada a tempo para a apresentação**. Todos os aparelhos sincronizam **pela nuvem (HTTPS)**; sem internet, os lançamentos ficam salvos no SQLite do aparelho e são enviados ao reconectar, sem duplicidade (UUIDs idempotentes). A API já possui os endpoints de IP local e heartbeat, mas o servidor no aparelho do gestor, a descoberta de IP e o encaminhamento LAN → nuvem não existem; por isso nenhum IP local é publicado e o app usa sempre a nuvem. O desenho previsto está em [`regra_de_sync.md`](regra_de_sync.md) §12.
 
 ---
