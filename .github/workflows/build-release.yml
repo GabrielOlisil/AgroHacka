@@ -74,19 +74,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Instalar Dependências de Sistema Linux (para o Tauri CLI no host)
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends \
-            ca-certificates \
-            curl \
-            pkg-config \
-            build-essential \
-            libglib2.0-dev
-          pkg-config --libs --cflags glib-2.0
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-
       - name: Configurar Android SDK e NDK
         run: |
           SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
@@ -126,7 +113,7 @@ jobs:
 
       - name: Compilar Pacote Android (.apk)
         working-directory: desktop
-        run: npx @tauri-apps/cli android build --apk --target aarch64
+        run: npx @tauri-apps/cli android build --apk --debug --target aarch64
 
       - name: Upload Artefatos Android (.apk)
         uses: actions/upload-artifact@v4

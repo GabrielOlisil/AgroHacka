@@ -52,6 +52,24 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     }
   });
 
+  it("workflow gera o .apk em modo debug, já assinado e instalável (um release sai sem assinatura)", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    expect(workflow).toMatch(/cli android build --apk --debug\b/);
+    expect(workflow).not.toMatch(/cli android build --apk(?! --debug)/);
+  });
+
+  it("job Android não instala bibliotecas GTK/GLib do host: eram paliativo do `tauri dev` indevido (Tarefa 5.3)", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    expect(workflow).not.toMatch(/libglib2\.0-dev|libgtk|libwebkit2gtk/);
+    expect(workflow).not.toContain("PKG_CONFIG_PATH");
+  });
+
   it("workflow do GitHub Actions deve disparar apenas na main ou tags e conter jobs de build Windows e Android", () => {
     const workflowPath = resolve(repoRoot, ".github/workflows/build-release.yml");
     expect(existsSync(workflowPath)).toBe(true);
