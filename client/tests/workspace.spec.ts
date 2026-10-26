@@ -27,6 +27,7 @@ function setup() {
     register: vi.fn().mockResolvedValue(session),
     connect: vi.fn().mockResolvedValue(session),
     pairing: vi.fn(),
+    listOperators: vi.fn().mockResolvedValue([]),
   };
   const backups = {
     create: vi.fn().mockResolvedValue(undefined),
@@ -45,6 +46,99 @@ function setup() {
   };
 }
 describe("fluxo do aplicativo offline", () => {
+  it("loads paired operators only on request, using the current manager session", async () => {
+    const { workspace, store, api } = setup();
+    const manager = { ...session, role: "GESTOR" as const };
+    store.loadSession.mockResolvedValue(manager as never);
+    await workspace.initialize();
+    expect(workspace.ready.value).toBe(true);
+    expect(api.listOperators).not.toHaveBeenCalled();
+    const paired = {
+      id: "existing",
+      farmId: "f",
+      nomeOperador: "Ana",
+      ativo: true,
+      pairingCode: "AGRO-1234",
+      createdAt: "2026-10-01T12:00:00Z",
+    };
+    api.listOperators.mockResolvedValueOnce([paired] as never);
+    await workspace.loadOperators();
+    expect(workspace.operators.value).toEqual([paired]);
+    expect(api.listOperators).toHaveBeenCalledWith(manager);
+    expect(api.pairing).not.toHaveBeenCalled();
+    expect(store.saveSession).not.toHaveBeenCalled();
+  });
+  it("never requests pairing codes from an operator session", async () => {
+    const { workspace, api } = setup();
+    await workspace.initialize();
+    await expect(workspace.loadOperators()).rejects.toThrow(/gestor/i);
+    expect(api.listOperators).not.toHaveBeenCalled();
+  });
+  it("can replace an older listing after a new pairing without letting its late response overwrite the new code", async () => {
+    const { workspace, store, api } = setup();
+    store.loadSession.mockResolvedValue({
+      ...session,
+      role: "GESTOR",
+    } as never);
+    await workspace.initialize();
+    let finish!: (rows: never[]) => void;
+    api.listOperators.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const earlier = workspace.loadOperators();
+    const paired = {
+      id: "new",
+      farmId: "f",
+      nomeOperador: "Ana",
+      ativo: true,
+      pairingCode: "AGRO-NEW",
+      createdAt: "2026-10-01T12:00:00Z",
+    };
+    api.listOperators.mockResolvedValueOnce([paired] as never);
+    await workspace.loadOperators(true);
+    finish([]);
+    await earlier;
+    expect(workspace.operators.value).toEqual([paired]);
+    expect(workspace.operatorsLoading.value).toBe(false);
+  });
+  it("keeps offline startup working and clears stale codes when a listing request fails", async () => {
+    const { workspace, store, api } = setup();
+    store.loadSession.mockResolvedValue({
+      ...session,
+      role: "GESTOR",
+    } as never);
+    await workspace.initialize();
+    api.listOperators.mockRejectedValueOnce(new Error("offline"));
+    await workspace.loadOperators();
+    expect(workspace.operators.value).toEqual([]);
+    expect(workspace.operatorsError.value).toMatch(/offline/i);
+    expect(workspace.session.value).not.toBeNull();
+    expect(workspace.operatorsLoading.value).toBe(false);
+  });
+  it("discards in-flight results on logout and never reveals the previous farm codes", async () => {
+    const { workspace, store, api } = setup();
+    store.loadSession.mockResolvedValue({
+      ...session,
+      role: "GESTOR",
+    } as never);
+    await workspace.initialize();
+    let finish!: (result: unknown) => void;
+    api.listOperators.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const listing = workspace.loadOperators();
+    await Promise.resolve();
+    expect(workspace.operatorsLoading.value).toBe(true);
+    await workspace.logout();
+    finish([{ id: "old", farmId: "f", pairingCode: "AGRO-OLD" }]);
+    await listing;
+    expect(workspace.operators.value).toEqual([]);
+    expect(workspace.operatorsLoading.value).toBe(false);
+  });
   it("faz manutenção periódica do backup apenas quando existe uma sessão", async () => {
     const { workspace, backups, store } = setup();
     store.loadSession.mockResolvedValue(null as never);

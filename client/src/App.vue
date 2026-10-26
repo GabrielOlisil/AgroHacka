@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
+import OperatorsPanel from "./components/OperatorsPanel.vue";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -18,6 +19,9 @@ const {
   error,
   syncing,
   backups,
+  operators,
+  operatorsLoading,
+  operatorsError,
 } = workspace;
 const mode = ref<"login" | "register" | "connect">("login");
 const tab = ref("overview");
@@ -145,6 +149,7 @@ async function record() {
 async function generatePairing() {
   await act(async () => {
     pairing.value = await workspace.pair(operatorName.value);
+    if (tab.value === "operators") void workspace.loadOperators(true);
     const { default: QRCode } = await import("qrcode");
     qrImage.value = await QRCode.toDataURL(
       JSON.stringify(pairing.value.qrPayload),
@@ -163,6 +168,10 @@ const cameraErrors: Record<string, string> = {
     "A câmera está em uso por outro aplicativo ou não pôde ser aberta." +
     cameraFallback,
 };
+function openOperators() {
+  tab.value = "operators";
+  void workspace.loadOperators();
+}
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
@@ -446,6 +455,14 @@ onUnmounted(() => {
         >
           <UiIcon name="history" :size="18" /><span>Histórico</span></button
         ><button
+          v-if="session.role === 'GESTOR'"
+          data-testid="operators-nav"
+          :class="{ active: tab === 'operators' }"
+          :aria-current="tab === 'operators' ? 'page' : undefined"
+          @click="openOperators"
+        >
+          <UiIcon name="users" :size="18" /><span>Operadores</span></button
+        ><button
           :class="{ active: tab === 'backups' }"
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
@@ -513,7 +530,9 @@ onUnmounted(() => {
                   ? "Estoque de insumos"
                   : tab === "history"
                     ? "Histórico de movimentações"
-                    : "Backups e recuperação"
+                    : tab === "operators"
+                      ? "Operadores da fazenda"
+                      : "Backups e recuperação"
             }}
           </h1>
           <p class="muted">
@@ -937,6 +956,19 @@ onUnmounted(() => {
           Nenhum backup disponível ainda.
         </p>
       </section>
+      <OperatorsPanel
+        v-if="tab === 'operators' && session.role === 'GESTOR'"
+        :key="session.farmId"
+        :operators="operators"
+        :loading="operatorsLoading"
+        :error="operatorsError"
+        :refresh="workspace.loadOperators"
+        :connect="
+          () => {
+            showPairing = true;
+          }
+        "
+      />
       <footer class="page-footer">
         AgroHacka · Decisões fundamentadas nos registros da propriedade.<span
           >Estimativas dependem da qualidade e da quantidade do histórico.</span

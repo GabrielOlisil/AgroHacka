@@ -42,6 +42,10 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     error: ref(""),
     syncing: ref(false),
     backups: ref([]),
+    operators: ref([]),
+    loadOperators: vi.fn(),
+    operatorsLoading: ref(false),
+    operatorsError: ref(""),
     initialize: vi.fn(),
     login: vi.fn(),
     register: vi.fn(),
@@ -73,6 +77,54 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   return state;
 }
 describe("telas responsivas dos perfis", () => {
+  it("refreshes existing pairings after connecting a new operator using the same dialog", async () => {
+    const state = controller("GESTOR");
+    state.pair.mockResolvedValue({
+      pairingCode: "AGRO-NEW",
+      deviceToken: "token",
+      qrPayload: {
+        farmId: "f",
+        farmNome: "Boa Vista",
+        nomeOperador: "Ana",
+        deviceToken: "token",
+      },
+    });
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
+    await wrapper.get('[data-testid="pairing"]').trigger("click");
+    await wrapper.get('[role="dialog"] input').setValue("Ana");
+    await wrapper.get('[role="dialog"] form').trigger("submit");
+    await flushPromises();
+    expect(state.pair).toHaveBeenCalledOnce();
+    expect(state.loadOperators).toHaveBeenCalledTimes(2);
+    expect(state.loadOperators).toHaveBeenLastCalledWith(true);
+    expect(wrapper.text()).toContain("AGRO-NEW");
+    wrapper.unmount();
+  });
+  it("offers paired operator code recovery only to the manager", async () => {
+    const state = controller("GESTOR");
+    state.analysis.value.products = [
+      {
+        id: "p",
+        nome: "Diesel",
+        saldo: 5,
+        unidadeMedida: "L",
+        consumoDiario: [],
+      },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
+    expect(wrapper.get("h1").text()).toBe("Operadores da fazenda");
+    expect(wrapper.text()).toContain("Operadores pareados");
+    expect(state.loadOperators).toHaveBeenCalledOnce();
+    expect(wrapper.find('[data-testid="sync-balances"]').exists()).toBe(false);
+    wrapper.unmount();
+    const operator = mount(App, {
+      props: { controller: controller("OPERADOR") as never },
+    });
+    expect(operator.find('[data-testid="operators-nav"]').exists()).toBe(false);
+    operator.unmount();
+  });
   it("só mostra o painel de conciliação na aba Estoque, mesmo com pendência e saldo negativo", async () => {
     const state = withDiesel(controller("GESTOR"), -25);
     state.confirmedBalances.value = { p: -20 };
