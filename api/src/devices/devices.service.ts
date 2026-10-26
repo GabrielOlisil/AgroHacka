@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import crypto from 'crypto';
+import type { OperatorsResponseDto } from './dto/devices.dto';
 
 export interface CreatePairingDto {
   farmId: string;
@@ -24,6 +25,36 @@ export interface UpdateLocalIpDto {
 @Injectable()
 export class DevicesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listOperators(farmId: string): Promise<OperatorsResponseDto> {
+    if (typeof farmId !== 'string' || !farmId.trim())
+      throw new BadRequestException(
+        'Fazenda obrigatória para consultar operadores.',
+      );
+    const operators = await this.prisma.device.findMany({
+      where: { farmId },
+      select: {
+        id: true,
+        farmId: true,
+        nomeOperador: true,
+        ativo: true,
+        pairingCode: true,
+        createdAt: true,
+      },
+      orderBy: [{ nomeOperador: 'asc' }, { id: 'asc' }],
+    });
+    return {
+      farmId,
+      operators: operators.map((device) => ({
+        id: device.id,
+        farmId: device.farmId,
+        nomeOperador: device.nomeOperador,
+        ativo: device.ativo,
+        pairingCode: device.ativo ? device.pairingCode : null,
+        createdAt: device.createdAt.toISOString(),
+      })),
+    };
+  }
 
   async createPairingToken(dto: CreatePairingDto) {
     const farm = await this.prisma.farm.findUnique({
