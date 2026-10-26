@@ -246,14 +246,14 @@
 ### ETAPA 5: Empacotamento do .exe e .apk *(Dia 11)*
 *Geração dos artefatos finais para entrega.*
 
-- [ ] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
+- [x] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
   - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
   - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
     > O script existe, mas o instalador não o executa, e a porta 3333 só seria usada pelo servidor LAN, que não será implementado a tempo (ver 5.6).
   - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
   - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
-  - [ ] Testar instalação limpa em máquina Windows sem versão anterior instalada.
+  - [x] Testar instalação limpa em máquina Windows sem versão anterior instalada (concluído pelo usuário em 26/10).
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
