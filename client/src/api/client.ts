@@ -105,6 +105,28 @@ export function createApi(
         );
       return { simulado: result.modo === "SIMULADO" };
     },
+    async updateTelefone(
+      session: Session,
+      telefone: string,
+    ): Promise<string | undefined> {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode alterar o WhatsApp dos alertas.");
+      const trimmed = telefone.trim();
+      const result = object(
+        await unpack(
+          await (client as any).PATCH("/auth/telefone", {
+            body: { telefone: trimmed || null },
+            headers: {
+              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+            },
+            signal: signal(),
+          }),
+        ),
+      );
+      return result.telefone === undefined
+        ? undefined
+        : text(result.telefone, "WhatsApp");
+    },
     async listOperators(session: Session) {
       if (session.role !== "GESTOR")
         throw new Error(

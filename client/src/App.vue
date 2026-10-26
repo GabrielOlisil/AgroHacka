@@ -46,6 +46,14 @@ const showPairing = ref(false);
 const video = ref<HTMLVideoElement | null>(null);
 const camera = ref(false);
 const testingWhatsApp = ref(false);
+const savingPhone = ref(false);
+const phoneDraft = ref(session.value?.telefone ?? "");
+watch(
+  () => session.value?.telefone,
+  (telefone) => {
+    phoneDraft.value = telefone ?? "";
+  },
+);
 const whatsappFeedback = ref("");
 const whatsappSimulated = ref(false);
 const whatsappError = ref("");
@@ -178,20 +186,36 @@ async function sendWhatsAppTest() {
       ? "Teste em modo de simulação: o serviço de WhatsApp do servidor não está configurado, então nenhuma mensagem real foi enviada."
       : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
   } catch (cause) {
-    const offline =
-      cause instanceof TypeError ||
-      (cause instanceof Error &&
-        (cause.name === "TimeoutError" || cause.name === "AbortError"));
-    whatsappError.value = `Não foi possível enviar o teste: ${
-      offline
-        ? "sem conexão com o servidor. Verifique a internet e tente novamente."
-        : cause instanceof Error
-          ? cause.message
-          : String(cause)
-    }`;
+    whatsappError.value = `Não foi possível enviar o teste: ${describeWhatsAppFailure(cause)}`;
   } finally {
     testingWhatsApp.value = false;
   }
+}
+async function saveWhatsAppNumber() {
+  if (savingPhone.value) return;
+  savingPhone.value = true;
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
+  try {
+    const telefone = await workspace.updateTelefone(phoneDraft.value);
+    whatsappFeedback.value = telefone
+      ? `WhatsApp atualizado. Os alertas serão enviados para ${telefone}.`
+      : "Alertas de WhatsApp desativados.";
+  } catch (cause) {
+    whatsappError.value = `Não foi possível salvar o número: ${describeWhatsAppFailure(cause)}`;
+  } finally {
+    savingPhone.value = false;
+  }
+}
+function describeWhatsAppFailure(cause: unknown) {
+  const offline =
+    cause instanceof TypeError ||
+    (cause instanceof Error &&
+      (cause.name === "TimeoutError" || cause.name === "AbortError"));
+  if (offline)
+    return "sem conexão com o servidor. Verifique a internet e tente novamente.";
+  return cause instanceof Error ? cause.message : String(cause);
 }
 const cameraFallback =
   " Digite o código ou escolha uma imagem do QR Code.";
@@ -810,6 +834,30 @@ onUnmounted(() => {
                   : "Nenhum número cadastrado. Os alertas de emergência não serão enviados ao celular."
               }}
             </p>
+            <div class="whatsapp-number">
+              <label
+                >Número do WhatsApp
+                <input
+                  v-model="phoneDraft"
+                  type="tel"
+                  autocomplete="tel"
+                  placeholder="+55 69 99999-9999"
+                  :disabled="savingPhone"
+                  @keydown.enter.prevent="saveWhatsAppNumber"
+              /></label>
+              <small class="muted"
+                >Informe com o código do país. Deixe em branco para desativar os
+                alertas.</small
+              >
+              <button
+                type="button"
+                class="secondary"
+                :disabled="busy || savingPhone"
+                @click="saveWhatsAppNumber"
+              >
+                {{ savingPhone ? "Salvando…" : "Salvar número" }}
+              </button>
+            </div>
             <button
               v-if="session.telefone"
               type="button"

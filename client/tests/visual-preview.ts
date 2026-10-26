@@ -160,6 +160,9 @@ const controller: Workspace = {
   async testWhatsApp() {
     return { simulado: true };
   },
+  async updateTelefone(value: string) {
+    return value.trim() || undefined;
+  },
   async record(input) {
     movements.value.push({
       ...input,
