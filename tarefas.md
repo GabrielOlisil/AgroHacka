@@ -150,6 +150,27 @@
 
 > Revisão visual no navegador com dados simulados: autenticação, painéis, estoque, histórico, backups e pareamento; larguras desktop e mobile de 390/360 px. Validação final: 75 testes Vitest, checagem TypeScript e build aprovados. WebView e Android real continuam nas pendências específicas abaixo.
 
+- [x] **3.8. [DEV 2] Integrar operadores ao fluxo de pareamento existente:**
+  - [x] Listar os mesmos dispositivos criados em **Conectar operador**, em aba exclusiva do gestor, com busca e filtro de situação.
+  - [x] Consultar e ocultar o código original sem criar outro operador, gerar outra credencial ou alterar o histórico.
+  - [x] Usar `openapi-fetch` com o contrato gerado pelo comando do projeto; atualizar a lista após novo pareamento.
+  - [x] Validar erros de rede, carregamento, permissões, respostas atrasadas e troca de sessão com testes.
+
+- [x] **3.9. [DEV 1 + DEV 2] Consulta autenticada de operadores e recuperação do código pela API:**
+  - [x] Publicar `GET /devices`, limitado à fazenda da identidade autenticada de gestor; rejeitar operador e ausência de autenticação.
+  - [x] Retornar somente os campos administrativos necessários, sem `deviceToken`, com `Cache-Control: no-store` e código nulo para dispositivos inativos.
+  - [x] Validar isolamento entre fazendas e consulta sem efeitos colaterais em testes de serviço, controller e HTTP.
+  - [x] Integrar o contrato OpenAPI regenerado pelo usuário, sem edição manual do arquivo gerado.
+
+> Escopo simplificado por decisão do usuário: o CRUD administrativo local separado
+> e sua futura sincronização foram substituídos pela consulta dos pareamentos reais.
+> Esta consulta exige API acessível e não persiste os códigos no SQLite. Nenhum dado
+> local foi apagado nem migration alterada. Edição, revogação e rotação de credenciais
+> não fazem parte desta entrega. Testes em WebView e aparelho real seguem pendentes.
+> Validação: desktop `npm test` (134), `npm run check` e `npm run build`;
+> API `npm test` (87) e `npm run build`, todos aprovados. Revisão visual no navegador
+> com operadores fictícios; testes HTTP com repositório simulado, sem banco real.
+
 ---
 
 ### ETAPA 4: Sincronização Híbrida, Backup e WhatsApp *(Dias 9 a 10 — EM PARALELO)*
