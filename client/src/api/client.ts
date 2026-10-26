@@ -15,8 +15,18 @@ import {
   type SyncResponse,
 } from "../offline/types";
 
-// URL explícita, como o script OpenAPI existente. Nenhuma variável de ambiente.
-export const API_URL = "http://localhost:3000";
+// URL da API injetada pelo Vite em tempo de build a partir de:
+//   .env.development  → dev  (`npm run dev` / `tauri dev`)
+//   .env.production   → prod (`npm run build` / `tauri build`)
+// Em produção este valor é embutido no binário — não há leitura de arquivo em runtime.
+const _apiUrl = import.meta.env.VITE_API_URL as string | undefined;
+if (!_apiUrl) {
+  throw new Error(
+    "VITE_API_URL não definida. Crie client/.env.development ou client/.env.production antes de compilar.",
+  );
+}
+export const API_URL: string = _apiUrl;
+
 export class ApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {

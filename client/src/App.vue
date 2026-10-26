@@ -145,25 +145,42 @@ async function generatePairing() {
     );
   });
 }
+const cameraFallback =
+  " Digite o código ou escolha uma imagem do QR Code.";
+const cameraErrors: Record<string, string> = {
+  NotAllowedError:
+    "Sem permissão para usar a câmera. Libere o acesso nas configurações do aparelho." +
+    cameraFallback,
+  NotFoundError: "Nenhuma câmera foi encontrada neste aparelho." + cameraFallback,
+  NotReadableError:
+    "A câmera está em uso por outro aplicativo ou não pôde ser aberta." +
+    cameraFallback,
+};
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
-    await nextTick();
-    if (!video.value) return;
-    const { BrowserQRCodeReader } = await import("@zxing/browser");
-    const controls = await new BrowserQRCodeReader().decodeFromVideoDevice(
-      undefined,
-      video.value,
-      (result) => {
-        if (result) {
-          code.value = result.getText();
-          stopScanner?.();
-          camera.value = false;
-        }
-      },
-    );
-    stopScanner = () => controls.stop();
-    if (!camera.value) controls.stop();
+    try {
+      await nextTick();
+      if (!video.value) return;
+      const { BrowserQRCodeReader } = await import("@zxing/browser");
+      const controls = await new BrowserQRCodeReader().decodeFromVideoDevice(
+        undefined,
+        video.value,
+        (result) => {
+          if (result) {
+            code.value = result.getText();
+            stopScanner?.();
+            camera.value = false;
+          }
+        },
+      );
+      stopScanner = () => controls.stop();
+      if (!camera.value) controls.stop();
+    } catch (cause) {
+      camera.value = false;
+      const friendly = cause instanceof Error && cameraErrors[cause.name];
+      throw friendly ? new Error(friendly) : cause;
+    }
   });
 }
 async function scanImage(event: Event) {

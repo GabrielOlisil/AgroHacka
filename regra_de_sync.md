@@ -542,13 +542,13 @@ Pontos concretos de atenção:
    O cliente atual evita essa janela não enviando `lastSyncTimestamp` e baixando
    o conjunto completo. Isso custa mais tráfego, mas não deve ser removido antes
    de existir um cursor consistente.
-4. `desktop/src/offline/local-store.ts` gera UUID dentro de cada `recordMovement`.
+4. `client/src/offline/local-store.ts` gera UUID dentro de cada `recordMovement`.
    Repetir uma chamada de criação não é o mesmo que reenviar um ID da outbox:
    o rascunho estável ainda precisa ser implementado.
 5. A confirmação por `syncedCount` não comprova os IDs e decisões por operação.
 
-Referências locais: `desktop/src/offline/sync.ts`,
-`desktop/src/offline/local-store.ts`, `desktop/src/api/client.ts`,
+Referências locais: `client/src/offline/sync.ts`,
+`client/src/offline/local-store.ts`, `client/src/api/client.ts`,
 `api/src/sync/sync.service.ts`, `api/src/sync/sync.controller.ts` e
 `api/prisma/schema.prisma`.
 

@@ -320,6 +320,10 @@ small {
   flex: 1;
   min-width: 0;
 }
+.split > .secondary,
+.split > .file-button {
+  align-self: stretch;
+}
 .notice {
   display: flex;
   align-items: start;
@@ -456,9 +460,6 @@ small {
 .file-button {
   position: relative;
   flex-direction: row;
-  font-size: var(--font-size-sm);
-  min-height: var(--control-lg);
-  padding: var(--space-2);
   text-align: center;
   cursor: pointer;
 }

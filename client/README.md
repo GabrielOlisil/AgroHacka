@@ -9,9 +9,9 @@ o script que gera o OpenAPI não foram modificados por esta implementação.
 Use Node.js 24 LTS e o ambiente Rust/Tauri já configurado no projeto:
 
 ```powershell
-cd desktop
+cd client
 npm ci
-npm run tauri
+npm run tauri:dev
 ```
 
 `npm run dev` abre somente a interface no navegador. O armazenamento SQLite e os
@@ -61,7 +61,7 @@ e Android real.
 ## Persistência e sincronização
 
 - O plugin SQL aplica a migration `src-tauri/migrations/001_offline.sql`.
-- Migrations SQL usam LF, fixado por `desktop/.gitattributes`. O SQLx inclui
+- Migrations SQL usam LF, fixado por `client/.gitattributes`. O SQLx inclui
   quebras de linha no checksum: trocar LF por CRLF pode causar o erro
   `migration 1 was previously applied but has been modified` mesmo com SQL
   equivalente. O teste de regressão preserva o checksum original e verifica

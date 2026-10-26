@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Variáveis de ambiente locais (não versionar — use .env.example como referência)
+# O Vite usa .env.development em dev e .env.production no build.
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
