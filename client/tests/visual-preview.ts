@@ -81,6 +81,7 @@ const gestor: Session = {
   farmNome: "Fazenda Boa Vista",
   nome: "Ana Oliveira",
   userId: "u",
+  telefone: "+5569999999999",
 };
 const operador: Session = {
   ...gestor,
@@ -155,6 +156,9 @@ const controller: Workspace = {
   },
   async logout() {
     session.value = null;
+  },
+  async testWhatsApp() {
+    return { simulado: true };
   },
   async record(input) {
     movements.value.push({

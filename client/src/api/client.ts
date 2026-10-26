@@ -75,9 +75,36 @@ export function createApi(
       farmNome: user.farmNome,
       nome: user.nome,
       accessToken: text(response.accessToken, "token de acesso"),
+      telefone: user.telefone,
     });
   }
   return {
+    async testWhatsApp(
+      session: Session,
+      paraTelefone: string,
+    ): Promise<{ simulado: boolean }> {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode testar os alertas de WhatsApp.");
+      const result = object(
+        await unpack(
+          await client.POST("/notifications/test-whatsapp", {
+            body: { paraTelefone: text(paraTelefone, "WhatsApp") },
+            headers: {
+              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+            },
+            signal: signal(),
+          }),
+        ),
+      );
+      // A API responde HTTP 200 mesmo quando a Twilio recusa a mensagem.
+      if (result.sucesso !== true)
+        throw new Error(
+          typeof result.erro === "string" && result.erro
+            ? result.erro
+            : "A mensagem de teste não foi enviada.",
+        );
+      return { simulado: result.modo === "SIMULADO" };
+    },
     async listOperators(session: Session) {
       if (session.role !== "GESTOR")
         throw new Error(

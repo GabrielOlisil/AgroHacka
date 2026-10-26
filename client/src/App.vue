@@ -45,6 +45,10 @@ const qrImage = ref("");
 const showPairing = ref(false);
 const video = ref<HTMLVideoElement | null>(null);
 const camera = ref(false);
+const testingWhatsApp = ref(false);
+const whatsappFeedback = ref("");
+const whatsappSimulated = ref(false);
+const whatsappError = ref("");
 let stopScanner: (() => void) | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
 let backupTimer: ReturnType<typeof setInterval> | undefined;
@@ -60,6 +64,9 @@ watch(session, () => {
   tab.value = "overview";
   code.value = "";
   password.value = "";
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
   stopScanner?.();
   camera.value = false;
 });
@@ -156,6 +163,35 @@ async function generatePairing() {
       { width: 280, margin: 2, errorCorrectionLevel: "M" },
     );
   });
+}
+async function sendWhatsAppTest() {
+  if (testingWhatsApp.value) return;
+  const phone = session.value?.telefone;
+  testingWhatsApp.value = true;
+  whatsappFeedback.value = "";
+  whatsappSimulated.value = false;
+  whatsappError.value = "";
+  try {
+    const { simulado } = await workspace.testWhatsApp();
+    whatsappSimulated.value = simulado;
+    whatsappFeedback.value = simulado
+      ? "Teste em modo de simulação: o serviço de WhatsApp do servidor não está configurado, então nenhuma mensagem real foi enviada."
+      : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
+  } catch (cause) {
+    const offline =
+      cause instanceof TypeError ||
+      (cause instanceof Error &&
+        (cause.name === "TimeoutError" || cause.name === "AbortError"));
+    whatsappError.value = `Não foi possível enviar o teste: ${
+      offline
+        ? "sem conexão com o servidor. Verifique a internet e tente novamente."
+        : cause instanceof Error
+          ? cause.message
+          : String(cause)
+    }`;
+  } finally {
+    testingWhatsApp.value = false;
+  }
 }
 const cameraFallback =
   " Digite o código ou escolha uma imagem do QR Code.";
@@ -354,13 +390,17 @@ onUnmounted(() => {
                 required
             /></label>
             <label v-if="mode === 'register'"
-              >WhatsApp do gestor <span class="muted">(opcional)</span
+              >WhatsApp para alertas de emergência
+              <span class="muted">(opcional)</span
               ><input
                 v-model="telefone"
                 type="tel"
                 autocomplete="tel"
                 placeholder="+55 69 …"
-            /></label>
+              /><small class="muted"
+                >Receba avisos automáticos caso falte insumo ou lote vença.
+                Deixe em branco se preferir não receber.</small
+              ></label>
           </template>
           <template v-else>
             <label
@@ -749,6 +789,51 @@ onUnmounted(() => {
             <p class="helper">
               O responsável é vinculado à sessão. Não é necessário ter conexão
               para salvar.
+            </p>
+          </section>
+          <section
+            v-if="session.role === 'GESTOR'"
+            class="panel whatsapp-panel"
+            data-testid="whatsapp-alerts"
+            aria-label="Alertas de emergência via WhatsApp"
+          >
+            <div class="section-heading">
+              <h2>Alertas de emergência via WhatsApp</h2>
+              <span class="badge" :class="{ success: session.telefone }">{{
+                session.telefone ? "Ativo" : "Não configurado"
+              }}</span>
+            </div>
+            <p class="muted">
+              {{
+                session.telefone
+                  ? `Notificações automáticas ativadas para o número ${session.telefone}. Em caso de risco crítico de estoque ou validade, um aviso é enviado ao gestor.`
+                  : "Nenhum número cadastrado. Os alertas de emergência não serão enviados ao celular."
+              }}
+            </p>
+            <button
+              v-if="session.telefone"
+              type="button"
+              class="secondary"
+              :disabled="busy || testingWhatsApp"
+              @click="sendWhatsAppTest"
+            >
+              <UiIcon name="circle-check" />
+              {{
+                testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
+              }}
+            </button>
+            <p
+              v-if="whatsappFeedback"
+              class="notice"
+              :class="{ success: !whatsappSimulated }"
+              role="status"
+            >
+              <UiIcon :name="whatsappSimulated ? 'info' : 'circle-check'" /><span
+                >{{ whatsappFeedback }}</span
+              >
+            </p>
+            <p v-if="whatsappError" class="notice error" role="alert">
+              <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
             </p>
           </section>
         </div>
