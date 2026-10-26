@@ -167,11 +167,11 @@ async function scanCamera() {
         undefined,
         video.value,
         (result) => {
-          if (result) {
-            code.value = result.getText();
-            stopScanner?.();
-            camera.value = false;
-          }
+          if (!result || !camera.value) return;
+          code.value = result.getText();
+          stopScanner?.();
+          camera.value = false;
+          void authenticate();
         },
       );
       stopScanner = () => controls.stop();
@@ -186,6 +186,7 @@ async function scanCamera() {
 async function scanImage(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
+  let scanned = false;
   await act(async () => {
     const url = URL.createObjectURL(file);
     try {
@@ -193,10 +194,12 @@ async function scanImage(event: Event) {
       code.value = (
         await new BrowserQRCodeReader().decodeFromImageUrl(url)
       ).getText();
+      scanned = true;
     } finally {
       URL.revokeObjectURL(url);
     }
   });
+  if (scanned) await authenticate();
 }
 async function restore(name: string) {
   if (

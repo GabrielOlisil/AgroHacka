@@ -2,10 +2,14 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { ref } from "vue";
 import { describe, expect, it, vi } from "vitest";
-const scanner = vi.hoisted(() => ({ decode: vi.fn() }));
+const scanner = vi.hoisted(() => ({
+  decode: vi.fn(),
+  decodeImage: vi.fn(),
+}));
 vi.mock("@zxing/browser", () => ({
   BrowserQRCodeReader: class {
     decodeFromVideoDevice = scanner.decode;
+    decodeFromImageUrl = scanner.decodeImage;
   },
 }));
 vi.mock("../src/components/HelloWorld.vue", () => ({
@@ -191,6 +195,110 @@ describe("telas responsivas dos perfis", () => {
     await flushPromises();
     expect(wrapper.find("video.camera").exists()).toBe(false);
     expect(wrapper.get('[role="alert"]').text()).toContain("falha inesperada");
+    wrapper.unmount();
+  });
+  async function openCamera(state: ReturnType<typeof controller>) {
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Conectar a uma fazenda")!
+      .trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Ler com a câmera")!
+      .trigger("click");
+    await flushPromises();
+    return wrapper;
+  }
+  it("conecta automaticamente ao ler o QR Code pela câmera, uma única vez", async () => {
+    let onResult!: (result: { getText(): string } | undefined) => void;
+    const stop = vi.fn();
+    scanner.decode.mockImplementation(async (_device, _video, callback) => {
+      onResult = callback;
+      return { stop };
+    });
+    const state = controller();
+    const wrapper = await openCamera(state);
+    const qr = '{"code":"AGRO-AB12","farmId":"f"}';
+    onResult({ getText: () => qr });
+    onResult({ getText: () => qr });
+    await flushPromises();
+    expect(state.connect).toHaveBeenCalledTimes(1);
+    expect(state.connect).toHaveBeenCalledWith(qr);
+    expect(stop).toHaveBeenCalled();
+    expect(wrapper.find("video.camera").exists()).toBe(false);
+    wrapper.unmount();
+  });
+  it("não conecta enquanto a câmera ainda não leu nenhum QR Code", async () => {
+    let onResult!: (result: { getText(): string } | undefined) => void;
+    scanner.decode.mockImplementation(async (_device, _video, callback) => {
+      onResult = callback;
+      return { stop: vi.fn() };
+    });
+    const state = controller();
+    const wrapper = await openCamera(state);
+    onResult(undefined);
+    await flushPromises();
+    expect(state.connect).not.toHaveBeenCalled();
+    expect(wrapper.find("video.camera").exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("mostra o erro da API e fecha a câmera quando o QR lido não conecta", async () => {
+    let onResult!: (result: { getText(): string } | undefined) => void;
+    scanner.decode.mockImplementation(async (_device, _video, callback) => {
+      onResult = callback;
+      return { stop: vi.fn() };
+    });
+    const state = controller();
+    state.connect.mockRejectedValue(new Error("Código de pareamento inválido."));
+    const wrapper = await openCamera(state);
+    onResult({ getText: () => "lixo" });
+    await flushPromises();
+    expect(state.connect).toHaveBeenCalledWith("lixo");
+    expect(wrapper.find("video.camera").exists()).toBe(false);
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Código de pareamento inválido.",
+    );
+    wrapper.unmount();
+  });
+  it("conecta automaticamente ao escolher uma imagem de QR Code", async () => {
+    scanner.decodeImage.mockResolvedValue({ getText: () => "AGRO-IMG1" });
+    const state = controller();
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Conectar a uma fazenda")!
+      .trigger("click");
+    const input = wrapper.get('input[type="file"]');
+    Object.defineProperty(input.element, "files", {
+      value: [new File(["x"], "qr.png", { type: "image/png" })],
+    });
+    URL.createObjectURL ??= () => "blob:qr";
+    URL.revokeObjectURL ??= () => undefined;
+    await input.trigger("change");
+    await flushPromises();
+    expect(state.connect).toHaveBeenCalledTimes(1);
+    expect(state.connect).toHaveBeenCalledWith("AGRO-IMG1");
+    wrapper.unmount();
+  });
+  it("não conecta quando a imagem escolhida não tem QR Code legível", async () => {
+    scanner.decodeImage.mockRejectedValue(new Error("QR não encontrado"));
+    const state = controller();
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Conectar a uma fazenda")!
+      .trigger("click");
+    const input = wrapper.get('input[type="file"]');
+    Object.defineProperty(input.element, "files", {
+      value: [new File(["x"], "foto.png", { type: "image/png" })],
+    });
+    URL.createObjectURL ??= () => "blob:qr";
+    URL.revokeObjectURL ??= () => undefined;
+    await input.trigger("change");
+    await flushPromises();
+    expect(state.connect).not.toHaveBeenCalled();
+    expect(wrapper.get('[role="alert"]').text()).toContain("QR não encontrado");
     wrapper.unmount();
   });
   it("encaminha login e conexão manual pelo controlador sem persistir senha na tela", async () => {
