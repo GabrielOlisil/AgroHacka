@@ -120,6 +120,10 @@ jobs:
         working-directory: desktop
         run: node ./src/scripts/garantir-permissao-camera.ts src-tauri/gen/android/app/src/main/AndroidManifest.xml
 
+      - name: Aplicar insets das barras do sistema na MainActivity
+        working-directory: desktop
+        run: node ./src/scripts/aplicar-insets-android.ts src-tauri/gen/android/app/src/main/java/com/agrohack/desktop/MainActivity.kt
+
       - name: Compilar Pacote Android (.apk)
         working-directory: desktop
         run: npx @tauri-apps/cli android build --apk --debug --target aarch64
