@@ -219,6 +219,16 @@
 > o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
 > tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
+- [ ] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
+  > Auditoria de 26/10: as tarefas 4.1, 4.2 e 6.2 entregaram o backend (envio pela Twilio com modo simulação; após um `/sync` que aceita movimentações, a reanálise grava o alerta e avisa o gestor dos alertas urgentes ainda não notificados). Faltavam a interface do gestor (a branch `feat/whatsapp-manager-ui` nunca foi mergeada), a proteção dos endpoints e a validação real.
+  - [x] Auditar o que existe e o que falta (backend `NotificationsService`, `StockService.reanalyzeAndPersistAlerts`, gatilho em `SyncService`).
+  - [ ] Segurança: exigir JWT de gestor em `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` (hoje abertos), restringindo número e fazenda à identidade autenticada.
+  - [ ] Interface do gestor: painel *"Alertas de emergência via WhatsApp"* (status Ativo/Não configurado e *Testar envio*), com a sessão trazendo o `telefone`, a partir da branch `feat/whatsapp-manager-ui`.
+  - [ ] Número do gestor: permitir cadastrar ou alterar depois do registro (o gestor do seed tem o número fictício `+5569999999999`).
+  - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), número do gestor dentro do Sandbox da Twilio e recebimento real de uma mensagem.
+  - [ ] Roteiro da demonstração: usar um insumo que ainda não tenha alerta. O alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem.
+  - [ ] Documentar no README os pré-requisitos (Sandbox da Twilio) e os limites (um aviso por alerta, só nível urgente).
+
 ---
 
 ### ETAPA 5: Empacotamento do .exe e .apk *(Dia 11)*
