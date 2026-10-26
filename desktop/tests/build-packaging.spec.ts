@@ -70,6 +70,18 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(workflow).not.toContain("PKG_CONFIG_PATH");
   });
 
+  it("workflow injeta VITE_API_URL de produção nos dois jobs: .env.production é ignorado pelo git e sem a URL o app abre em branco", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    const header = workflow.slice(0, workflow.indexOf("\njobs:"));
+    expect(header).toMatch(
+      /^env:\s*\n\s+VITE_API_URL: \$\{\{ vars\.VITE_API_URL \|\| 'https:\/\/api\.arikem\.qzz\.io' \}\}/m,
+    );
+    expect(workflow).not.toMatch(/VITE_API_URL:.*localhost/);
+  });
+
   it("workflow do GitHub Actions deve disparar apenas na main ou tags e conter jobs de build Windows e Android", () => {
     const workflowPath = resolve(repoRoot, ".github/workflows/build-release.yml");
     expect(existsSync(workflowPath)).toBe(true);

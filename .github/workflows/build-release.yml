@@ -11,6 +11,11 @@ on:
 permissions:
   contents: write
 
+# .env.production não é versionado; sem esta URL o app abre em branco (client.ts lança no import).
+# Para outra API, defina a variável de repositório VITE_API_URL no GitHub.
+env:
+  VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.arikem.qzz.io' }}
+
 jobs:
   build-desktop-windows:
     name: Build Desktop Windows (.exe / .msi)
