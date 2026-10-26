@@ -84,6 +84,13 @@ const urgent = computed(
 const hasDeficit = computed(() =>
   Object.values(confirmedBalances.value).some((saldo) => saldo < 0),
 );
+// Conciliação só importa na aba Estoque e quando há o que conciliar.
+const showReconciliation = computed(
+  () =>
+    tab.value === "stock" &&
+    analysis.value.products.length > 0 &&
+    (pendingCount.value > 0 || hasDeficit.value || reviews.value.length > 0),
+);
 function localDateTime() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
@@ -550,7 +557,7 @@ onUnmounted(() => {
         </p>
       </section>
       <section
-        v-if="analysis.products.length"
+        v-if="showReconciliation"
         class="panel"
         data-testid="sync-balances"
         aria-label="Conciliação do estoque"
