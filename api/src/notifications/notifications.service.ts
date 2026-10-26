@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeWhatsappNumber } from './whatsapp-number';
 import twilio from 'twilio';
 
 export interface SendWhatsAppDto {
@@ -36,10 +37,20 @@ export class NotificationsService {
   }
 
   async sendWhatsAppMessage(dto: SendWhatsAppDto) {
-    let cleanPhone = dto.paraTelefone.trim().replace(/\s+/g, '');
-    if (!cleanPhone.startsWith('whatsapp:')) {
-      cleanPhone = `whatsapp:${cleanPhone}`;
+    let canonical: string | null = null;
+    try {
+      canonical = normalizeWhatsappNumber(
+        (dto.paraTelefone ?? '').trim().replace(/^whatsapp:/i, ''),
+      );
+    } catch {
+      canonical = null;
     }
+    if (!canonical)
+      return {
+        sucesso: false,
+        erro: 'Número de WhatsApp inválido. Use o formato +5569999999999.',
+      };
+    const cleanPhone = `whatsapp:${canonical}`;
 
     let fromPhone = this.twilioPhone;
     if (!fromPhone.startsWith('whatsapp:')) {
