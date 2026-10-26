@@ -356,6 +356,14 @@ small {
 .whatsapp-panel .notice {
   margin: var(--space-4) 0 0;
 }
+.whatsapp-number {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.whatsapp-number button {
+  justify-self: start;
+}
 .welcome {
   display: grid;
   grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);

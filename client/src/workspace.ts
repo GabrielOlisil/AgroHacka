@@ -295,6 +295,19 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         throw new Error("Cadastre o WhatsApp do gestor para testar o envio.");
       return api.testWhatsApp(current, current.telefone);
     },
+    async updateTelefone(raw: string) {
+      const current = session.value;
+      if (current?.role !== "GESTOR")
+        throw new Error("Somente o gestor pode alterar o WhatsApp dos alertas.");
+      const telefone = await api.updateTelefone(current, raw);
+      // Saiu ou trocou de sessão enquanto aguardava: não recria a sessão antiga.
+      if (session.value !== current) return telefone;
+      const { telefone: _anterior, ...rest } = current;
+      const updated: Session = telefone ? { ...rest, telefone } : rest;
+      await requireStore().saveSession(updated);
+      session.value = updated;
+      return telefone;
+    },
     async createBackup() {
       if (syncing.value) throw new Error("Aguarde a sincronização.");
       await backupService.create();
