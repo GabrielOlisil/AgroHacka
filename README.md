@@ -145,7 +145,7 @@ npm run dev
 # - Boas-vindas (Novo Usuário): http://localhost:5173/tests/visual-preview.html?profile=guest
 
 # 7. Execução do Aplicativo Nativo com Tauri v2
-npm run tauri
+npm run tauri:dev
 ```
 
 ---

@@ -11,7 +11,7 @@ Use Node.js 24 LTS e o ambiente Rust/Tauri já configurado no projeto:
 ```powershell
 cd desktop
 npm ci
-npm run tauri
+npm run tauri:dev
 ```
 
 `npm run dev` abre somente a interface no navegador. O armazenamento SQLite e os
