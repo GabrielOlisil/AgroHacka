@@ -124,6 +124,10 @@ jobs:
             npx @tauri-apps/cli android init --ci
           fi
 
+      - name: Garantir permissão de câmera no AndroidManifest
+        working-directory: desktop
+        run: node ./src/scripts/garantir-permissao-camera.ts src-tauri/gen/android/app/src/main/AndroidManifest.xml
+
       - name: Compilar Pacote Android (.apk)
         working-directory: desktop
         run: npx @tauri-apps/cli android build --apk --target aarch64

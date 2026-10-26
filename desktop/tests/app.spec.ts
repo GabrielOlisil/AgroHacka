@@ -146,6 +146,53 @@ describe("telas responsivas dos perfis", () => {
     await flushPromises();
     expect(stop).toHaveBeenCalledOnce();
   });
+  it.each([
+    ["NotAllowedError", /permiss[ãa]o.*c[âa]mera/i],
+    ["NotFoundError", /nenhuma c[âa]mera/i],
+    ["NotReadableError", /em uso|n[ãa]o p[ôo]de ser aberta/i],
+  ])(
+    "fecha a câmera e orienta o operador quando a abertura falha com %s",
+    async (name, message) => {
+      scanner.decode.mockRejectedValue(
+        new DOMException("falha do dispositivo", name),
+      );
+      const wrapper = mount(App, {
+        props: { controller: controller() as never },
+      });
+      await wrapper
+        .findAll("button")
+        .find((b) => b.text() === "Conectar a uma fazenda")!
+        .trigger("click");
+      await wrapper
+        .findAll("button")
+        .find((b) => b.text() === "Ler com a câmera")!
+        .trigger("click");
+      await flushPromises();
+      expect(wrapper.find("video.camera").exists()).toBe(false);
+      const alert = wrapper.get('[role="alert"]').text();
+      expect(alert).toMatch(message);
+      expect(alert).toMatch(/c[óo]digo|imagem/i);
+      wrapper.unmount();
+    },
+  );
+  it("mantém a mensagem original quando a falha da câmera é desconhecida", async () => {
+    scanner.decode.mockRejectedValue(new Error("falha inesperada"));
+    const wrapper = mount(App, {
+      props: { controller: controller() as never },
+    });
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Conectar a uma fazenda")!
+      .trigger("click");
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Ler com a câmera")!
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.find("video.camera").exists()).toBe(false);
+    expect(wrapper.get('[role="alert"]').text()).toContain("falha inesperada");
+    wrapper.unmount();
+  });
   it("encaminha login e conexão manual pelo controlador sem persistir senha na tela", async () => {
     const state = controller();
     const wrapper = mount(App, { props: { controller: state as never } });
