@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { API_URL, createApi } from "../src/api/client";
 
 describe("configuração da URL da API via variável de ambiente", () => {
