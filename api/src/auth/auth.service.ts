@@ -131,6 +131,7 @@ export class AuthService {
           role: user.role,
           farmId: farm.id,
           farmNome: farm.nome,
+          ...(user.telefone ? { telefone: user.telefone } : {}),
         },
       };
     });
@@ -179,6 +180,7 @@ export class AuthService {
         role: user.role,
         farmId: user.farmId,
         farmNome: user.farm?.nome,
+        ...(user.telefone ? { telefone: user.telefone } : {}),
       },
     };
   }
