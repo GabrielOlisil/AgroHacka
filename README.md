@@ -153,9 +153,10 @@ npm run tauri:dev
 O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta **urgente** (estoque crítico, insumo vencido).
 
 **Pré-requisitos**
-1. **Variáveis de ambiente no servidor:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE` (padrão: número do Sandbox, `+14155238886`). Sem elas a API roda em **modo de simulação** e nada é enviado. O botão *Testar envio de alerta* do app avisa quando isso acontece.
-2. **Sandbox da Twilio:** o celular do Gestor precisa enviar `join <código do sandbox>` para **+1 415 523 8886** no WhatsApp. Esse registro vale **3 dias**; repita-o antes de gravar o vídeo e antes da apresentação.
-3. **Número do Gestor** em formato internacional (`+5569999999999`), informado no cadastro ou em *Visão geral → Alertas de emergência via WhatsApp*. Aceita espaços e hífens; em branco desativa os alertas. O Gestor do seed usa um número fictício e precisa ser trocado.
+1. **Variáveis de ambiente no servidor (as três obrigatórias para envio real):** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE`. `TWILIO_PHONE` é o número remetente mostrado no Console da Twilio em *Messaging → Try out WhatsApp*: contas novas recebem um número próprio (por exemplo, `+17372508034`), e o antigo Sandbox compartilhado `+1 415 523 8886` não vale para elas. Se faltar qualquer variável, a API roda em **modo de simulação** e nada é enviado; o botão *Testar envio de alerta* do app avisa quando isso acontece.
+2. **Conectar o celular do Gestor:** em *Try out WhatsApp*, selecione o número de teste verificado e envie, desse WhatsApp, o código exibido (por exemplo, `join twilio-trial`) para o número remetente. Só um número de teste fica ativo por vez, e o plano gratuito tem 100 mensagens. Se as mensagens pararem de chegar, envie o código de novo antes de gravar o vídeo e antes da apresentação.
+3. **Celulares do Brasil e o nono dígito:** muitas contas do WhatsApp brasileiras são identificadas **sem o 9 depois do DDD** (`+55 69 9XXXX-XXXX` vira `+55 69 XXXX-XXXX`). O número de teste verificado na Twilio e o número salvo no app precisam estar **no mesmo formato** com que o WhatsApp identifica o celular; com o formato errado, o `join` não é reconhecido e a mensagem não chega. Confirmado na configuração de 26/10.
+4. **Número do Gestor** em formato internacional, informado no cadastro ou em *Visão geral → Alertas de emergência via WhatsApp*. Aceita espaços e hífens; em branco desativa os alertas. O Gestor do seed usa um número fictício e precisa ser trocado.
 
 **Como funciona e limites**
 - O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
@@ -228,7 +229,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 - **Frontend / Clientes:** Vue 3, Vite, Tauri v2, Tailwind-free Vanilla Design System com tokens próprios, ícones Lucide, `@zxing/browser` (QR Code) e `@fontsource/inter`.
 - **Backend:** NestJS 12, Prisma ORM 6, Express, bcrypt, jsonwebtoken.
 - **Bancos de Dados:** SQLite 3 (local nos clientes) e PostgreSQL 16 (nuvem VPS).
-- **Comunicação e Notificações:** Twilio WhatsApp Sandbox API.
+- **Comunicação e Notificações:** Twilio WhatsApp API (ambiente de testes *Try out WhatsApp*).
 - **Infraestrutura:** VPS própria orquestrada via Coolify e Docker.
 
 ### 8.2. Declaração Formal de Uso Ético de Inteligência Artificial

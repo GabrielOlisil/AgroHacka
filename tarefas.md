@@ -225,9 +225,19 @@
   - [x] Segurança: `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT de um gestor; o teste só vai ao WhatsApp cadastrado do gestor da própria fazenda e o disparo só vale para a fazenda da identidade (`api/src/notifications/*.spec.ts`, 28 testes).
   - [x] Interface do gestor: painel *"Alertas de emergência via WhatsApp"* na Visão geral (status Ativo/Não configurado e *Testar envio de alerta*), com a sessão trazendo o `telefone` (login, cadastro e SQLite local). O teste distingue envio real, **modo de simulação** (servidor sem Twilio configurada, nada é enviado) e falha com o motivo; a API responde HTTP 200 mesmo quando a Twilio recusa (`client/tests/whatsapp-alerts*.spec.ts`).
   - [x] Número do gestor: o gestor cadastra, troca ou desativa o WhatsApp depois do registro (`PATCH /auth/telefone` e campo no painel). O número é normalizado para `+<dígitos>` no cadastro, na edição e no envio; antes um número digitado como `+55 69 99999-9999` chegava inválido à Twilio. **O gestor do seed continua com o número fictício `+5569999999999` até ser trocado pelo painel.**
-  - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), número do gestor dentro do Sandbox da Twilio e recebimento real de uma mensagem.
+  - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), celular do gestor conectado ao *Try out WhatsApp* e recebimento real de uma mensagem (passos na 4.9).
   - [x] Roteiro da demonstração: o alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem. Para repetir a demonstração, marcar os alertas da fazenda como resolvidos (`UPDATE alerts SET resolvido = true WHERE "farmId" = '<id>'`); a próxima sincronização os recria e notifica (README §4.4).
-  - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, Sandbox da Twilio válido por 3 dias, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4).
+  - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, conexão do celular de teste, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4; atualizado na 4.9 para o fluxo *Try out WhatsApp*).
+
+- [ ] **4.9. [EM CONJUNTO] Twilio no fluxo novo *Try out WhatsApp* e o nono dígito dos celulares brasileiros:**
+  > Descoberto em 26/10 ao conectar o celular do gestor: a conta usa o fluxo novo da Twilio, com remetente próprio (`+1 737 250 8034`) e código `join twilio-trial`; o Sandbox antigo compartilhado (`+1 415 523 8886`) recusa o código. O `join` só foi reconhecido com o número de teste verificado **sem o 9 depois do DDD**, que é como o WhatsApp identifica esse celular.
+  - [x] Diagnóstico do fluxo novo e do nono dígito (confirmado pelo usuário em 26/10).
+  - [x] API exige `TWILIO_PHONE`: sem ele, ou com valor inválido, roda em modo de simulação com aviso no log, em vez de usar o Sandbox antigo como padrão (`api/src/notifications/notifications.config.spec.ts`).
+  - [x] `.env.example` e README §4.4 atualizados: remetente do Console, um número de teste por vez, 100 mensagens grátis e a regra do nono dígito (`api/src/notifications/env-example.spec.ts`).
+  - [ ] Coolify: configurar `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE=+17372508034` e refazer o deploy da API.
+  - [ ] Levar `dev` para a `main` para publicar a API que exige `TWILIO_PHONE`, os endpoints de telefone e de teste e o app com o painel.
+  - [ ] No app, entrar como gestor, salvar o WhatsApp **no mesmo formato do número de teste verificado** (sem o 9) e tocar em *Testar envio de alerta*: a mensagem deve chegar (e não aparecer "modo de simulação").
+  - [ ] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp.
 
 ---
 
