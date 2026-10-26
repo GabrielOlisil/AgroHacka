@@ -434,6 +434,10 @@ previstas produzem recibos explícitos sem descartar silenciosamente outros iten
 
 ## 12. Sincronização LAN: uma evolução separada
 
+> **Status (26/10): não implementada no MVP e não será entregue a tempo.** O app
+> sincroniza somente pela nuvem. Este capítulo descreve o desenho para uma versão
+> futura (tarefa 5.6 do `tarefas.md`).
+
 O gestor pode futuramente receber registros dos operadores e encaminhá-los à nuvem.
 As identidades originais, conteúdo e referências operacionais devem ser preservados:
 encaminhar não cria outra movimentação.

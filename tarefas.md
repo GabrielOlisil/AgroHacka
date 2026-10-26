@@ -20,9 +20,9 @@
 | **Perfis de Dispositivo** | **Nó Gestor** vs. **Nó Operador** | **Central Dinâmica:** qualquer aparelho pode ser Gestor (com login) ou Operador (via pareamento) |
 | **Banco Local** | **SQLite local** (Tauri SQL Plugin) | Funcionamento **100% Offline-First** em todos os dispositivos |
 | **Backup Automático** | **Snapshots SQLite (Estilo Anki)** | Snapshots atômicos diários (`VACUUM INTO`), retenção de 7 dias e restauração em 1 clique |
-| **Sincronização Híbrida** | **Local (LAN) primeiro $\rightarrow$ Nuvem depois** | Tenta rota Wi-Fi local (timeout 500ms); se falhar, envia para a VPS |
-| **Descoberta de IP** | **Heartbeat na VPS + mDNS local** | Atualização automática de IP local sem intervenção do usuário |
-| **Firewall do Windows** | **Regra nativa no instalador do .exe** | Liberação automática da porta TCP de sincronização local em redes privadas |
+| **Sincronização Híbrida** | **Nuvem (HTTPS); LAN não implementada** | O app sincroniza **pela nuvem**. A rota Wi-Fi local (LAN) primeiro foi planejada e **não será implementada a tempo** (ver 5.6) |
+| **Descoberta de IP** | **Não implementada** (heartbeat e mDNS planejados) | Os endpoints de IP local existem na API, mas nenhum aparelho publica o IP; depende do servidor LAN (5.6) |
+| **Firewall do Windows** | **Script pronto, sem uso** | A regra da porta 3333 só serviria ao servidor LAN, não implementado (5.6); o instalador não a executa |
 | **Pareamento Flexível** | **QR Code + Código Manual Alternativo** | Pareamento com nome do operador; funciona com ou sem câmera |
 | **Inteligência de Estoque** | **Motor Híbrido (TypeScript puro)** | Regras de alertas executam localmente no SQLite e também no Backend |
 | **Notificações Críticas** | **Twilio API (WhatsApp)** | Envio automático de alertas urgentes para o WhatsApp do Gestor |
@@ -128,7 +128,7 @@
   - [x] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
   - [x] Retorna registros novos/atualizados e recalcula alertas.
 - [x] **3.3. Endpoint de Descoberta de IP (`PUT /farm/heartbeat`):**
-  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador.
+  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador. *Somente o endpoint na API: nenhum cliente o chama, pois a LAN não será implementada a tempo (ver 5.6).*
 
 #### 🔹 [DEV 2] Interface do Usuário (Vue 3 Responsivo)
 - [x] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
@@ -192,8 +192,9 @@
 - [x] **4.3. Motor de Sincronização Híbrida:**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
-  - [x] Implementar registro e atualização de IP local da fazenda (`POST /devices/local-ip`) e inclusão nos payloads de pareamento do operador (QR Code e código alfanumérico).
-  - [x] Transporte híbrido resiliente no cliente (`createHybridTransport`): ping na LAN local do Gestor com timeout rápido $\rightarrow$ se responder, sincroniza via LAN sem necessidade de internet; se falhar ou estiver fora do alcance, fallback transparente para a VPS Coolify.
+  - [x] Endpoints de IP local da fazenda (`POST /devices/local-ip`) e inclusão do IP nos payloads de pareamento, **somente no lado da API**: nenhum aparelho publica o IP, então ele sempre chega vazio (ver 5.6).
+  - [x] Transporte híbrido no cliente (`createHybridTransport`) com fallback transparente para a nuvem (VPS Coolify), testado: sem IP local, ou se a LAN falhar, o app sincroniza pela nuvem.
+  - [ ] Caminho LAN do transporte (ping rápido no gestor e sincronização sem internet): depende do servidor LAN do gestor, que **não será implementado a tempo** (ver 5.6).
 - [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
   - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
   - [x] Retenção automática dos últimos 7 dias.
@@ -227,6 +228,7 @@
   - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
   - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
+    > O script existe, mas o instalador não o executa, e a porta 3333 só seria usada pelo servidor LAN, que não será implementado a tempo (ver 5.6).
   - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
   - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
   - [ ] Testar instalação limpa em máquina Windows sem versão anterior instalada.
@@ -245,8 +247,10 @@
   - [x] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release: run da `main` (26/10) com Windows, Android e publicação em `success`; o APK do CI foi inspecionado (`com.agrohack.desktop.debug`, assinado, `arm64-v8a`, com `CAMERA`) e está na release `v1.0.0-entrega`.
 - [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
 - [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
-- [ ] **5.6. [EM CONJUNTO] Servidor LAN mínimo no gestor (relay, conforme `regra_de_sync.md` §12):**
-  > Premissas: o gestor **recebe de forma durável e encaminha à nuvem**; um recibo LAN não equivale a `ACCEPTED` da nuvem e o operador mantém sua cópia até a confirmação da nuvem; os IDs e as credenciais originais do operador são preservados (proveniência verificável, idempotência independente da rota). Servidor só no gestor **desktop**. O tráfego LAN é HTTP sem TLS: limitação a documentar.
+- [ ] **5.6. [EM CONJUNTO] Servidor LAN mínimo no gestor (relay, conforme `regra_de_sync.md` §12) — NÃO SERÁ IMPLEMENTADO A TEMPO (decisão de 26/10; fora do escopo do MVP):**
+  > Decisão: a sincronização por rede local (LAN) **não será entregue na apresentação de 29/10**. O app sincroniza **somente pela nuvem**; sem internet, os registros ficam salvos no SQLite do aparelho e são enviados ao reconectar, sem duplicidade. As subtarefas abaixo ficam como **backlog para uma versão futura**.
+  >
+  > Premissas do desenho: o gestor **recebe de forma durável e encaminha à nuvem**; um recibo LAN não equivale a `ACCEPTED` da nuvem e o operador mantém sua cópia até a confirmação da nuvem; os IDs e as credenciais originais do operador são preservados (proveniência verificável, idempotência independente da rota). Servidor só no gestor **desktop**. O tráfego LAN é HTTP sem TLS: limitação a documentar.
   - [ ] Servidor HTTP no gestor (Rust/Tauri) em `0.0.0.0:3333` com `GET /health` e `POST /sync`; recebimento durável em SQLite (nova migration local, sem editar a 001); recibo `LAN_RECEIVED` distinto de `ACCEPTED`.
   - [ ] Encaminhamento do gestor para a nuvem preservando credenciais e IDs do operador, de forma idempotente.
   - [ ] Cliente do operador: estado *recebido pelo gestor* na outbox, mantendo a cópia até a confirmação da nuvem (nova migration local).
@@ -272,6 +276,7 @@
 - [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `client/README.md`.
   - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
+  - [x] Registrar que a sincronização por LAN não será implementada a tempo (README §7.2, `client/README.md`, `regra_de_sync.md` §12 e roteiros do vídeo), mantendo a nuvem como único caminho de sincronização.
 
 ---
 

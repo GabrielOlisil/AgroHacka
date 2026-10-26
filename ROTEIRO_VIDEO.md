@@ -66,7 +66,7 @@
 
 *"Segundo: um aplicativo desktop para Windows e um aplicativo mobile para Android — ambos gerados do mesmo código, usando Tauri e Vue 3. Isso garante que o Gestor, que normalmente usa o computador, e o Operador de campo, que usa o celular, vejam a mesma informação com a mesma qualidade."*
 
-*"Terceiro, e esse é nosso diferencial técnico: o sistema funciona cem por cento offline. Cada dispositivo tem um banco SQLite local, e a sincronização acontece de forma híbrida — primeiro tenta a rede local da fazenda, sem precisar de internet; se não estiver na mesma rede, vai para a nuvem automaticamente."*
+*"Terceiro, e esse é nosso diferencial técnico: o sistema funciona cem por cento offline. Cada dispositivo tem um banco SQLite local, e tudo que é lançado sem internet fica guardado no aparelho e é enviado para a nuvem assim que a conexão volta, sem duplicar nada."*
 
 *"Vamos ver tudo isso funcionando agora."*
 
@@ -156,7 +156,7 @@
 
 > **[Desativa modo avião]**
 
-*"Em segundos, o motor de sincronização híbrida entra em ação. Ele primeiro tenta sincronizar via rede local da fazenda — se o Gestor estiver na mesma rede Wi-Fi, a comunicação acontece sem tocar na internet. Se não estiver na mesma rede, vai direto para a nuvem."*
+*"Em segundos, o motor de sincronização entra em ação e envia para a nuvem tudo que ficou guardado no celular, sem duplicar nenhum registro."*
 
 *"Olha o que acontece no desktop do Gestor..."*
 

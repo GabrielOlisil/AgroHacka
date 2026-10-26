@@ -196,6 +196,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 2. **Proteção por Cofre Nativo do SO:** Tokens JWT e backups locais SQLite residem em arquivos do usuário; a criptografia em repouso por cofre nativo (Windows DPAPI / Android Keystore) está mapeada para a próxima versão de produção.
 3. **Sincronização por Download Completo:** Enquanto um cursor seguro de CDC (Change Data Capture) não for disponibilizado na API, o cliente baixa o catálogo consistente integral e mescla por UUID, mitigando riscos de janelas temporais cegas.
 4. **Câmera em Dispositivos Físicos:** O leitor de QR Code funciona perfeitamente via imagem ou webcam de computador; em aparelhos Android específicos, a permissão de câmera deve ser concedida pelo manifesto da WebView. O código alfanumérico manual serve como alternativa de alta resiliência para qualquer situação sem câmera.
+5. **Sincronização por Rede Local (LAN) não implementada:** a sincronização direta entre aparelhos na mesma Wi-Fi, sem internet, **não será implementada a tempo para a apresentação**. Todos os aparelhos sincronizam **pela nuvem (HTTPS)**; sem internet, os lançamentos ficam salvos no SQLite do aparelho e são enviados ao reconectar, sem duplicidade (UUIDs idempotentes). A API já possui os endpoints de IP local e heartbeat, mas o servidor no aparelho do gestor, a descoberta de IP e o encaminhamento LAN → nuvem não existem; por isso nenhum IP local é publicado e o app usa sempre a nuvem. O desenho previsto está em [`regra_de_sync.md`](regra_de_sync.md) §12.
 
 ---
 

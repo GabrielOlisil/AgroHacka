@@ -145,9 +145,14 @@ baixá-los novamente.
 
 ## Pendências para integração completa
 
-- O servidor LAN no aparelho gestor, mDNS, heartbeat do gestor e encaminhamento
-  LAN → nuvem não estão implementados. Existe um helper de fallback testado,
-  mas ele não é ativado como se o gestor já tivesse um servidor HTTP.
+- **Sincronização por LAN: não será implementada a tempo para a apresentação**
+  (decisão de 26/10). O servidor LAN no aparelho gestor, mDNS, heartbeat do gestor
+  e encaminhamento LAN → nuvem não existem. O app sincroniza **somente pela
+  nuvem**: sem internet, os registros ficam no SQLite do aparelho e são enviados
+  ao reconectar, sem duplicidade. A API já tem os endpoints de IP local e
+  heartbeat, mas nenhum aparelho publica o IP, e o helper `createHybridTransport`
+  sempre cai na nuvem por falta de IP e de servidor. O desenho previsto
+  (relay do gestor) está em `../regra_de_sync.md` §12 e no backlog da tarefa 5.6.
 - O backend desta branch implementa autenticação de `/sync`, recibos individuais
   e conflitos imutáveis. Exige a atualização aditiva do banco descrita em
   `../api/SYNC.md`, ainda não aplicada a bancos reais. Cursor seguro, tombstones,
