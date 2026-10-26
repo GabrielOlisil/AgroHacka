@@ -22,7 +22,7 @@ import {
 const _apiUrl = import.meta.env.VITE_API_URL as string | undefined;
 if (!_apiUrl) {
   throw new Error(
-    "VITE_API_URL não definida. Crie desktop/.env.development ou desktop/.env.production antes de compilar.",
+    "VITE_API_URL não definida. Crie client/.env.development ou client/.env.production antes de compilar.",
   );
 }
 export const API_URL: string = _apiUrl;

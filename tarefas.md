@@ -62,7 +62,7 @@
   - [x] Configurar aplicação da API NestJS no Coolify com deploy automático via Git.
 - [x] **0.2. [DEV 2] Setup do Tauri v2 nos Clientes:**
   - [x] Garantir dependências de build Windows (Rust + WebView2) e Android (SDK/NDK) na máquina.
-  - [x] Verificar execução inicial da pasta `desktop/` com Vue 3.
+  - [x] Verificar execução inicial da pasta `client/` com Vue 3.
 - [x] **0.3. [EM CONJUNTO] Governança do Repositório:**
   - [x] Conferir dados da inscrição, protocolo e chave na plataforma do AgroHack (Equipe: Oliveira & Oliveira | Protocolo: AGRO26-F009CD2F9F | Integrantes: Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira — ADS 6º Período).
   - [x] Garantir que o repositório GitHub esteja público ou com acesso aos avaliadores da banca (https://github.com/GabrielOlisil/AgroHacka).
@@ -95,7 +95,7 @@
   - [x] Restaurar a migration original em LF e preservar esse padrão no checkout do Git.
   - [x] Validar o checksum e a suíte de testes sem apagar ou alterar o banco existente.
 
-> Cliente: persistência e retomada offline validadas por testes. Tokens e backups ainda não estão criptografados; a proteção por cofre nativo permanece pendente e está documentada em `desktop/README.md`. Senhas de login não são persistidas.
+> Cliente: persistência e retomada offline validadas por testes. Tokens e backups ainda não estão criptografados; a proteção por cofre nativo permanece pendente e está documentada em `client/README.md`. Senhas de login não são persistidas.
 
 ---
 
@@ -139,14 +139,14 @@
   - [ ] Tela no Operador: leitor de QR Code pela câmera + botão alternativo *"Digitar Código Manualmente"*.
     - [x] Conexão por código manual ou conteúdo do QR Code, com validação automatizada.
     - [x] Implementar leitura por câmera e imagem QR na interface.
-    - [x] Tratar negação de permissão, câmera ausente/em uso e falhas desconhecidas: fecha o vídeo e orienta usar código manual ou imagem do QR (`desktop/tests/app.spec.ts`).
-    - [x] Garantir `CAMERA` (e câmera opcional) no `AndroidManifest.xml` gerado no CI (`desktop/src/scripts/garantir-permissao-camera.ts`, passo no `build-release.yml`; `desktop/tests/android-camera-permission.spec.ts`).
+    - [x] Tratar negação de permissão, câmera ausente/em uso e falhas desconhecidas: fecha o vídeo e orienta usar código manual ou imagem do QR (`client/tests/app.spec.ts`).
+    - [x] Garantir `CAMERA` (e câmera opcional) no `AndroidManifest.xml` gerado no CI (`client/src/scripts/garantir-permissao-camera.ts`, passo no `build-release.yml`; `client/tests/android-camera-permission.spec.ts`).
     - [x] Permissão `Câmera` aparece nas configurações do app em Android real (APK debug, 26/10): o patch do manifest funciona.
     - [ ] Validar a leitura do QR Code pela câmera na WebView em aparelho Android real (ainda não testada).
 - [x] **3.6. Painéis e Paridade de Recursos:**
   - [x] **Painel Gestor:** Dashboard com Alertas Prioritários, Curva ABC, listagem de insumos e histórico.
   - [x] **Painel Operador:** Botões grandes para *Baixa Rápida de Insumo* e *Entrada de Compra* (com nome do operador bloqueado).
-- [x] **3.7. [DEV 2] Refinamento visual conforme `desktop/design-system.md`:**
+- [x] **3.7. [DEV 2] Refinamento visual conforme `client/design-system.md`:**
   - [x] Aplicar tokens, tipografia local, cantos retos e controles compactos a todas as telas.
   - [x] Substituir os símbolos da interface exclusivamente por ícones Lucide.
   - [x] Validar navegação acessível, regressões e layouts desktop/mobile.
@@ -203,7 +203,7 @@
 
 - [ ] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
   - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
-  - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`desktop/scripts/liberar-firewall.bat`):
+  - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
   - [ ] Testar instalação limpa em máquina Windows após geração do artefato na `main`.
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
@@ -217,7 +217,7 @@
   - [x] Corrigir na origem: `"tauri": "tauri"` e novo `tauri:dev` para o fluxo de desenvolvimento; removido o passo paliativo de `libglib2.0-dev`/`pkg-config` do workflow.
   - [x] Gerar `.apk` instalável: build em modo `--debug` (o release sai sem assinatura e o Android recusa instalar).
   - [x] Injetar `VITE_API_URL` de produção no workflow: `.env.production` não é versionado e, sem a URL, o `client.ts` lançava erro no import e o app abria em branco.
-  - [x] Tratar o modo edge-to-edge: `desktop/src/scripts/aplicar-insets-android.ts` aplica na `MainActivity` gerada o padding das barras do sistema, recorte e teclado.
+  - [x] Tratar o modo edge-to-edge: `client/src/scripts/aplicar-insets-android.ts` aplica na `MainActivity` gerada o padding das barras do sistema, recorte e teclado.
   - [ ] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release (só roda na `main`; a validação foi feita em container Ubuntu 24.04 sem GTK).
 
 ---
@@ -232,10 +232,10 @@
   - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
 - [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
   - [x] Validar automaticamente persistência offline, rollback e reenvio idempotente entre dois SQLite e um servidor simulado.
-  - [x] Desligar Wi-Fi/4G (modo avião), fazer movimentações no cliente, reconectar e confirmar a sincronização sem duplicidade com UUIDs preservados e liquidação atômica de pendências (`desktop/tests/realtime-reanalysis-offline.spec.ts`).
+  - [x] Desligar Wi-Fi/4G (modo avião), fazer movimentações no cliente, reconectar e confirmar a sincronização sem duplicidade com UUIDs preservados e liquidação atômica de pendências (`client/tests/realtime-reanalysis-offline.spec.ts`).
 
 - [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
-  - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `desktop/README.md`.
+  - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `client/README.md`.
   - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
 
 ---
