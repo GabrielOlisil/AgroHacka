@@ -430,7 +430,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - [x] **11.6. Alvos de toque de 44–48 px no celular:** `--control-md` 44 px e `--control-lg` 48 px até 760 px; abas do menu com 48 px, rótulos inteiros e rolagem lateral quando não cabem (`mobile-touch.spec.ts`).
 
 **Prioridade 2 — offline first e navegação no celular**
-- [ ] **11.7. Status de sincronização claro:** "Offline · N pendentes" / "Online · tudo enviado às HH:MM" no lugar de "Dados salvos neste aparelho".
+- [x] **11.7. Status de sincronização claro:** "Offline · N registro(s) pendente(s)", "N registro(s) pendente(s) de envio", "Tudo enviado · HH:MM" e "Sincronizando…", reagindo aos eventos `online`/`offline`; offline em destaque (`app.spec.ts`). `navigator.onLine` indica rede, não a API: as pendências seguem como fonte do que não chegou à nuvem.
 - [ ] **11.8. Histórico no celular em cartões, com etiqueta Pendente/Enviado** em cada registro.
 - [ ] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens; Backups em "Mais".
 

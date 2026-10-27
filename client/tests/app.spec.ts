@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { flushPromises, mount } from "@vue/test-utils";
 import { ref } from "vue";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 const scanner = vi.hoisted(() => ({
   decode: vi.fn(),
   decodeImage: vi.fn(),
@@ -99,6 +99,65 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("status de sincronização claro (tarefa 11.7)", () => {
+  function setOnline(value: boolean) {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      get: () => value,
+    });
+    window.dispatchEvent(new Event(value ? "online" : "offline"));
+  }
+  const status = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.get(".sync-status").text();
+  afterEach(() => setOnline(true));
+
+  it("online e sem pendências: tudo enviado, com a hora da última sincronização", () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.lastSync.value = "2026-10-27T15:40:00.000Z" as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const hour = new Date("2026-10-27T15:40:00.000Z").toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    expect(status(wrapper)).toBe(`Tudo enviado · ${hour}`);
+    wrapper.unmount();
+  });
+
+  it("online com pendências: diz quantos registros aguardam envio", () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.pendingCount.value = 2;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(status(wrapper)).toBe("2 registro(s) pendente(s) de envio");
+    wrapper.unmount();
+  });
+
+  it("offline: avisa e conta as pendências, e muda quando a conexão cai ou volta", async () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.pendingCount.value = 2;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    setOnline(false);
+    await flushPromises();
+    expect(status(wrapper)).toBe("Offline · 2 registro(s) pendente(s)");
+    state.pendingCount.value = 0;
+    await flushPromises();
+    expect(status(wrapper)).toBe("Offline · dados salvos neste aparelho");
+    setOnline(true);
+    await flushPromises();
+    expect(status(wrapper)).toBe("Dados salvos neste aparelho");
+    wrapper.unmount();
+  });
+
+  it("durante o envio mostra Sincronizando…", () => {
+    const state = controller("OPERADOR");
+    state.syncing.value = true;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(status(wrapper)).toBe("Sincronizando…");
+    wrapper.unmount();
+  });
+});
 describe("formulário de movimentação da Visão geral", () => {
   async function submitOverviewForm(state: ReturnType<typeof controller>) {
     const wrapper = mount(App, { props: { controller: state as never } });
