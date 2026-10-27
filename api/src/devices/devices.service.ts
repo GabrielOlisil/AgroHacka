@@ -50,6 +50,22 @@ export class DevicesService {
     };
   }
 
+  async deactivateDevice(
+    farmId: string,
+    deviceId: string,
+  ): Promise<OperatorsResponseDto> {
+    if (typeof deviceId !== 'string' || !deviceId.trim())
+      throw new BadRequestException('Operador obrigatório para desativar.');
+    // Scoped by farm in the same statement: a foreign device looks exactly like a missing one.
+    const { count } = await this.prisma.device.updateMany({
+      where: { id: deviceId, farmId },
+      data: { ativo: false },
+    });
+    if (count === 0)
+      throw new NotFoundException('Operador não encontrado nesta fazenda.');
+    return this.listOperators(farmId);
+  }
+
   async createPairingToken(dto: CreatePairingDto) {
     const farm = await this.prisma.farm.findUnique({
       where: { id: dto.farmId },

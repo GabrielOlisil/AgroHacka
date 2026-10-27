@@ -9,7 +9,23 @@ const props = defineProps<{
   error: string;
   refresh: () => Promise<void>;
   connect: () => void;
+  deactivate: (id: string) => Promise<void>;
 }>();
+const deactivatingId = ref<string | null>(null);
+async function confirmDeactivate(operator: PairedOperator) {
+  if (
+    !window.confirm(
+      `Desativar ${operator.nomeOperador}? O aparelho deixa de sincronizar com a fazenda e o código para de funcionar. Os registros já enviados continuam no histórico.`,
+    )
+  )
+    return;
+  deactivatingId.value = operator.id;
+  try {
+    await props.deactivate(operator.id);
+  } finally {
+    deactivatingId.value = null;
+  }
+}
 const search = ref("");
 const status = ref("all");
 const revealedId = ref<string | null>(null);
@@ -118,6 +134,17 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
           >
             <UiIcon :name="revealedId === operator.id ? 'eye-off' : 'eye'" />{{
               revealedId === operator.id ? "Ocultar código" : "Ver código"
+            }}
+          </button>
+          <button
+            v-if="operator.ativo"
+            class="secondary"
+            :data-testid="`deactivate-${operator.id}`"
+            :disabled="loading || deactivatingId !== null"
+            @click="confirmDeactivate(operator)"
+          >
+            <UiIcon name="circle-alert" />{{
+              deactivatingId === operator.id ? "Desativando…" : "Desativar"
             }}
           </button>
           <p v-else class="helper">

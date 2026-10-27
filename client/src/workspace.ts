@@ -87,6 +87,22 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       if (version === operatorsVersion) operatorsLoading.value = false;
     }
   }
+  async function deactivateOperator(deviceId: string) {
+    const current = session.value;
+    if (current?.role !== "GESTOR")
+      throw new Error("Somente o gestor pode desativar operadores.");
+    // Supersedes any listing in flight, so a late response cannot restore the old state.
+    const version = ++operatorsVersion;
+    operatorsError.value = "";
+    try {
+      const result = await api.deactivateOperator(current, deviceId);
+      if (!disposed && version === operatorsVersion && session.value === current)
+        operators.value = result;
+    } catch (cause) {
+      if (!disposed && version === operatorsVersion && session.value === current)
+        operatorsError.value = `Não foi possível desativar o operador: ${message(cause)}`;
+    }
+  }
   const requireStore = () => {
     if (!store)
       throw new Error(
@@ -215,6 +231,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     operatorsLoading,
     operatorsError,
     loadOperators,
+    deactivateOperator,
     initialize,
     refresh,
     sync,

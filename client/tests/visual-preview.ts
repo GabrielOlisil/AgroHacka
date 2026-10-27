@@ -126,6 +126,7 @@ const controller: Workspace = {
   operatorsLoading: ref(false),
   operatorsError: ref(""),
   async loadOperators() {},
+  async deactivateOperator() {},
   ready: ref(true),
   session,
   analysis,
