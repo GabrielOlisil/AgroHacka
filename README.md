@@ -93,7 +93,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
-**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 A compilação Android permanece em **debug**, com assinatura automática de
 desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
@@ -282,8 +282,15 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada:** `v1.0.3-entrega` (app versão 1.0.3), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). A tag identifica o commit avaliado.
-- **Versões anteriores:** `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a 1.0.3.
+- **Versão avaliada:** `v1.0.4-entrega` (app versão 1.0.4), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). A tag identifica o commit avaliado.
+  - Traz as melhorias de uso no celular da Etapa 11:
+    - alertas em linguagem simples;
+    - menu inferior;
+    - histórico em cartões com a situação de envio;
+    - data "agora";
+    - busca de insumo e destinos recentes;
+    - urgente em vermelho.
+- **Versões anteriores:** `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
 - **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
