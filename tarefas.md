@@ -118,7 +118,7 @@
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
   - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
-- [ ] **2.4. [EM CONJUNTO / DEV 1] Alinhar o caminho analítico realmente utilizado (reaberta; ver 10.3):** Existem funções e testes para consumo, autonomia, validade, anomalias, estoque parado e excesso. A auditoria identificou que `StockService.analyzeStock()` não usa integralmente o motor integrado; validar paridade de comportamento pela rota/serviço efetivos, sem afirmar alinhamento de 100% antes dessa comprovação.
+- [x] **2.4. [EM CONJUNTO / DEV 1] Alinhar o caminho analítico realmente utilizado (reaberta; fechada pela 10.3):** Existem funções e testes para consumo, autonomia, validade, anomalias, estoque parado e excesso. A auditoria identificou que `StockService.analyzeStock()` não usa integralmente o motor integrado; validar paridade de comportamento pela rota/serviço efetivos, sem afirmar alinhamento de 100% antes dessa comprovação.
 
 ---
 
@@ -369,7 +369,11 @@ foi cancelado em 5.6. O aceite físico Android continua em 5.2.
   - A rota exige o JWT do Gestor ou o `x-device-token` de um operador ativo (os dois perfis já veem a análise no app; a rota só lê dados). A fazenda vem da identidade; `farmId` divergente ou que não é texto recebe 403 (`stock.controller.spec.ts`, via HTTP).
   - `auth/jwt-secret.ts`: em produção a API não inicia sem `JWT_SECRET` próprio; o valor público de desenvolvimento é recusado (`jwt-secret.spec.ts`).
   - **Antes do próximo deploy (`dev` → `main`):** conferir no Coolify se `JWT_SECRET` está definido com valor próprio. Se faltar ou for o valor do `.env.example`, a API não sobe. Trocar o segredo encerra as sessões de gestor abertas (é preciso fazer login de novo); os operadores pareados não são afetados.
-- [ ] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
+- [x] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
+  - `StockService.analyzeStock` (rota e reanálise) usa `analyzeStockInventory`; o caminho antigo com regras próprias foi removido. Sem `saldoTotal`: saldos em `balancesByUnit`.
+  - `analyzeStockInventory` alinhado ao cliente: preço ausente fica desconhecido (não R$ 0), aviso de base limitada, confiabilidade e amostras, autonomia sem arredondar e alertas ordenados (antes a ordenação era descartada).
+  - `parity.spec.ts` roda API e cliente com as mesmas fixtures e data de referência: base simulada, litros/quilos, validade hoje/vencida/30/31 dias, poucas amostras, limiares 7/15/90/91 e saldo = mínimo, janela da anomalia, parado, zerado/negativo, preço zero/ausente, futuras e listas vazias.
+  - Ciclo dos alertas: situação que deixou de existir é resolvida; atenção → urgente atualiza o alerta e volta a notificar (`stock.service.spec.ts`).
 - [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
   - [x] **DEV 2:** expor amostras, dias de calendário e base limitada/intermediária/ampliada por produto; explicitar que não é garantia de duração. Alertas de falta/validade/excesso com apenas 1–2 retiradas também avisam sobre a base limitada.
   - [x] **DEV 2:** valor/ABC desconhecidos permanecem nulos; indicar subtotal parcial, quantidade de insumos com saldo sem preço e indisponibilidade quando nenhum estiver valorado; preço zero informado continua válido.

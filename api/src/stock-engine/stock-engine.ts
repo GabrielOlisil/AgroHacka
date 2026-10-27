@@ -85,9 +85,12 @@ export interface AnalyzedProductOutput extends StockInventoryProduct {
   saldo: number;
   consumoMedioDiario: number;
   diasRestantes: number | null;
-  valorEstoque: number;
-  classeAbc: 'A' | 'B' | 'C';
-  percentualValor: number;
+  valorEstoque: number | null;
+  classeAbc: 'A' | 'B' | 'C' | null;
+  percentualValor: number | null;
+  amostrasConsumo: number;
+  diasAmostra: number;
+  confiabilidade: 'INDISPONIVEL' | 'BAIXA' | 'MEDIA' | 'ALTA';
   consumoDiario: { dia: string; quantidade: number }[];
 }
 
@@ -104,6 +107,8 @@ export interface StockInventoryAnalysis {
   products: AnalyzedProductOutput[];
   alerts: StockInventoryAlert[];
   totalValue: number;
+  pricedProductCount: number;
+  unpricedProductCount: number;
   balancesByUnit: Record<string, number>;
 }
 
@@ -447,8 +452,13 @@ export function prioritizeAlerts<T extends { nivel: 'URGENTE' | 'ATENCAO' | 'INF
   );
 }
 
+const iso = (value: string | Date) => (typeof value === 'string' ? new Date(value) : value).toISOString();
+
 /**
- * 8. Análise Integrada de Estoque (com paridade total com o cliente desktop offline)
+ * 8. Análise Integrada de Estoque.
+ * Mesma lógica de client/src/offline/analysis.ts (analyzeInventory); a paridade
+ * é verificada com as mesmas fixtures em parity.spec.ts. Ao mudar uma regra,
+ * mude as duas e mantenha esse teste passando.
  */
 export function analyzeStockInventory(
   products: StockInventoryProduct[] | null | undefined,
@@ -459,140 +469,118 @@ export function analyzeStockInventory(
     throw new Error('Data de análise inválida.');
   }
 
-  const safeProducts = products ?? [];
-  const safeMovements = movements ?? [];
+  // Prisma entrega Date e o cliente guarda ISO: normaliza para comparar como o cliente.
+  const safeProducts = (products ?? []).map((p) => ({
+    ...p,
+    precoAquisicao: p.precoAquisicao ?? null,
+    validade: p.validade ? iso(p.validade) : null,
+  }));
+  const safeMovements = (movements ?? []).map((m) => ({ ...m, dataMovimento: iso(m.dataMovimento) }));
 
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const alerts: StockInventoryAlert[] = [];
   const balancesByUnit: Record<string, number> = {};
 
-  const analyzedProducts = safeProducts.map((p): AnalyzedProductOutput => {
+  const result = safeProducts.map((p): AnalyzedProductOutput => {
     const history = safeMovements
-      .filter((m) => {
-        const mTime = typeof m.dataMovimento === 'string' ? Date.parse(m.dataMovimento) : m.dataMovimento.getTime();
-        return m.productId === p.id && m.farmId === p.farmId && mTime <= now.getTime();
-      })
-      .sort((a, b) => {
-        const aStr = typeof a.dataMovimento === 'string' ? a.dataMovimento : a.dataMovimento.toISOString();
-        const bStr = typeof b.dataMovimento === 'string' ? b.dataMovimento : b.dataMovimento.toISOString();
-        return aStr.localeCompare(bStr);
-      });
-
+      .filter((m) => m.productId === p.id && m.farmId === p.farmId && Date.parse(m.dataMovimento) <= now.getTime())
+      .sort((a, b) => a.dataMovimento.localeCompare(b.dataMovimento));
     const saldo = history.reduce((sum, m) => sum + (m.tipo === 'ENTRADA' ? m.quantidade : -m.quantidade), 0);
-
-    const out = history.filter((m) => {
-      const mTime = typeof m.dataMovimento === 'string' ? Date.parse(m.dataMovimento) : m.dataMovimento.getTime();
-      return m.tipo === 'SAIDA' && mTime >= today - 29 * DAY;
-    });
-
-    const firstDateStr = out[0]
-      ? typeof out[0].dataMovimento === 'string'
-        ? out[0].dataMovimento
-        : out[0].dataMovimento.toISOString()
-      : null;
-
-    const firstDay = firstDateStr ? Date.parse(firstDateStr.slice(0, 10)) : today;
+    const out = history.filter((m) => m.tipo === 'SAIDA' && Date.parse(m.dataMovimento) >= today - 29 * DAY);
+    const firstDay = out[0] ? Date.parse(out[0].dataMovimento.slice(0, 10)) : today;
     const days = Math.max(1, Math.floor((today - firstDay) / DAY) + 1);
     const rate = out.reduce((sum, m) => sum + m.quantidade, 0) / days;
     const daysLeft = rate > 0 ? Math.max(0, saldo) / rate : null;
+    const limitedEvidence =
+      rate > 0 && out.length < 3
+        ? ` Base limitada: ${out.length} retirada(s) em ${days} dia(s) de calendário; a previsão não é garantia de duração.`
+        : '';
 
-    const addAlert = (tipo: StockInventoryAlert['tipo'], nivel: StockInventoryAlert['nivel'], justificativa: string) => {
+    const add = (tipo: StockInventoryAlert['tipo'], nivel: StockInventoryAlert['nivel'], justificativa: string) =>
       alerts.push({
         id: `${tipo}:${p.id}`,
         productId: p.id,
         tipo,
         nivel,
         titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
-        justificativa,
+        justificativa:
+          justificativa + (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : ''),
       });
-    };
 
-    if (saldo <= p.estoqueMinimo) {
-      addAlert(
+    if (saldo <= p.estoqueMinimo)
+      add(
         'FALTA',
         'URGENTE',
         `Saldo de ${saldo.toFixed(2)} ${p.unidadeMedida}, ${saldo <= 0 ? 'zerado ou negativo' : 'no mínimo ou abaixo do mínimo'} de ${p.estoqueMinimo} ${p.unidadeMedida}. ${rate === 0 ? 'Sem histórico suficiente para estimar duração.' : `Consumo médio de ${rate.toFixed(2)} ${p.unidadeMedida}/dia em ${days} dias; autonomia de ${daysLeft?.toFixed(1)} dias.`}`,
       );
-    } else if (daysLeft !== null && daysLeft <= 15) {
-      addAlert(
+    else if (daysLeft !== null && daysLeft <= 15)
+      add(
         'FALTA',
         daysLeft <= 7 ? 'URGENTE' : 'ATENCAO',
         `Mantendo ${rate.toFixed(2)} ${p.unidadeMedida}/dia (últimos ${days} dias, incluindo dias sem saída), o saldo dura aproximadamente ${daysLeft.toFixed(1)} dias.`,
       );
-    }
 
     if (p.validade && saldo > 0) {
-      const valStr = typeof p.validade === 'string' ? p.validade : p.validade.toISOString();
-      const remaining = Math.round((Date.parse(valStr.slice(0, 10)) - today) / DAY);
+      const remaining = Math.round((Date.parse(p.validade.slice(0, 10)) - today) / DAY);
       const surplus = Math.max(0, saldo - Math.max(0, remaining) * rate);
-
-      if (remaining < 0) {
-        addAlert(
+      if (remaining < 0)
+        add(
           'VENCIMENTO',
           'URGENTE',
-          `Validade em ${valStr.slice(0, 10)}: há ${Math.abs(remaining)} dias. Saldo de ${saldo.toFixed(2)} ${p.unidadeMedida}.`,
+          `Validade em ${p.validade.slice(0, 10)}: há ${Math.abs(remaining)} dias. Saldo de ${saldo.toFixed(2)} ${p.unidadeMedida}.`,
         );
-      } else if (remaining <= 30 && surplus > 0) {
-        addAlert(
+      else if (remaining <= 30 && surplus > 0)
+        add(
           'VENCIMENTO',
           remaining === 0 ? 'URGENTE' : 'ATENCAO',
           `Vence ${remaining === 0 ? 'hoje' : `em ${remaining} dias`}; sobra estimada de ${surplus.toFixed(2)} ${p.unidadeMedida}, usando consumo médio de ${rate.toFixed(2)} ${p.unidadeMedida}/dia.${rate === 0 ? ' Sem consumo recente, previsão de baixa confiança.' : ''}`,
         );
-      }
     }
 
     if (out.length >= 4) {
       const previous = out.slice(0, -1);
       const mean = previous.reduce((sum, m) => sum + m.quantidade, 0) / previous.length;
       const last = out[out.length - 1];
-      if (mean > 0 && last.quantidade >= mean * 3) {
-        addAlert(
+      if (mean > 0 && last.quantidade >= mean * 3)
+        add(
           'ANOMALIA',
           'ATENCAO',
           `Retirada de ${last.quantidade} ${p.unidadeMedida}: ${(last.quantidade / mean).toFixed(1)}x a média de ${mean.toFixed(2)} ${p.unidadeMedida} nas ${previous.length} retiradas anteriores. Critério: pelo menos 3x a média.`,
         );
-      }
     }
 
     const lastOut = history.filter((m) => m.tipo === 'SAIDA').slice(-1)[0];
     const firstEntry = history.find((m) => m.tipo === 'ENTRADA');
-    const refMov = lastOut ?? firstEntry;
-    if (refMov && saldo > 0) {
-      const refStr = typeof refMov.dataMovimento === 'string' ? refMov.dataMovimento : refMov.dataMovimento.toISOString();
-      if (today - Date.parse(refStr.slice(0, 10)) >= 30 * DAY) {
-        addAlert(
-          'PARADO',
-          'INFORMATIVO',
-          'Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.',
-        );
-      }
-    }
+    if (saldo > 0 && firstEntry && today - Date.parse((lastOut ?? firstEntry).dataMovimento.slice(0, 10)) >= 30 * DAY)
+      add(
+        'PARADO',
+        'INFORMATIVO',
+        'Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.',
+      );
 
-    if (daysLeft !== null && daysLeft > 90) {
-      addAlert(
+    if (daysLeft !== null && daysLeft > 90)
+      add(
         'EXCESSO',
         'INFORMATIVO',
         `Estoque para aproximadamente ${daysLeft.toFixed(0)} dias no ritmo recente. Referência de acompanhamento: acima de 90 dias; considerar sazonalidade antes de decidir.`,
       );
-    }
 
     balancesByUnit[p.unidadeMedida] = (balancesByUnit[p.unidadeMedida] ?? 0) + saldo;
 
     const daily = new Map<string, number>();
-    for (const m of out) {
-      const mStr = typeof m.dataMovimento === 'string' ? m.dataMovimento : m.dataMovimento.toISOString();
-      const dKey = mStr.slice(0, 10);
-      daily.set(dKey, (daily.get(dKey) ?? 0) + m.quantidade);
-    }
+    for (const m of out) daily.set(m.dataMovimento.slice(0, 10), (daily.get(m.dataMovimento.slice(0, 10)) ?? 0) + m.quantidade);
 
     return {
       ...p,
       saldo,
       consumoMedioDiario: rate,
-      diasRestantes: daysLeft !== null ? Math.round(daysLeft * 10) / 10 : null,
-      valorEstoque: Math.max(0, saldo) * (p.precoAquisicao ?? 0),
-      classeAbc: 'C',
-      percentualValor: 0,
+      diasRestantes: daysLeft,
+      amostrasConsumo: out.length,
+      diasAmostra: days,
+      confiabilidade: rate === 0 ? 'INDISPONIVEL' : out.length >= 5 ? 'ALTA' : out.length >= 3 ? 'MEDIA' : 'BAIXA',
+      valorEstoque: p.precoAquisicao === null ? null : Math.max(0, saldo) * p.precoAquisicao,
+      classeAbc: p.precoAquisicao === null ? null : 'C',
+      percentualValor: p.precoAquisicao === null ? null : 0,
       consumoDiario: Array.from({ length: days }, (_, i) => {
         const dia = new Date(today - (days - 1 - i) * DAY).toISOString().slice(0, 10);
         return { dia, quantidade: daily.get(dia) ?? 0 };
@@ -600,27 +588,24 @@ export function analyzeStockInventory(
     };
   });
 
-  const totalValue = analyzedProducts.reduce((sum, p) => sum + p.valorEstoque, 0);
+  const priced = result.filter((p): p is AnalyzedProductOutput & { valorEstoque: number } => p.valorEstoque !== null);
+  const totalValue = priced.reduce((sum, p) => sum + p.valorEstoque, 0);
+  const pricedProductCount = priced.filter((p) => p.saldo > 0).length;
+  const unpricedProductCount = result.filter((p) => p.saldo > 0 && p.valorEstoque === null).length;
   let cumulative = 0;
-  for (const p of [...analyzedProducts].sort((a, b) => b.valorEstoque - a.valorEstoque || a.id.localeCompare(b.id))) {
+  for (const p of [...priced].sort((a, b) => b.valorEstoque - a.valorEstoque || a.id.localeCompare(b.id))) {
     p.percentualValor = totalValue > 0 ? (p.valorEstoque / totalValue) * 100 : 0;
-    p.classeAbc =
-      p.valorEstoque <= 0
-        ? 'C'
-        : cumulative < 80
-          ? 'A'
-          : cumulative < 95
-            ? 'B'
-            : 'C';
+    p.classeAbc = p.valorEstoque <= 0 ? 'C' : cumulative < 80 ? 'A' : cumulative < 95 ? 'B' : 'C';
     cumulative += p.percentualValor;
   }
 
-  prioritizeAlerts(alerts);
-
   return {
-    products: analyzedProducts,
-    alerts,
+    products: result,
+    alerts: prioritizeAlerts(alerts),
     totalValue,
+    pricedProductCount,
+    unpricedProductCount,
     balancesByUnit,
   };
 }
+

@@ -2,14 +2,16 @@ import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AlertType, UrgencyLevel } from '@prisma/client';
-import {
-  calculateRunoutTime,
-  checkExpiryRisk,
-  detectConsumptionAnomalies,
-  calculateAbcCurve,
-  prioritizeAlerts,
-  AlertInput,
-} from '../stock-engine/stock-engine';
+import { analyzeStockInventory, StockInventoryAlert } from '../stock-engine/stock-engine';
+
+// Persisted alert types managed by the reanalysis. PARADO/EXCESSO are informative
+// and stay only in the analysis; other types (e.g. OUTRO) are never touched here.
+const PERSISTED_TYPES: Partial<Record<StockInventoryAlert['tipo'], AlertType>> = {
+  FALTA: AlertType.ESTOQUE_CRITICO,
+  VENCIMENTO: AlertType.RISCO_VENCIMENTO,
+  ANOMALIA: AlertType.CONSUMO_ANOMALO,
+};
+const MANAGED_TYPES = new Set<AlertType>(Object.values(PERSISTED_TYPES));
 
 @Injectable()
 export class StockService {
@@ -18,128 +20,24 @@ export class StockService {
     @Optional() private readonly notificationsService?: NotificationsService,
   ) {}
 
-
-  async analyzeStock(farmId: string) {
-    // 1. Busca todos os produtos da fazenda com suas movimentações
+  async analyzeStock(farmId: string, now: Date = new Date()) {
     const products = await this.prisma.product.findMany({
       where: { farmId },
-      include: {
-        movements: {
-          orderBy: { dataMovimento: 'asc' },
-        },
-      },
+      include: { movements: true },
     });
 
-    const alertsToCreate: AlertInput[] = [];
-    const productsWithBalances: any[] = [];
-
-    let saldoTotalGeral = 0;
-
-    for (const product of products) {
-      // Calcula saldo atual a partir do histórico de entradas e saídas
-      let saldo = 0;
-      const saidas: { quantidade: number; data: Date }[] = [];
-
-      for (const mov of product.movements) {
-        if (mov.tipo === 'ENTRADA') {
-          saldo += mov.quantidade;
-        } else if (mov.tipo === 'SAIDA') {
-          saldo -= mov.quantidade;
-          saidas.push({ quantidade: mov.quantidade, data: mov.dataMovimento });
-        }
-      }
-
-      saldoTotalGeral += saldo;
-
-      // 2. Análise de Runout Time (Risco de Falta e Autonomia)
-      const runout = calculateRunoutTime(saldo, product.estoqueMinimo, saidas);
-      if (runout.status === 'CRITICO') {
-        alertsToCreate.push({
-          id: `alert-runout-${product.id}`,
-          nivel: 'URGENTE',
-          titulo: `Estoque Crítico: ${product.nome}`,
-          justificativa: runout.justificativa,
-        });
-      } else if (runout.status === 'ATENCAO') {
-        alertsToCreate.push({
-          id: `alert-runout-${product.id}`,
-          nivel: 'ATENCAO',
-          titulo: `Atenção de Estoque: ${product.nome}`,
-          justificativa: runout.justificativa,
-        });
-      }
-
-      // 3. Análise de Risco de Vencimento
-      const expiry = checkExpiryRisk(saldo, runout.consumoMedioDiario, product.validade);
-      if (expiry.temRisco) {
-        alertsToCreate.push({
-          id: `alert-expiry-${product.id}`,
-          nivel: expiry.jaVenceu ? 'URGENTE' : 'ATENCAO',
-          titulo: expiry.jaVenceu ? `Insumo Vencido: ${product.nome}` : `Risco de Vencimento: ${product.nome}`,
-          justificativa: expiry.justificativa,
-        });
-      }
-
-      // 4. Detecção de Anomalias na última saída registrada
-      if (saidas.length >= 4) {
-        const ultimaSaida = saidas[saidas.length - 1];
-        const historicoAnterior = saidas.slice(0, saidas.length - 1).map((s) => s.quantidade);
-        const anomaly = detectConsumptionAnomalies(ultimaSaida.quantidade, historicoAnterior);
-
-        if (anomaly.isAnomaly) {
-          alertsToCreate.push({
-            id: `alert-anomaly-${product.id}`,
-            nivel: 'ATENCAO',
-            titulo: `Saída Fora do Padrão: ${product.nome}`,
-            justificativa: anomaly.justificativa,
-          });
-        }
-      }
-
-      productsWithBalances.push({
-        id: product.id,
-        nome: product.nome,
-        categoria: product.categoria,
-        unidadeMedida: product.unidadeMedida,
-        saldo,
-        estoqueMinimo: product.estoqueMinimo,
-        preco: product.precoAquisicao,
-        validade: product.validade,
-        runout,
-      });
-    }
-
-    // 5. Curva ABC de capital imobilizado
-    const curvaAbc = calculateAbcCurve(
-      productsWithBalances.map((p) => ({
-        id: p.id,
-        nome: p.nome,
-        saldo: p.saldo,
-        preco: p.preco,
-      })),
+    return analyzeStockInventory(
+      products.map(({ movements: _movements, ...product }) => product),
+      products.flatMap((product) => product.movements),
+      now,
     );
-
-    // 6. Alertas priorizados
-    const alertasPriorizados = prioritizeAlerts(alertsToCreate);
-
-    return {
-      resumo: {
-        totalInsumos: products.length,
-        saldoTotal: saldoTotalGeral,
-        totalFinanceiroEstoque: curvaAbc.totalEstoqueFinanceiro,
-        totalAlertas: alertasPriorizados.length,
-      },
-      curvaAbc,
-      alertas: alertasPriorizados,
-      produtos: productsWithBalances,
-    };
   }
 
-  async reanalyzeAndPersistAlerts(farmId: string) {
-    const analysis = await this.analyzeStock(farmId);
+  async reanalyzeAndPersistAlerts(farmId: string, now: Date = new Date()) {
+    const analysis = await this.analyzeStock(farmId, now);
 
-    const criticalAlerts = analysis.alertas.filter(
-      (a) => a.nivel === 'URGENTE' || a.nivel === 'ATENCAO',
+    const criticalAlerts = analysis.alerts.filter(
+      (a) => (a.nivel === 'URGENTE' || a.nivel === 'ATENCAO') && PERSISTED_TYPES[a.tipo],
     );
 
     const existingAlerts = await this.prisma.alert.findMany({
@@ -148,36 +46,46 @@ export class StockService {
         resolvido: false,
       },
     });
-
-    const existingKeys = new Set(
-      existingAlerts.map((e) => `${e.productId}-${e.tipo}`),
-    );
+    const existingByKey = new Map(existingAlerts.map((e) => [`${e.productId}-${e.tipo}`, e]));
+    const currentKeys = new Set<string>();
 
     for (const alert of criticalAlerts) {
-      const productId = alert.id.replace(/^(alert-runout-|alert-expiry-|alert-anomaly-)/, '');
-      let tipo: AlertType = AlertType.ESTOQUE_CRITICO;
-      if (alert.id.startsWith('alert-expiry-')) {
-        tipo = AlertType.RISCO_VENCIMENTO;
-      } else if (alert.id.startsWith('alert-anomaly-')) {
-        tipo = AlertType.CONSUMO_ANOMALO;
-      }
+      const tipo = PERSISTED_TYPES[alert.tipo]!;
+      const nivelUrgencia = alert.nivel === 'URGENTE' ? UrgencyLevel.ALTA : UrgencyLevel.MEDIA;
+      const key = `${alert.productId}-${tipo}`;
+      currentKeys.add(key);
 
-      const key = `${productId}-${tipo}`;
-      if (!existingKeys.has(key)) {
+      const existing = existingByKey.get(key);
+      if (!existing) {
         await this.prisma.alert.create({
           data: {
             farmId,
-            productId,
+            productId: alert.productId,
             tipo,
-            nivelUrgencia: alert.nivel === 'URGENTE' ? UrgencyLevel.ALTA : UrgencyLevel.MEDIA,
-            justificativa: alert.justificativa || 'Alerta gerado pela análise de estoque.',
+            nivelUrgencia,
+            justificativa: alert.justificativa,
             resolvido: false,
             notificadoWhatsapp: false,
-
           },
         });
-        existingKeys.add(key);
+      } else if (existing.nivelUrgencia !== nivelUrgencia) {
+        // A level change (e.g. ATENÇÃO -> URGENTE) must be notifiable again.
+        await this.prisma.alert.update({
+          where: { id: existing.id },
+          data: { nivelUrgencia, justificativa: alert.justificativa, notificadoWhatsapp: false },
+        });
       }
+    }
+
+    // The situation no longer exists: resolve, keeping the history.
+    const resolvedIds = existingAlerts
+      .filter((e) => e.productId && MANAGED_TYPES.has(e.tipo) && !currentKeys.has(`${e.productId}-${e.tipo}`))
+      .map((e) => e.id);
+    if (resolvedIds.length > 0) {
+      await this.prisma.alert.updateMany({
+        where: { id: { in: resolvedIds } },
+        data: { resolvido: true },
+      });
     }
 
     let notificacoesResult: any = null;
@@ -192,4 +100,3 @@ export class StockService {
     };
   }
 }
-

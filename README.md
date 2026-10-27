@@ -161,7 +161,8 @@ O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta
 
 **Como funciona e limites**
 - O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
-- **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto não for resolvido, e a versão atual não resolve alertas sozinha. Um novo lançamento no mesmo insumo **não reenvia** a mensagem.
+- **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto estiver aberto, e um novo lançamento com a mesma situação **não reenvia** a mensagem.
+- **Ciclo automático:** a cada reanálise, o alerta cuja situação deixou de existir é marcado como resolvido (o histórico fica). Se a situação voltar, um novo alerta é gravado e notificado. Um alerta que sobe de atenção para urgente é atualizado e passa a ser notificado.
 - Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base simulada, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
 - Os endpoints `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT do Gestor.
 
@@ -175,7 +176,11 @@ UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';
 
 ## 5. Dados e Critérios Agronômicos
 
-O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. A validação da paridade do caminho efetivamente usado na API com `client/src/offline/analysis.ts` está aberta nas tarefas 2.4/10.3; não se deve presumir paridade total apenas pela existência de funções semelhantes.
+O motor analítico responde às **7 perguntas oficiais** do desafio com as mesmas regras no cliente ([`analysis.ts`](client/src/offline/analysis.ts)) e na API ([`stock-engine.ts`](api/src/stock-engine/stock-engine.ts)). A rota `POST /stock/analyze` e a reanálise que grava alertas e dispara o WhatsApp usam esse motor. A paridade é verificada por [`parity.spec.ts`](api/src/stock-engine/parity.spec.ts), que roda os dois motores com as mesmas fixtures e a mesma data de referência e exige resultados iguais:
+- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, parado/excesso, ABC e ordem dos alertas.
+- **Fixtures:** a base simulada, litros e quilos juntos, validade hoje, poucas amostras, limiares exatos, listas vazias, zero e preço ausente.
+- **Limite:** a paridade vale para essas fixtures, não é uma prova formal para qualquer entrada. As duas cópias precisam mudar juntas, e o teste falha se divergirem.
+- **Saldos por unidade:** os saldos são agrupados por unidade (`balancesByUnit`); não existe saldo total somando unidades diferentes.
 
 ### 5.1. Critérios de Cálculo e Fórmulas
 
@@ -223,7 +228,7 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 224 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
+- **API NestJS:** 243 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
 - **Desktop/Mobile (Tauri + Vue):** 283 testes Vitest e 5 testes nativos Rust aprovados em 27/10. SQLite temporário real verifica transações, reabertura offline, recuperação e reenvio sem duplicidade; servidor simulado não comprova locks PostgreSQL nem execução Android ([`cloud-restart.spec.ts`](client/tests/cloud-restart.spec.ts), [`analysis-disclosure.spec.ts`](client/tests/analysis-disclosure.spec.ts), [`local-store.spec.ts`](client/tests/local-store.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
