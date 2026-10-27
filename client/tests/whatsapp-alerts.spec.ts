@@ -140,7 +140,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
   it("fica só na Visão geral, sem repetir nas outras abas", async () => {
     const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
     expect(wrapper.find(panel).exists()).toBe(true);
-    for (const label of ["Estoque", "Histórico", "Backups"]) {
+    for (const label of ["Estoque", "Histórico", "Cópias"]) {
       await wrapper
         .get('nav[aria-label="Navegação principal"]')
         .findAll("button")
@@ -173,8 +173,8 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     await clickTest(wrapper);
 
     const card = wrapper.get(panel).text();
-    expect(card).toContain("simulação");
-    expect(card).toContain("nenhuma mensagem real");
+    expect(card).toContain("ainda não está ativado");
+    expect(card).toContain("nenhuma mensagem foi enviada");
     expect(card).not.toContain("Mensagem de teste enviada");
     // simulação não é sucesso: nada foi enviado, então não pode ter estilo verde
     expect(wrapper.find(`${panel} .notice.success`).exists()).toBe(false);
@@ -218,7 +218,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     await clickTest(wrapper);
 
     const alert = wrapper.get(`${panel} [role="alert"]`).text();
-    expect(alert).toContain("sem conexão com o servidor");
+    expect(alert).toContain("sem internet");
     expect(alert).not.toContain("Failed to fetch");
     wrapper.unmount();
   });
@@ -396,7 +396,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       await flushPromises();
 
       const alert = wrapper.get(`${panel} [role="alert"]`).text();
-      expect(alert).toContain("sem conexão com o servidor");
+      expect(alert).toContain("sem internet");
       expect(alert).not.toContain("Failed to fetch");
       wrapper.unmount();
     });

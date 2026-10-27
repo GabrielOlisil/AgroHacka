@@ -132,7 +132,7 @@ describe("controle de estoque do gestor", () => {
       );
       expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
       expect(wrapper.get("h1").text()).toBe("Estoque de insumos");
-      expect(wrapper.text()).toContain("Salvo no aparelho");
+      expect(wrapper.text()).toContain("Salvo neste aparelho");
       wrapper.unmount();
     },
   );
@@ -219,7 +219,7 @@ describe("controle de estoque do gestor", () => {
     await stock(wrapper);
     await wrapper.get('[data-testid="new-product"]').trigger("click");
     expect(wrapper.get('[role="dialog"]').text()).toContain("Novo insumo");
-    expect(wrapper.get('[role="dialog"]').text()).toContain("Requer internet");
+    expect(wrapper.get('[role="dialog"]').text()).toContain("Precisa de internet");
     wrapper.unmount();
   });
   it("retira explicações repetitivas e preserva alertas de estado", async () => {
@@ -233,7 +233,7 @@ describe("controle de estoque do gestor", () => {
     expect(wrapper.text()).not.toContain(
       "Quantidade disponível × preço de aquisição",
     );
-    expect(wrapper.text()).toContain("pendente");
+    expect(wrapper.text()).toContain("esperando envio");
     await stock(wrapper);
     expect(wrapper.text()).toContain("Preço não informado");
     expect(wrapper.find('[data-testid="sync-balances"]').exists()).toBe(true);
@@ -246,7 +246,7 @@ describe("controle de estoque do gestor", () => {
     await stock(wrapper);
     const details = wrapper.get('details[data-testid="sync-balances"]');
     expect(details.attributes("open")).toBeUndefined();
-    expect(details.get("summary").text()).toContain("pendente");
+    expect(details.get("summary").text()).toContain("esperando envio");
     state.confirmedBalances.value = { diesel: -1 };
     await flushPromises();
     expect(details.attributes("open")).toBeDefined();

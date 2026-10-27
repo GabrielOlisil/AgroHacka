@@ -129,7 +129,7 @@ describe("status de sincronização claro (tarefa 11.7)", () => {
     const state = controller("OPERADOR");
     state.pendingCount.value = 2;
     const wrapper = mount(App, { props: { controller: state as never } });
-    expect(status(wrapper)).toBe("2 registro(s) pendente(s) de envio");
+    expect(status(wrapper)).toBe("2 lançamento(s) esperando envio");
     wrapper.unmount();
   });
 
@@ -140,21 +140,21 @@ describe("status de sincronização claro (tarefa 11.7)", () => {
     const wrapper = mount(App, { props: { controller: state as never } });
     setOnline(false);
     await flushPromises();
-    expect(status(wrapper)).toBe("Offline · 2 registro(s) pendente(s)");
+    expect(status(wrapper)).toBe("Sem internet · 2 lançamento(s) esperando envio");
     state.pendingCount.value = 0;
     await flushPromises();
-    expect(status(wrapper)).toBe("Offline · dados salvos neste aparelho");
+    expect(status(wrapper)).toBe("Sem internet · tudo guardado neste aparelho");
     setOnline(true);
     await flushPromises();
-    expect(status(wrapper)).toBe("Dados salvos neste aparelho");
+    expect(status(wrapper)).toBe("Tudo guardado neste aparelho");
     wrapper.unmount();
   });
 
-  it("durante o envio mostra Sincronizando…", () => {
+  it("durante o envio mostra Atualizando…", () => {
     const state = controller("OPERADOR");
     state.syncing.value = true;
     const wrapper = mount(App, { props: { controller: state as never } });
-    expect(status(wrapper)).toBe("Sincronizando…");
+    expect(status(wrapper)).toBe("Atualizando…");
     wrapper.unmount();
   });
 });
@@ -172,7 +172,7 @@ describe("formulário de movimentação da Visão geral", () => {
   it("confirma o salvamento logo abaixo do botão, não só no topo (tarefa 11.3)", async () => {
     const wrapper = await submitOverviewForm(withDiesel(controller("OPERADOR")));
     expect(wrapper.get(".movement-panel [role='status']").text()).toContain(
-      "Salvo no aparelho",
+      "Salvo neste aparelho",
     );
     expect(wrapper.find(".page-heading + .notice.success").exists()).toBe(false);
     wrapper.unmount();
@@ -279,8 +279,8 @@ describe("telas responsivas dos perfis", () => {
       expect(estimate.get("small").classes()).toContain("estimate-context");
       if (count) {
         expect(estimate.text()).toContain(`${count} retirada(s)`);
-        expect(estimate.text()).toContain("dia(s) de calendário");
-        expect(estimate.text()).toContain("não é garantia");
+        expect(estimate.text()).toContain("dia(s)");
+        expect(estimate.text()).toContain("não uma garantia");
       }
       wrapper.unmount();
     },
@@ -328,7 +328,7 @@ describe("telas responsivas dos perfis", () => {
       expect(wrapper.get('[data-testid="abc-unknown"]').text()).toBe(
         "Não classificado",
       );
-      expect(wrapper.text()).toContain("Classificação parcial");
+      expect(wrapper.text()).toContain("fora da classe de valor");
       expect(wrapper.text()).toContain("Preço não informado");
       wrapper.unmount();
     },
@@ -386,7 +386,7 @@ describe("telas responsivas dos perfis", () => {
     state.confirmedBalances.value = { p: -20 };
     state.pendingCount.value = 1;
     const wrapper = mount(App, { props: { controller: state as never } });
-    for (const label of ["Visão geral", "Histórico", "Backups"]) {
+    for (const label of ["Visão geral", "Histórico", "Cópias"]) {
       await goToTab(wrapper, label);
       expect(wrapper.find(balancesPanel).exists(), label).toBe(false);
     }
@@ -447,10 +447,10 @@ describe("telas responsivas dos perfis", () => {
     const wrapper = mount(App, { props: { controller: state as never } });
     await goToTab(wrapper, "Estoque");
     expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
-      "Confirmado conhecido: -20 L",
+      "Saldo confirmado: -20 L",
     );
     expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
-      "Provisório neste aparelho: -25 L",
+      "Com os lançamentos deste aparelho: -25 L",
     );
     expect(wrapper.get('[data-testid="sync-deficit"]').text()).toMatch(
       /gestor/i,
@@ -472,7 +472,7 @@ describe("telas responsivas dos perfis", () => {
       "Produto indisponível",
     );
     expect(wrapper.get('[data-testid="sync-reviews"]').text()).toContain(
-      "rejected-id",
+      "não entraram no saldo",
     );
     wrapper.unmount();
   });

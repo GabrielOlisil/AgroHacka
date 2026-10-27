@@ -56,8 +56,8 @@ describe("manager operator actions", () => {
     expect(props.remove).not.toHaveBeenCalled();
     const dialog = wrapper.get('[role="alertdialog"]');
     expect(dialog.text()).toContain("Ana");
-    expect(dialog.text()).toMatch(/sincroniz.*pend[êe]ncias/i);
-    expect(dialog.text()).toMatch(/movimenta[çc][õo]es.*mantid/i);
+    expect(dialog.text()).toMatch(/Atualizar agora.*internet/i);
+    expect(dialog.text()).toMatch(/lançamentos.*hist[óo]rico/i);
     await dialog.get('[data-testid="cancel-delete-operator"]').trigger("click");
     expect(wrapper.find('[role="alertdialog"]').exists()).toBe(false);
     expect(props.remove).not.toHaveBeenCalled();
