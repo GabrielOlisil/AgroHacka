@@ -29,6 +29,7 @@
 | **Instituição** | Instituto Federal de Rondônia (IFRO) — Campus Ariquemes |
 | **Integrante 1 (DEV 1)** | **Kauê Rian Silva Conceição Oliveira** — ADS 6º Período (Foco: Backend, Dados, Sincronização e Infraestrutura) |
 | **Integrante 2 (DEV 2)** | **Gabriel de Oliveira Silva** — ADS 6º Período (Foco: Frontend, Tauri v2, SQLite Offline e UX) |
+| **Responsável ADS** | **Gabriel de Oliveira Silva** |
 
 ---
 
@@ -89,6 +90,8 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 ---
 
 ## 4. Como Testar e Executar
+
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
@@ -254,14 +257,14 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 
 ### 8.2. Declaração Formal de Uso Ético de Inteligência Artificial
 Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe declara:
-> *“Ferramentas de Inteligência Artificial Generativa (Claude 3.7 Sonnet e Gemini via Antigravity IDE) foram utilizadas como assistentes de codificação em pair-programming, auxiliando na geração de scaffolding, revisão de tipagens estritas TypeScript, criação de baterias de testes unitários TDD e elaboração de documentação técnica. Toda a lógica de negócio agronômica, modelagem relacional, arquitetura de sincronização idempotente e regras de decisão foram concebidas, revisadas, testadas e validadas integralmente pelos integrantes da equipe.”*
+> *“Ferramentas de Inteligência Artificial Generativa foram utilizadas como assistentes de codificação: **Claude Code** (Anthropic), **Codex/ChatGPT** (OpenAI) e **Gemini** (Google, via Antigravity IDE). Elas auxiliaram na geração de código e scaffolding, na escrita de testes automatizados no ciclo TDD, na revisão de tipagem TypeScript, na investigação de falhas de build e na elaboração de documentação técnica. Toda alteração passou por revisão humana dos integrantes, que definiram os requisitos, as regras de negócio agronômicas, a modelagem e a arquitetura de sincronização, validaram os testes e decidiram o que entrou no repositório por meio de Pull Requests.”*
 
 ---
 
 ## 9. Autoria, Licença e Segurança
 
 - **Autoria:** Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira.
-- **Licença:** Distribuído sob a licença open-source MIT.
+- **Licença:** Distribuído sob a licença open-source MIT ([`LICENSE`](LICENSE)); os metadados de `package.json` e `Cargo.toml` seguem a mesma licença.
 - **Segurança de Credenciais:** Nenhuma chave privada, credencial de produção, token Twilio ou senha pessoal está exposta no repositório. Variáveis de ambiente sensíveis são gerenciadas exclusivamente através dos painéis protegidos do Coolify na VPS e em arquivos locais `.env` ignorados pelo `.gitignore`.
 - **Segredo JWT:** o valor do `.env.example` é público e só serve para desenvolvimento. Com `NODE_ENV=production`, a API **não inicia** sem um `JWT_SECRET` próprio (ausente ou igual ao valor público é recusado).
 - **Análise de estoque autorizada:** `POST /stock/analyze` exige o JWT do Gestor ou o `x-device-token` de um operador ativo, e analisa sempre a fazenda da identidade autenticada. Um `farmId` de outra fazenda no corpo da requisição recebe 403.
@@ -270,7 +273,9 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão:** `v1.0.0-entrega`
+- **Versão avaliada:** `v1.0.1-entrega`, com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). A tag identifica o commit avaliado.
+- **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
+- **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
 - **Branch de Desenvolvimento:** `dev`
 - **Branch de Produção / Entrega:** `main`

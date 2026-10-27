@@ -1,6 +1,7 @@
 {
   "name": "agrohacka-root",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "test": "npm --prefix api test",
     "test:client": "npm --prefix client test",
