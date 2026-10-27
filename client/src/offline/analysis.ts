@@ -17,15 +17,20 @@ export interface AnalyzedProduct extends Product {
   saldo: number;
   consumoMedioDiario: number;
   diasRestantes: number | null;
-  valorEstoque: number;
-  classeAbc: "A" | "B" | "C";
-  percentualValor: number;
+  valorEstoque: number | null;
+  classeAbc: "A" | "B" | "C" | null;
+  percentualValor: number | null;
+  amostrasConsumo: number;
+  diasAmostra: number;
+  confiabilidade: "INDISPONIVEL" | "BAIXA" | "MEDIA" | "ALTA";
   consumoDiario: { dia: string; quantidade: number }[];
 }
 export interface InventoryAnalysis {
   products: AnalyzedProduct[];
   alerts: InventoryAlert[];
   totalValue: number;
+  pricedProductCount: number;
+  unpricedProductCount: number;
   balancesByUnit: Record<string, number>;
 }
 const DAY = 86_400_000;
@@ -70,6 +75,10 @@ export function analyzeInventory(
     const days = Math.max(1, Math.floor((today - firstDay) / DAY) + 1);
     const rate = out.reduce((sum, m) => sum + m.quantidade, 0) / days;
     const daysLeft = rate > 0 ? Math.max(0, saldo) / rate : null;
+    const limitedEvidence =
+      rate > 0 && out.length < 3
+        ? ` Base limitada: ${out.length} retirada(s) em ${days} dia(s) de calendário; a previsão não é garantia de duração.`
+        : "";
     const add = (
       tipo: InventoryAlert["tipo"],
       nivel: InventoryAlert["nivel"],
@@ -81,7 +90,11 @@ export function analyzeInventory(
         tipo,
         nivel,
         titulo: `${p.nome} · ${tipo === "FALTA" ? "Reposição" : tipo === "VENCIMENTO" ? "Validade" : tipo === "ANOMALIA" ? "Consumo fora do padrão" : tipo === "PARADO" ? "Estoque parado" : "Excesso"}`,
-        justificativa,
+        justificativa:
+          justificativa +
+          (tipo === "FALTA" || tipo === "VENCIMENTO" || tipo === "EXCESSO"
+            ? limitedEvidence
+            : ""),
       });
     if (saldo <= p.estoqueMinimo)
       add(
@@ -157,9 +170,22 @@ export function analyzeInventory(
       saldo,
       consumoMedioDiario: rate,
       diasRestantes: daysLeft,
-      valorEstoque: Math.max(0, saldo) * (p.precoAquisicao ?? 0),
-      classeAbc: "C",
-      percentualValor: 0,
+      amostrasConsumo: out.length,
+      diasAmostra: days,
+      confiabilidade:
+        rate === 0
+          ? "INDISPONIVEL"
+          : out.length >= 5
+            ? "ALTA"
+            : out.length >= 3
+              ? "MEDIA"
+              : "BAIXA",
+      valorEstoque:
+        p.precoAquisicao === null
+          ? null
+          : Math.max(0, saldo) * p.precoAquisicao,
+      classeAbc: p.precoAquisicao === null ? null : "C",
+      percentualValor: p.precoAquisicao === null ? null : 0,
       consumoDiario: Array.from({ length: days }, (_, i) => {
         const dia = new Date(today - (days - 1 - i) * DAY)
           .toISOString()
@@ -168,9 +194,17 @@ export function analyzeInventory(
       }),
     };
   });
-  const totalValue = result.reduce((sum, p) => sum + p.valorEstoque, 0);
+  const priced = result.filter(
+    (p): p is AnalyzedProduct & { valorEstoque: number } =>
+      p.valorEstoque !== null,
+  );
+  const totalValue = priced.reduce((sum, p) => sum + p.valorEstoque, 0);
+  const pricedProductCount = priced.filter((p) => p.saldo > 0).length;
+  const unpricedProductCount = result.filter(
+    (p) => p.saldo > 0 && p.valorEstoque === null,
+  ).length;
   let cumulative = 0;
-  for (const p of [...result].sort(
+  for (const p of [...priced].sort(
     (a, b) => b.valorEstoque - a.valorEstoque || a.id.localeCompare(b.id),
   )) {
     p.percentualValor =
@@ -189,5 +223,12 @@ export function analyzeInventory(
   alerts.sort(
     (a, b) => priority[a.nivel] - priority[b.nivel] || a.id.localeCompare(b.id),
   );
-  return { products: result, alerts, totalValue, balancesByUnit };
+  return {
+    products: result,
+    alerts,
+    totalValue,
+    pricedProductCount,
+    unpricedProductCount,
+    balancesByUnit,
+  };
 }

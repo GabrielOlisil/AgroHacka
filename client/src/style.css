@@ -934,6 +934,10 @@ td small {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
 }
+.estimate-context {
+  max-width: 28ch;
+  white-space: normal;
+}
 .backup-list {
   margin: 0;
   padding: 0;
