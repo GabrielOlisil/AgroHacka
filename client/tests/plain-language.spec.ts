@@ -43,6 +43,7 @@ function controller(role: "GESTOR" | "OPERADOR" | null) {
     analysis: ref(analysis),
     movements: ref([entry, out]),
     pendingCount: ref(2),
+    pendingIds: ref(["e", "s"]),
     reviews: ref([{ id: "r1", message: "Lançamento recusado." }]),
     confirmedBalances: ref({ p: -1 }),
     lastSync: ref("2026-10-16T12:00:00Z"),

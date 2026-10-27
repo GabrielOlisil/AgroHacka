@@ -431,7 +431,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 **Prioridade 2 — offline first e navegação no celular**
 - [x] **11.7. Status de sincronização claro:** "Offline · N registro(s) pendente(s)", "N registro(s) pendente(s) de envio", "Tudo enviado · HH:MM" e "Sincronizando…", reagindo aos eventos `online`/`offline`; offline em destaque (`app.spec.ts`). `navigator.onLine` indica rede, não a API: as pendências seguem como fonte do que não chegou à nuvem.
-- [ ] **11.8. Histórico no celular em cartões, com etiqueta Pendente/Enviado** em cada registro.
+- [x] **11.8. Histórico no celular em cartões, com etiqueta de situação** em cada registro: "Esperando envio" (ainda só neste aparelho) ou "Enviado". No celular a tabela vira cartões, com o mesmo estilo do Estoque. O workspace expõe `pendingIds` (`cloud-only.spec.ts`); teste da tela em `app.spec.ts` e do CSS em `mobile-touch.spec.ts`.
 - [ ] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens; Backups em "Mais".
 
 **Prioridade 3 — depois da apresentação**

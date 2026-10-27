@@ -44,6 +44,7 @@ function controller(role: "GESTOR" | "OPERADOR" = "GESTOR", items = products) {
     analysis: ref(analyzeInventory(items, movements)),
     movements: ref(movements),
     pendingCount: ref(0),
+    pendingIds: ref([]),
     reviews: ref([]),
     confirmedBalances: ref({}),
     lastSync: ref(null),

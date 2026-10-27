@@ -39,6 +39,7 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     }),
     movements: ref([]),
     pendingCount: ref(0),
+    pendingIds: ref<string[]>([]),
     reviews: ref([]),
     confirmedBalances: ref({}),
     lastSync: ref(null),
@@ -99,6 +100,35 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("histórico em cartões com situação de envio (tarefa 11.8)", () => {
+  it("marca cada registro como enviado ou esperando envio e rotula os campos do cartão", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const movement = {
+      productId: "p",
+      farmId: "f",
+      tipo: "SAIDA",
+      quantidade: 5,
+      dataMovimento: "2026-10-27T12:00:00Z",
+      responsavel: "Ana",
+    };
+    state.movements.value = [
+      { ...movement, id: "local" },
+      { ...movement, id: "sent" },
+    ] as never;
+    state.pendingIds.value = ["local"];
+    state.pendingCount.value = 1;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Histórico");
+    const rows = wrapper.findAll(".history-panel tbody tr");
+    expect(rows.map((row) => row.get('[data-label="Situação"]').text())).toEqual([
+      "Esperando envio",
+      "Enviado",
+    ]);
+    const labels = rows[0]!.findAll("td[data-label]").map((td) => td.attributes("data-label"));
+    expect(labels).toEqual(["Insumo", "Movimento", "Quantidade", "Responsável", "Destino", "Situação"]);
+    wrapper.unmount();
+  });
+});
 describe("status de sincronização claro (tarefa 11.7)", () => {
   function setOnline(value: boolean) {
     Object.defineProperty(window.navigator, "onLine", {

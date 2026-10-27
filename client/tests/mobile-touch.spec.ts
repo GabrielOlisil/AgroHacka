@@ -24,4 +24,10 @@ describe("alvos de toque no celular (tarefa 11.6)", () => {
     expect(button).toMatch(/white-space:\s*nowrap/);
     expect(button).toMatch(/flex:\s*0 0 auto|flex:\s*none/);
   });
+
+  it("o histórico vira cartões, como o estoque (tarefa 11.8)", () => {
+    expect(mobile).toMatch(/\.history-panel tbody tr,?\s*[^{]*\{[^}]*display:\s*grid/);
+    expect(mobile).toMatch(/\.history-panel td\[data-label\]::before/);
+    expect(mobile).toMatch(/\.history-panel thead/);
+  });
 });

@@ -15,6 +15,7 @@ const {
   analysis,
   movements,
   pendingCount,
+  pendingIds,
   reviews,
   confirmedBalances,
   lastSync,
@@ -1248,7 +1249,7 @@ onUnmounted(() => {
           Nenhum insumo encontrado.
         </p>
       </section>
-      <section v-if="tab === 'history'" class="panel">
+      <section v-if="tab === 'history'" class="panel history-panel">
         <div class="section-heading">
           <h2>Histórico de movimentações</h2>
           <span class="badge">{{ movements.length }} registros</span>
@@ -1263,33 +1264,43 @@ onUnmounted(() => {
                 <th>Quantidade</th>
                 <th>Responsável</th>
                 <th>Destino</th>
+                <th>Situação</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="m in movements" :key="m.id">
                 <td>{{ formatDate(m.dataMovimento) }}</td>
-                <td>
+                <td data-label="Insumo">
                   {{
                     analysis.products.find((p) => p.id === m.productId)?.nome ??
                     m.productId
                   }}
                 </td>
-                <td>
+                <td data-label="Movimento">
                   <span
                     class="badge"
                     :class="m.tipo === 'ENTRADA' ? 'success' : ''"
                     >{{ m.tipo === "ENTRADA" ? "Entrada" : "Saída" }}</span
                   >
                 </td>
-                <td>
+                <td data-label="Quantidade">
                   {{ unitValue(m.quantidade) }}
                   {{
                     analysis.products.find((p) => p.id === m.productId)
                       ?.unidadeMedida
                   }}
                 </td>
-                <td>{{ m.responsavel }}</td>
-                <td>{{ m.destino || "—" }}</td>
+                <td data-label="Responsável">{{ m.responsavel }}</td>
+                <td data-label="Destino">{{ m.destino || "—" }}</td>
+                <td data-label="Situação">
+                  <span
+                    class="badge"
+                    :class="pendingIds.includes(m.id) ? 'pending' : 'success'"
+                    >{{
+                      pendingIds.includes(m.id) ? "Esperando envio" : "Enviado"
+                    }}</span
+                  >
+                </td>
               </tr>
             </tbody>
           </table>
