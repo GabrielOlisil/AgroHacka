@@ -332,6 +332,20 @@ function chooseMore(next: "operators" | "backups") {
   if (next === "operators") openOperators();
   else tab.value = next;
 }
+// Fecha ao tocar fora do menu (e fora do próprio botão Mais) ou ao apertar Esc.
+function closeMoreOutside(event: MouseEvent) {
+  const target = event.target as Element | null;
+  if (!target?.closest?.('.more-menu, [data-testid="more-nav"]'))
+    showMore.value = false;
+}
+function closeMoreOnEscape(event: KeyboardEvent) {
+  if (event.key === "Escape") showMore.value = false;
+}
+watch(showMore, (open) => {
+  const method = open ? "addEventListener" : "removeEventListener";
+  document[method]("click", closeMoreOutside as EventListener);
+  document[method]("keydown", closeMoreOnEscape as EventListener);
+});
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
@@ -446,6 +460,9 @@ onUnmounted(() => {
   window.removeEventListener("online", online);
   window.removeEventListener("online", updateOnline);
   window.removeEventListener("offline", updateOnline);
+  showMore.value = false;
+  document.removeEventListener("click", closeMoreOutside);
+  document.removeEventListener("keydown", closeMoreOnEscape);
   stopScanner?.();
   workspace.dispose();
 });

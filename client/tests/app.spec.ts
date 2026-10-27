@@ -122,6 +122,26 @@ describe("navegação inferior no celular (tarefa 11.9)", () => {
     wrapper.unmount();
   });
 
+  it("o menu Mais fecha ao tocar fora dele ou apertar Esc, mas não ao tocar dentro", async () => {
+    const wrapper = mount(App, {
+      props: { controller: controller("GESTOR") as never },
+      attachTo: document.body,
+    });
+    const more = () => nav(wrapper).get('[data-testid="more-nav"]');
+    await more().trigger("click");
+    await wrapper.get(".more-menu").trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(true);
+    await wrapper.get(".page-heading").trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    expect(more().attributes("aria-expanded")).toBe("false");
+    await more().trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(true);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flushPromises();
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it("o operador já cabe em 4 abas: sem Mais, Cópias continua no menu", () => {
     const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
     expect(nav(wrapper).find('[data-testid="more-nav"]').exists()).toBe(false);
