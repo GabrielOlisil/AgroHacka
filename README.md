@@ -223,7 +223,7 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 213 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
+- **API NestJS:** 224 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
 - **Desktop/Mobile (Tauri + Vue):** 283 testes Vitest e 5 testes nativos Rust aprovados em 27/10. SQLite temporário real verifica transações, reabertura offline, recuperação e reenvio sem duplicidade; servidor simulado não comprova locks PostgreSQL nem execução Android ([`cloud-restart.spec.ts`](client/tests/cloud-restart.spec.ts), [`analysis-disclosure.spec.ts`](client/tests/analysis-disclosure.spec.ts), [`local-store.spec.ts`](client/tests/local-store.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
@@ -258,6 +258,8 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 - **Autoria:** Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira.
 - **Licença:** Distribuído sob a licença open-source MIT.
 - **Segurança de Credenciais:** Nenhuma chave privada, credencial de produção, token Twilio ou senha pessoal está exposta no repositório. Variáveis de ambiente sensíveis são gerenciadas exclusivamente através dos painéis protegidos do Coolify na VPS e em arquivos locais `.env` ignorados pelo `.gitignore`.
+- **Segredo JWT:** o valor do `.env.example` é público e só serve para desenvolvimento. Com `NODE_ENV=production`, a API **não inicia** sem um `JWT_SECRET` próprio (ausente ou igual ao valor público é recusado).
+- **Análise de estoque autorizada:** `POST /stock/analyze` exige o JWT do Gestor ou o `x-device-token` de um operador ativo, e analisa sempre a fazenda da identidade autenticada. Um `farmId` de outra fazenda no corpo da requisição recebe 403.
 
 ---
 

@@ -365,7 +365,10 @@ foi cancelado em 5.6. O aceite físico Android continua em 5.2.
   - Sem base oficial (confirmado pela organização em 27/10/2026); dados identificados como simulados.
   - `api/src/stock/demo-load.ts`: validação com relatório de linhas válidas, rejeitadas e tratamentos (unidades, preço/validade ausentes, datas, refs duplicadas sem fusão por nome) e carga transacional que não apaga nada e não faz nada se o gestor de demonstração já existir. `prisma/seed.ts` deixou de apagar tabelas globalmente.
   - Testes: `demo-load.spec.ts` (casos de borda) e `test/demo-load.postgres.integration.ts` (PostgreSQL descartável: atomicidade, idempotência, outras fazendas intactas).
-- [ ] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
+- [x] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
+  - A rota exige o JWT do Gestor ou o `x-device-token` de um operador ativo (os dois perfis já veem a análise no app; a rota só lê dados). A fazenda vem da identidade; `farmId` divergente ou que não é texto recebe 403 (`stock.controller.spec.ts`, via HTTP).
+  - `auth/jwt-secret.ts`: em produção a API não inicia sem `JWT_SECRET` próprio; o valor público de desenvolvimento é recusado (`jwt-secret.spec.ts`).
+  - **Antes do próximo deploy (`dev` → `main`):** conferir no Coolify se `JWT_SECRET` está definido com valor próprio. Se faltar ou for o valor do `.env.example`, a API não sobe. Trocar o segredo encerra as sessões de gestor abertas (é preciso fazer login de novo); os operadores pareados não são afetados.
 - [ ] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
 - [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
   - [x] **DEV 2:** expor amostras, dias de calendário e base limitada/intermediária/ampliada por produto; explicitar que não é garantia de duração. Alertas de falta/validade/excesso com apenas 1–2 retiradas também avisam sobre a base limitada.
