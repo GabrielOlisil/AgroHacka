@@ -171,14 +171,17 @@ describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", (
     expect(Math.abs(new Date(first.dataMovimento).getTime() - Date.now())).toBeLessThan(5_000);
 
     await panel.get('[data-testid="change-date"]').trigger("click");
-    await panel.get('input[type="datetime-local"]').setValue("2026-10-20T08:30");
+    // Data e hora separadas: o seletor de cada uma cabe na tela do celular.
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    await panel.get('input[type="date"]').setValue("2026-10-20");
+    await panel.get('input[type="time"]').setValue("08:30");
     await panel.get('input[type="number"]').setValue(2);
     await panel.get("form").trigger("submit");
     await flushPromises();
     expect(state.record.mock.calls[1]![0]).toMatchObject({
       dataMovimento: new Date("2026-10-20T08:30").toISOString(),
     });
-    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(panel.find('input[type="date"]').exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -191,16 +194,17 @@ describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", (
     const wrapper = mount(App, { props: { controller: withDiesel(controller("OPERADOR")) as never } });
     const panel = wrapper.get(".movement-panel");
     await panel.get('[data-testid="change-date"]').trigger("click");
-    await panel.get('input[type="datetime-local"]').trigger("click");
-    expect(showPicker).toHaveBeenCalledTimes(1);
+    await panel.get('input[type="date"]').trigger("click");
+    await panel.get('input[type="time"]').trigger("click");
+    expect(showPicker).toHaveBeenCalledTimes(2);
     // Navegador que recusa (sem gesto do usuário) ou não tem showPicker: o campo segue normal.
     showPicker.mockImplementation(() => {
       throw new DOMException("sem gesto", "NotAllowedError");
     });
-    await panel.get('input[type="datetime-local"]').trigger("click");
+    await panel.get('input[type="date"]').trigger("click");
     Object.defineProperty(HTMLInputElement.prototype, "showPicker", { configurable: true, value: undefined });
-    await panel.get('input[type="datetime-local"]').trigger("click");
-    expect(panel.find('input[type="datetime-local"]').exists()).toBe(true);
+    await panel.get('input[type="date"]').trigger("click");
+    expect(panel.find('input[type="date"]').exists()).toBe(true);
     wrapper.unmount();
   });
 
@@ -232,8 +236,12 @@ describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", (
     await goToTab(wrapper, "Estoque");
     await wrapper.get('[data-testid="saida-p"]').trigger("click");
     const modal = wrapper.get('[aria-labelledby="movement-title"]');
-    expect(modal.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(modal.find('input[type="date"]').exists()).toBe(false);
     expect(modal.get('[data-testid="movement-date"]').text()).toContain("agora");
+    await modal.get('[data-testid="change-date"]').trigger("click");
+    expect(modal.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(modal.find('input[type="date"]').exists()).toBe(true);
+    expect(modal.find('input[type="time"]').exists()).toBe(true);
     expect(modal.findAll('[data-testid="recent-destination"]').map((c) => c.text())).toEqual(["Galpão"]);
     wrapper.unmount();
   });
