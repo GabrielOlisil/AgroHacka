@@ -83,7 +83,6 @@ describe("Tarefas 6.2 & 6.3: Validação de Reanálise em Tempo Real e Modo Offl
       register: vi.fn(),
       connect: vi.fn(),
       pairing: vi.fn(),
-      updateLocalIp: vi.fn(),
     };
 
     const backups = {
@@ -182,7 +181,6 @@ describe("Tarefas 6.2 & 6.3: Validação de Reanálise em Tempo Real e Modo Offl
       register: vi.fn(),
       connect: vi.fn(),
       pairing: vi.fn(),
-      updateLocalIp: vi.fn(),
     };
 
     const backups = {

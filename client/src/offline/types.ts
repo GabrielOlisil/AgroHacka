@@ -64,8 +64,6 @@ export interface Session {
   deviceId?: string;
   accessToken?: string;
   deviceToken?: string;
-  localIp?: string | null;
-  localPort?: number;
   telefone?: string;
 }
 export interface SyncResponse {
@@ -98,8 +96,6 @@ export interface PairingResponse {
     farmNome: string;
     nomeOperador: string;
     deviceToken: string;
-    localIp?: string | null;
-    localPort?: number;
   };
 }
 export interface MovementInput {
@@ -255,14 +251,6 @@ export function parseSession(value: unknown): Session {
     "deviceToken",
   ] as const)
     if (s[key] !== undefined) result[key] = text(s[key], key);
-  if (s.localIp !== undefined)
-    result.localIp = s.localIp === null ? null : text(s.localIp, "IP");
-  if (s.localPort !== undefined) {
-    const port = number(s.localPort, "porta", 1);
-    if (!Number.isInteger(port) || port > 65535)
-      throw new Error("Porta inválida.");
-    result.localPort = port;
-  }
   if (typeof s.telefone === "string" && s.telefone.trim())
     result.telefone = s.telefone.trim();
   return result;
