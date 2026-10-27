@@ -7,6 +7,28 @@ export type ConnectInput = components["schemas"]["ConnectDeviceDto"];
 export type Movement = components["schemas"]["SyncMovementDto"];
 export type SyncPayload = components["schemas"]["SyncPayloadDto"];
 export type PairedOperator = components["schemas"]["PairedOperatorDto"];
+export type UpdateOperatorInput = components["schemas"]["UpdateOperatorDto"];
+
+export function parseOperatorUpdate(value: unknown): UpdateOperatorInput {
+  const patch = object(value);
+  if (
+    !Object.keys(patch).length ||
+    Object.keys(patch).some((key) => key !== "nomeOperador" && key !== "ativo")
+  )
+    throw new Error("Campos de operador inválidos.");
+  const result: UpdateOperatorInput = {};
+  if ("nomeOperador" in patch) {
+    const name = text(patch.nomeOperador, "nome do operador").normalize("NFC");
+    if (name.length > 100) throw new Error("Nome do operador inválido.");
+    result.nomeOperador = name;
+  }
+  if ("ativo" in patch) {
+    if (typeof patch.ativo !== "boolean")
+      throw new Error("Situação do operador inválida.");
+    result.ativo = patch.ativo;
+  }
+  return result;
+}
 
 export function parsePairedOperators(
   value: unknown,

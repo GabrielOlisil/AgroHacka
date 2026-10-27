@@ -111,6 +111,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DevicesController_deleteOperator"];
+        options?: never;
+        head?: never;
+        patch: operations["DevicesController_updateOperator"];
+        trace?: never;
+    };
     "/devices": {
         parameters: {
             query?: never;
@@ -217,6 +233,15 @@ export interface components {
         };
         DispatchAlertsDto: {
             farmId: string;
+        };
+        UpdateOperatorDto: {
+            nomeOperador?: string;
+            ativo?: boolean;
+        };
+        OperatorMutationResponseDto: {
+            farmId: string;
+            id: string;
+            sucesso: boolean;
         };
         PairedOperatorDto: {
             id: string;
@@ -499,6 +524,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    DevicesController_deleteOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorMutationResponseDto"];
+                };
+            };
+        };
+    };
+    DevicesController_updateOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOperatorDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorMutationResponseDto"];
                 };
             };
         };
