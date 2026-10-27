@@ -27,8 +27,8 @@ não altera sua URL. `localhost` no Android aponta para o próprio celular.
 
 O primeiro cadastro, login ou pareamento exige a API. Após obter a sessão e
 sincronizar o catálogo, leituras, movimentações e análises funcionam offline.
-Uma fazenda nova sem produtos depende do catálogo disponibilizado pelo backend;
-o endpoint atual de sincronização não recebe cadastros de produtos.
+Uma fazenda nova pode cadastrar insumos em **Estoque → Novo insumo**, com internet.
+O cadastro é confirmado pela API antes de ficar disponível no catálogo local.
 
 ## Testar
 
@@ -128,10 +128,33 @@ para atualizar os resultados.
   sazonalidade. Os critérios são referências explícitas do protótipo.
 - Saldos são agrupados por unidade, sem um total que misture litros e quilos.
 
-As fórmulas locais estão isoladas no cliente. O alinhamento do caminho efetivamente
-utilizado pelo serviço da API, incluindo unidades, parado/excesso e metadados
-financeiros, permanece nas tarefas 2.4/10.3/10.4 do DEV 1. Não prometer paridade
-total antes dessa validação. Esta entrega não modifica o backend nem o OpenAPI.
+As fórmulas locais estão isoladas no cliente. As tarefas 2.4/10.3/10.4 alinharam
+o caminho efetivamente utilizado pela API; `api/src/stock-engine/parity.spec.ts`
+compara as mesmas fixtures e data de referência nas duas camadas. O cadastro
+de insumos usa o contrato OpenAPI regenerado pelo comando do projeto.
+
+## Controle de estoque do gestor
+
+Na aba **Estoque**, **Novo insumo** cadastra nome, categoria e unidade livres,
+estoque mínimo e, opcionalmente, preço por unidade, validade, lote e fornecedor.
+Categorias novas podem ser digitadas; não exigem alteração no banco. O cadastro
+usa `POST /products` com o JWT do gestor e requer internet. O produto confirmado
+fica disponível no SQLite; os demais aparelhos o recebem no próximo sync.
+
+O cadastro não cria saldo: use **Entrada** na linha/cartão do produto para
+registrar a quantidade. **Saída** registra a retirada. As duas ações continuam
+funcionando offline e preservam a outbox e o histórico. O gestor pode combinar
+busca, categoria e situação (mínimo, sem estoque ou sem preço).
+
+O formulário mantém UUID/conteúdo em retries e ao fechar/reabrir o modal durante
+a mesma sessão. Após falha de rede, **Tentar novamente** confirma o mesmo cadastro;
+não o recria. O rascunho de cadastro não é uma outbox de produtos: ao reiniciar o
+app após uma resposta perdida, sincronize e confira o catálogo antes de iniciar
+outro cadastro. Preço ausente continua desconhecido; zero informado é válido.
+Edição/exclusão de cadastro e estorno de movimentos não fazem parte desta tela.
+
+Informações analíticas detalhadas ficam em **Detalhes**; conciliação só aparece
+quando há pendência/divergência e fica expandida em caso de saldo negativo.
 
 ## Pareamento e backups
 
@@ -160,8 +183,8 @@ baixá-los novamente.
   central, sem servidor no gestor, descoberta de IP ou fallback local. Os registros
   offline continuam no SQLite/outbox e são enviados ao reconectar. **5.7-A concluída
   no cliente:** removidos os helpers LAN, publicação de IP e script de firewall;
-  sessões/QR legados ignoram esses campos. Endpoints e campos ainda existentes na
-  API/contrato são pendências do DEV 1 (5.7-B/C). Não apagar dados locais nem
+  sessões/QR legados ignoram esses campos. As tarefas 5.7-B/C também retiraram
+  as rotas e os campos LAN da API/contrato. Não apagar dados locais nem
   regenerar tokens para atualizar. Ver `../ROADMAP_FINALIZACAO.md`.
 - O backend desta branch implementa autenticação de `/sync`, recibos individuais
   e conflitos imutáveis. Exige a atualização aditiva do banco descrita em
@@ -174,12 +197,12 @@ baixá-los novamente.
   cofre nativo é uma pendência antes de tratar o armazenamento como seguro.
 - O fluxo HTTP da API real com PostgreSQL descartável e dois SQLite é testado por
   `npm run test:sync` na pasta `api`. Isso não substitui testes no dispositivo.
-- A pendência de aceite do DEV 2 no MVP é a validação offline no Android real
-  (tarefa 5.2), adiada pelo usuário. O roteiro e os critérios estão em
-  [VALIDACAO_OFFLINE.md](VALIDACAO_OFFLINE.md). Testes automatizados não comprovam
-  esse aceite. Instalação limpa no Windows, APK instalado, câmera e WhatsApp
-  real já foram registrados em `../tarefas.md`; isso não dispensa testar uma
-  nova versão nos aparelhos. A extração do motor compartilhado e o cofre nativo
+- O usuário confirmou o teste offline no Android em 27/10 (tarefa 5.2), conforme
+  [VALIDACAO_OFFLINE.md](VALIDACAO_OFFLINE.md). O novo cadastro e o novo pacote
+  release ainda precisam de validação própria. A assinatura de distribuição e
+  os secrets necessários estão em [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
+  Instalação limpa no Windows, câmera e WhatsApp real estão em `../tarefas.md`.
+  A extração do motor compartilhado e o cofre nativo
   continuam como evoluções, sem ampliar o escopo desta validação.
 
 ## Operadores pareados e recuperação do código

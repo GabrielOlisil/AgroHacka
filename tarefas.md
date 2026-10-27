@@ -8,7 +8,8 @@
 
 > **Fechamento vigente (27/10):** roadmap detalhado ao final deste arquivo.
 > Sincronização exclusivamente pela internet; LAN cancelada, não adiada.
-> Retirada no cliente concluída (5.7-A); API/contrato pendentes (5.7-B/C).
+> Retirada de LAN concluída no cliente, na API e no contrato (5.7).
+> Teste offline Android confirmado pelo usuário; novo release/cadastro em 3.10/5.8.
 > Os itens 10.1–10.7 complementam este checklist com as lacunas do regulamento.
 
 ---
@@ -25,7 +26,7 @@
 | **Perfis de Dispositivo** | **Nó Gestor** vs. **Nó Operador** | **Central Dinâmica:** qualquer aparelho pode ser Gestor (com login) ou Operador (via pareamento) |
 | **Banco Local** | **SQLite local** (Tauri SQL Plugin) | Funcionamento **100% Offline-First** em todos os dispositivos |
 | **Backup Automático** | **Snapshots SQLite (Estilo Anki)** | Snapshots atômicos diários (`VACUUM INTO`), retenção de 7 dias e restauração em 1 clique |
-| **Sincronização** | **Somente internet (HTTPS)** | SQLite/outbox offline e envio direto à API central; cliente sem LAN em 5.7-A, retirada da superfície da API pendente em 5.7-B/C |
+| **Sincronização** | **Somente internet (HTTPS)** | SQLite/outbox offline e envio direto à API central; LAN retirada do cliente, API e contrato em 5.7 |
 | **Descoberta de IP** | **Cancelada** | Retirar endpoints, campos e consumo de IP local; sem mDNS nem heartbeat LAN (5.7) |
 | **Firewall do Windows** | **Sem porta de sincronização local** | Script LAN retirado em 5.7-A; nenhuma regra do sistema do usuário é alterada automaticamente |
 | **Pareamento Flexível** | **QR Code + Código Manual Alternativo** | Pareamento com nome do operador; funciona com ou sem câmera |
@@ -182,6 +183,13 @@
 
 ---
 
+- [x] **3.10. [DEV 2 + API autorizada] Controle de estoque do gestor:**
+  - [x] Cadastrar insumos com categoria livre, unidade, mínimo, preço/validade opcionais e recebimento pelos operadores via sync; sem alterar migrations nem gerar saldo implícito.
+  - [x] Facilitar busca/filtros e entradas/saídas pela aba Estoque; restringir o cadastro ao gestor.
+  - [x] Simplificar textos e colocar explicações analíticas em detalhes opcionais, mantendo avisos de pendências, erros e dados ausentes.
+  - [x] Validar cadastro, permissões, reenvios e interface com testes RED → GREEN e contrato gerado pelo comando do projeto.
+  > 27/10: `POST /products` autenticado, lock PostgreSQL por fazenda, UUID/conteúdo estáveis e 409 sem expor fazenda alheia. Cadastro online, saldo zero até registrar entrada, download pelo sync existente. Frontend com `openapi-fetch`, contrato gerado por `npm run openapi`, SQLite preservando outbox/histórico e rascunho mantido ao fechar/reabrir o modal na sessão. 471 testes cliente, 371 testes API, 29 testes PostgreSQL descartável, TypeScript e builds aprovados. Revisão visual com dados fictícios. Novo cadastro ainda não testado no aparelho real; edição/exclusão e cadastro offline fora deste escopo.
+
 ### ETAPA 4: Sincronização Híbrida, Backup e WhatsApp *(Dias 9 a 10 — EM PARALELO)*
 *Diferenciais de peso para a banca avaliadora.*
 
@@ -194,7 +202,7 @@
   - [x] Endpoint de teste manual para demonstração durante o pitch.
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
-- [x] **4.3. Motor de Sincronização Cloud (com transporte legado a retirar em 5.7):**
+- [x] **4.3. Motor de Sincronização Cloud (transporte legado retirado em 5.7):**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
   - [x] Implementação histórica dos endpoints de IP local e campos de pareamento na API; não corresponde a servidor LAN funcional. Retirada planejada em 5.7.
@@ -259,12 +267,12 @@
   - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
   - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
   - [x] Testar instalação limpa em máquina Windows sem versão anterior instalada (concluído pelo usuário em 26/10).
-- [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
+- [x] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
-  - [ ] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
+  - [x] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
     - [x] Preparar roteiro reproduzível com persistência após reabrir, confirmação no gestor e novo sync sem duplicidade: `client/VALIDACAO_OFFLINE.md`.
-    > Teste físico adiado pelo usuário em 26/10. O roteiro e os testes automatizados não concluem esta validação.
+    > Teste físico confirmado com sucesso pelo usuário em 27/10. Aceite referente ao APK já instalado; o novo build release e o novo cadastro exigem validação própria.
     > Regressão DEV 2 em `test/dev2-offline-readiness`: 254 testes Vitest, checagem TypeScript, build da interface e 5 testes Rust de transação/backup aprovados. Sem alterações na API, contrato, envs ou migrations; sem novo APK/instalador nesta etapa.
   - [x] App respeita as barras do sistema no aparelho real (insets), confirmado em 26/10.
   - [x] `.apk` da release gerado pelo GitHub Actions instalado e funcionando no aparelho (26/10). O download direto pelo navegador do celular corrompeu o arquivo de 155 MB ("problem parsing the package"); o mesmo arquivo enviado pelo WhatsApp instalou. Baixar no PC e transferir.
@@ -289,6 +297,13 @@
   - [x] **Aceite do cliente em testes automatizados:** sessão antiga com IP envia apenas à API configurada; sem internet, salvar/reabrir mantém a outbox; retry não duplica; nenhum servidor, permissão ou regra de firewall LAN exigido. O teste físico permanece em 5.2.
 
 ---
+
+- [ ] **5.8. [DEV 2] Android em modo release:**
+  - [x] Configurar o workflow para compilar release arm64, alinhar, assinar e verificar; upload somente do APK verificado, sem fallback debug.
+  - [x] Documentar configuração da chave de assinatura no GitHub e a transição da instalação debug, preservando os dados do usuário (`client/ANDROID_RELEASE.md`).
+  - [x] Validar workflow/scripts, inclusive assinatura real v2/v3 e alinhamento de APK mínimo com chave descartável, recusa de senha incorreta/debug e limpeza do material temporário; incluído nos 471 testes cliente aprovados.
+  - [ ] Configurar os quatro secrets de assinatura no GitHub e executar o workflow com o aplicativo completo. Não foram criados secrets nem chave de distribuição nesta tarefa.
+  - [ ] Validar o novo APK release e o novo cadastro no aparelho. Debug e release têm identificadores/SQLite diferentes; sincronizar pendências antes da transição, sem desinstalar/apagar o debug.
 
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
@@ -361,7 +376,8 @@
 
 Ordem, dependências e critérios detalhados na seção de roadmap ao final deste arquivo.
 Não são funcionalidades já concluídas. A retirada de LAN está em 5.7; seu servidor
-foi cancelado em 5.6. O aceite físico Android continua em 5.2.
+foi cancelado em 5.6. O aceite físico Android anterior foi confirmado em 5.2;
+o pacote release e as novas telas ainda exigem validação em 5.8/10.5.
 
 - [x] **10.0. [EM CONJUNTO] Registrar o roadmap de finalização e a decisão de sincronizar exclusivamente pela internet.**
 - [x] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
@@ -385,8 +401,8 @@ foi cancelado em 5.6. O aceite físico Android continua em 5.2.
     > Feito pela 10.3: a análise da API devolve valor/ABC nulos sem preço, `pricedProductCount`/`unpricedProductCount`, amostras, dias e confiabilidade, iguais ao cliente. `parity.spec.ts` cobre sem histórico, poucas/muitas amostras, todos/alguns/nenhum com preço e preço zero. A resposta de `/stock/analyze` não tem schema no contrato e o cliente não a consome, então não houve adaptação de cliente.
 - [ ] **10.5. [DEV 2 + DEV 1] Regressão integrada:**
   - [x] **DEV 2:** 283 testes do cliente, checagem TypeScript, build da interface e 5 testes Rust aprovados em 27/10; reabertura offline e resposta perdida validadas com SQLite temporário real e servidor simulado. Revisão visual no navegador com dados fictícios (não substitui aparelhos). Sem novo APK/instalador, mudança de API, contrato, envs ou migrations.
-  - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. Concluir 5.2 somente após o teste físico adiado; mocks e SQLite não comprovam locks PostgreSQL nem execução Android.
-    > 27/10, `dev` com 10.1–10.4 e 5.7: API `npm test` 245, `npm run build` OK, `npm run test:sync` 24 em PostgreSQL descartável (Docker); cliente `npm test` 283, `npm run check` e `npm run build` OK. Rust: código de `client/src-tauri` inalterado desde 26/10, valendo os 5 testes de 27/10 do DEV 2. **Faltam:** atualização sobre instalação existente e aparelhos (Windows e Android) com o novo build, e o teste físico da 5.2.
+  - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. O aceite anterior de 5.2 foi informado pelo usuário; o novo pacote release e o novo cadastro exigem teste próprio em aparelhos.
+    > Baseline anterior: `dev` com 10.1–10.4 e 5.7 tinha 245 testes API, 24 PostgreSQL e 283 cliente. Nesta alteração, 3.10/5.8: 371 API, 29 PostgreSQL, 471 cliente, TypeScript e builds aprovados. Código Rust inalterado; os 5 testes nativos anteriores não foram reexecutados. O aceite anterior de 5.2 foi informado pelo usuário. **Faltam:** execução CI com assinatura da equipe, atualização/instalação do novo pacote e teste do cadastro em aparelhos.
 - [ ] **10.6. [EM CONJUNTO] Fechar documentação verificável:** concluir 7.1, origem dos dados, responsável, links dos pacotes/vídeo, declaração de IA efetiva e licença consistente.
 - [ ] **10.7. [EM CONJUNTO] Congelar e publicar a versão avaliada:** PRs para `dev`, fluxo existente de release, commit/tag identificável e conclusão das tarefas 8/9 sem alegar testes não executados.
 
@@ -423,15 +439,18 @@ servidor intermediário. Login e pareamento inicial exigem a API; sessões já
 estabelecidas continuam permitindo trabalho offline. A disponibilidade efetiva
 da API, e não apenas `navigator.onLine`, determina o sucesso da sincronização.
 
-**Estado atual (27/10):** 5.7-A implementada no cliente, com transporte direto à
-API e sem helpers LAN. Sessões e QR antigos ignoram os campos locais sem perder
-credenciais. Endpoints/campos da API e do contrato ainda dependem de 5.7-B/C
-(DEV 1). As demais pendências seguem os checkboxes acima, que registram o estado de execução.
+**Estado atual (27/10):** 5.7 concluída no cliente, API e contrato, com transporte
+direto à API e sem helpers LAN. Sessões/QR antigos ignoram os campos locais sem
+perder credenciais. As tarefas 10.1–10.4 também foram concluídas na `dev`;
+a organização confirmou que os dados devem ser simulados, sem base oficial.
+As demais pendências seguem os checkboxes acima, que registram o estado de execução.
 
 Também foi implementada a parte local de 10.4: amostragem junto à previsão,
-financeiro parcial e itens sem preço fora da ABC. Regressão do cliente: 283
-testes Vitest, checagem TypeScript, build da interface e 5 testes Rust aprovados;
-teste Android físico não executado. Nenhum novo APK/instalador foi publicado.
+financeiro parcial e itens sem preço fora da ABC. A tarefa 3.10 acrescenta cadastro
+online de insumos e ações de estoque. Regressão atual: 471 testes cliente, 371
+API, 29 PostgreSQL, TypeScript e builds aprovados. Aceite Android anterior
+confirmado pelo usuário; novo APK release/cadastro aguardam validação em 5.8.
+Nenhum novo APK/instalador foi publicado nesta alteração.
 
 ### 2. Ordem de execução e paralelismo
 
@@ -443,7 +462,7 @@ teste Android físico não executado. Nenhum novo APK/instalador foi publicado.
 | 2 | 10.3: corrigir unidades e unificar a análise utilizada | DEV 1 | Mesmos cenários e critérios do cliente |
 | 3A | 10.4: incerteza e valores financeiros parciais | DEV 2 + DEV 1 quando houver mudança contratual | Interface clara e contrato publicado antes de adaptar o cliente |
 | 3B | 5.7-B/C: retirar a superfície LAN da API e do contrato | DEV 1, depois DEV 2 | Cliente cloud-only preparado; transição compatível |
-| 4 | 10.5 e 5.2: regressões e aceite em aparelhos | DEV 2; validação conjunta da API | Nenhuma perda ou duplicidade; Android físico ainda pendente |
+| 4 | 10.5, 5.2 e 5.8: regressões e aceite em aparelhos | DEV 2; validação conjunta da API | Android anterior aprovado pelo usuário; novo release/cadastro pendentes |
 | 5 | 10.6 e 7.1: fechar documentação e acesso | Ambos | Material corresponde ao comportamento real |
 | 6 | 10.7, 8.1 e 8.2: release, vídeo e apresentação | Ambos | Versão identificada e reproduzível |
 
@@ -579,7 +598,8 @@ e da cobertura financeira sem interpretar dado ausente como zero.
 - Validar a atualização sobre instalação existente, sem apagar SQLite, sessão,
   histórico ou fila. Nenhuma necessidade de editar a migration SQLite 001.
 - Executar no Android real o roteiro `client/VALIDACAO_OFFLINE.md` e registrar
-  evidências. **Adiado pelo usuário; a tarefa 5.2 permanece aberta.**
+  evidências. **Aceite do APK anterior informado pelo usuário em 27/10; o novo
+  release e o novo cadastro ainda exigem teste próprio (5.8/10.5).**
 - Retestar Windows e Android se a remoção de LAN afetar o novo build. A aprovação
   dos instaladores anteriores não comprova a aprovação da versão modificada.
 

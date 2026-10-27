@@ -1,7 +1,9 @@
 # Aceite offline no Android — tarefa 5.2 (DEV 2)
 
-Status em 26/10/2026: **pendente de execução no aparelho**, adiado pelo usuário.
-Este roteiro não é evidência de teste concluído. A sincronização do MVP é somente
+Status em 27/10/2026: **teste no Android confirmado com sucesso pelo usuário**,
+referente ao APK já instalado. Modelo, versão do pacote e medições não foram
+informados nesta confirmação. O novo cadastro e o novo APK release precisam de
+aceite próprio; o relato anterior não comprova essas alterações. A sincronização do MVP é somente
 pela nuvem; o mesmo Wi-Fi, sem internet, não sincroniza celular e computador.
 
 ## Preparação
@@ -41,20 +43,19 @@ pela nuvem; o mesmo Wi-Fi, sem internet, não sincroniza celular e computador.
 
 ## Registro do aceite
 
-Preencher depois da execução, sem tokens, QR Codes, códigos de pareamento ou
+Complementar o relato do usuário, sem tokens, QR Codes, códigos de pareamento ou
 dados pessoais em capturas de tela:
 
 | Evidência | Resultado observado |
 | --- | --- |
-| APK/release e data do teste | Não executado |
-| Aparelho e Android | Não executado |
-| Saldo inicial, quantidade/unidade e saldo final | Não executado |
-| Persistência após fechar e reabrir offline | Não executado |
-| Confirmação no gestor após reconexão | Não executado |
-| Nova sincronização sem duplicidade | Não executado |
+| Aceite Android do fluxo offline | Sucesso informado pelo usuário em 27/10/2026 |
+| APK/release, aparelho e Android | Não informados nesta confirmação |
+| Saldo inicial, quantidade/unidade e saldo final | Medições não fornecidas |
+| Persistência, reconexão e repetição de sync | Aceite geral do roteiro informado; sem evidências detalhadas anexadas |
+| Novo cadastro e APK release desta alteração | Ainda não validados no aparelho |
 
-Somente após esses critérios passarem, concluir o checkbox de validação física e
-a tarefa 5.2 em `../tarefas.md`. Se falhar, anotar em qual etapa, o aviso exibido e
+A tarefa 5.2 foi concluída com base no aceite informado; a validação do novo
+release permanece na tarefa 5.8 em `../tarefas.md`. Se falhar, anotar a etapa, o aviso e
 a contagem de pendências; preservar o app e o SQLite para diagnóstico. Não apagar
 banco, editar migrations nem tentar corrigir o resultado diretamente na nuvem.
 
