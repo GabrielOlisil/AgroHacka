@@ -81,6 +81,7 @@ watch(session, () => {
   showPairing.value = false;
   operatorName.value = "";
   productId.value = "";
+  chartProductId.value = "";
   quantity.value = "";
   destination.value = "";
   search.value = "";
@@ -112,9 +113,11 @@ const filteredProducts = computed(() =>
         (stockStatus.value === "unpriced" && p.precoAquisicao === null)),
   ),
 );
-const selectedProduct = computed(
+// The chart has its own selection: browsing consumption must not change the form.
+const chartProductId = ref("");
+const chartProduct = computed(
   () =>
-    analysis.value.products.find((p) => p.id === productId.value) ??
+    analysis.value.products.find((p) => p.id === chartProductId.value) ??
     analysis.value.products[0],
 );
 const financialPartial = computed(
@@ -199,6 +202,31 @@ async function record() {
     destination.value = "";
     movementDate.value = localDateTime();
   }, "Salvo no aparelho · sincronização pendente.");
+}
+const formProduct = computed(() =>
+  analysis.value.products.find((p) => p.id === productId.value),
+);
+// Offline-first records the fact even past the balance; warn, never block.
+const exceedsBalance = computed(
+  () =>
+    kind.value === "SAIDA" &&
+    !!formProduct.value &&
+    Number(quantity.value) > formProduct.value.saldo,
+);
+// The overview form is far below the page notices on a phone: answer next to it.
+const formFeedback = ref("");
+const formError = ref("");
+async function recordFromForm() {
+  formFeedback.value = "";
+  formError.value = "";
+  await record();
+  if (feedback.value) {
+    formFeedback.value = feedback.value;
+    feedback.value = "";
+  } else if (error.value) {
+    formError.value = error.value;
+    error.value = "";
+  }
 }
 function openMovement(id: string, type: "ENTRADA" | "SAIDA") {
   productId.value = id;
@@ -767,7 +795,10 @@ onUnmounted(() => {
             ><strong>{{ urgent.toString().padStart(2, "0") }}</strong>
           </article>
         </section>
-        <div class="dashboard-grid">
+        <div
+          class="dashboard-grid"
+          :class="{ 'actions-first': session.role === 'OPERADOR' }"
+        >
           <section class="panel">
             <div class="section-heading">
               <h2>Alertas prioritários</h2>
@@ -838,7 +869,7 @@ onUnmounted(() => {
                   <UiIcon name="arrow-down-left" /> Entrada de compra
                 </button>
               </div>
-              <form @submit.prevent="record">
+              <form @submit.prevent="recordFromForm">
                 <label
                   >Insumo<select v-model="productId" required>
                     <option value="" disabled>Selecione um insumo</option>
@@ -852,11 +883,21 @@ onUnmounted(() => {
                     </option>
                   </select></label
                 >
+                <small
+                  v-if="formProduct"
+                  class="helper"
+                  data-testid="form-balance"
+                  >Saldo: {{ unitValue(formProduct.saldo) }}
+                  {{ formProduct.unidadeMedida }}</small
+                >
                 <div class="split">
                   <label
-                    >Quantidade<input
+                    >Quantidade{{
+                      formProduct ? ` (${formProduct.unidadeMedida})` : ""
+                    }}<input
                       v-model="quantity"
                       type="number"
+                      inputmode="decimal"
                       min="0.000001"
                       step="any"
                       required /></label
@@ -868,6 +909,20 @@ onUnmounted(() => {
                       aria-readonly="true"
                   /></label>
                 </div>
+                <p
+                  v-if="exceedsBalance && formProduct"
+                  class="notice"
+                  aria-live="polite"
+                  data-testid="balance-warning"
+                >
+                  <UiIcon name="info" /><span
+                    >A saída é maior que o saldo deste aparelho ({{
+                      unitValue(formProduct.saldo)
+                    }}
+                    {{ formProduct.unidadeMedida }}). O registro será salvo e a
+                    diferença aparece para o gestor revisar.</span
+                  >
+                </p>
                 <label
                   >Data e hora<input
                     v-model="movementDate"
@@ -887,6 +942,12 @@ onUnmounted(() => {
                     busy ? "Salvando…" : "Salvar neste aparelho"
                   }}
                 </button>
+                <p v-if="formFeedback" class="notice success" role="status">
+                  <UiIcon name="circle-check" /><span>{{ formFeedback }}</span>
+                </p>
+                <p v-if="formError" class="notice error" role="alert">
+                  <UiIcon name="circle-alert" /><span>{{ formError }}</span>
+                </p>
               </form>
             </section>
             <section
@@ -967,7 +1028,7 @@ onUnmounted(() => {
               <h2>Consumo ao longo do tempo</h2>
               <p class="muted">Últimos 30 dias</p>
             </div>
-            <select v-model="productId" aria-label="Insumo para analisar">
+            <select v-model="chartProductId" aria-label="Insumo para analisar">
               <option value="" disabled>Selecione</option>
               <option v-for="p in analysis.products" :key="p.id" :value="p.id">
                 {{ p.nome }}
@@ -975,21 +1036,21 @@ onUnmounted(() => {
             </select>
           </div>
           <div
-            v-if="selectedProduct"
+            v-if="chartProduct"
             class="chart"
-            :aria-label="`Consumo diário de ${selectedProduct.nome}`"
+            :aria-label="`Consumo diário de ${chartProduct.nome}`"
           >
             <div
-              v-for="day in selectedProduct.consumoDiario"
+              v-for="day in chartProduct.consumoDiario"
               :key="day.dia"
               class="chart-column"
             >
               <span
                 class="chart-bar"
                 :style="{
-                  height: `${Math.max(2, (day.quantidade / Math.max(1, ...selectedProduct.consumoDiario.map((d) => d.quantidade))) * 115)}px`,
+                  height: `${Math.max(2, (day.quantidade / Math.max(1, ...chartProduct.consumoDiario.map((d) => d.quantidade))) * 115)}px`,
                 }"
-                :title="`${day.dia}: ${day.quantidade} ${selectedProduct.unidadeMedida}`"
+                :title="`${day.dia}: ${day.quantidade} ${chartProduct.unidadeMedida}`"
               ></span
               ><small>{{ day.dia.slice(8) }}</small>
             </div>
@@ -1056,7 +1117,7 @@ onUnmounted(() => {
                 <th>Valor armazenado</th>
                 <th>ABC</th>
                 <th>Validade</th>
-                <th v-if="session.role === 'GESTOR'">Movimentar</th>
+                <th>Movimentar</th>
               </tr>
             </thead>
             <tbody>
@@ -1124,7 +1185,7 @@ onUnmounted(() => {
                       : "Não informada"
                   }}
                 </td>
-                <td v-if="session.role === 'GESTOR'" class="movement-cell">
+                <td class="movement-cell">
                   <div class="stock-actions">
                     <button
                       class="secondary"
@@ -1287,7 +1348,7 @@ onUnmounted(() => {
       </section>
     </div>
     <div
-      v-if="showMovement && session.role === 'GESTOR'"
+      v-if="showMovement"
       class="modal-backdrop"
       @click.self="!busy && (showMovement = false)"
       @keydown.esc="!busy && (showMovement = false)"
@@ -1308,26 +1369,41 @@ onUnmounted(() => {
         </button>
         <h2 id="movement-title">
           {{ kind === "ENTRADA" ? "Entrada" : "Saída" }} ·
-          {{ selectedProduct?.nome }}
+          {{ formProduct?.nome }}
         </h2>
         <p class="muted">
-          Saldo: {{ unitValue(selectedProduct?.saldo ?? 0) }}
-          {{ selectedProduct?.unidadeMedida }}
+          Saldo: {{ unitValue(formProduct?.saldo ?? 0) }}
+          {{ formProduct?.unidadeMedida }}
         </p>
         <p v-if="movementError" class="notice error" role="alert">
           {{ movementError }}
         </p>
         <form @submit.prevent="recordFromStock">
           <label
-            >Quantidade ({{ selectedProduct?.unidadeMedida }})<input
+            >Quantidade ({{ formProduct?.unidadeMedida }})<input
               v-model="quantity"
               type="number"
+              inputmode="decimal"
               min="0.000001"
               step="any"
               required
               autofocus
               :disabled="busy"
           /></label>
+          <p
+            v-if="exceedsBalance && formProduct"
+            class="notice"
+            aria-live="polite"
+            data-testid="balance-warning"
+          >
+            <UiIcon name="info" /><span
+              >A saída é maior que o saldo deste aparelho ({{
+                unitValue(formProduct.saldo)
+              }}
+              {{ formProduct.unidadeMedida }}). O registro será salvo e a
+              diferença aparece para o gestor revisar.</span
+            >
+          </p>
           <label
             >Data e hora<input
               v-model="movementDate"

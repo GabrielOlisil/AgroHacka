@@ -268,6 +268,16 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       wrapper.unmount();
     });
 
+    it("para o operador o registro vem antes dos alertas (tarefa 11.2)", () => {
+      expect(rule(".actions-first > .action-row")).toMatch(/order\s*:\s*-1/);
+      const operador = mountApp(controller({ role: "OPERADOR" }));
+      expect(operador.get(".dashboard-grid").classes()).toContain("actions-first");
+      operador.unmount();
+      const gestor = mountApp(controller({ telefone: "+5569999999999" }));
+      expect(gestor.get(".dashboard-grid").classes()).not.toContain("actions-first");
+      gestor.unmount();
+    });
+
     it("para o operador a linha de baixo tem só a movimentação", () => {
       const wrapper = mountApp(controller({ role: "OPERADOR" }));
       const children = wrapper.get(actionRow).findAll(":scope > section");
