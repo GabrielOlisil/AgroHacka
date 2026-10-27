@@ -6,6 +6,7 @@ import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
 import { APP_VERSION } from "./app-version";
+import { openPicker } from "./open-picker";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -1051,7 +1052,8 @@ onUnmounted(() => {
                   >Data e hora<input
                     v-model="movementDate"
                     type="datetime-local"
-                    required /></label
+                    required
+                    @click="openPicker" /></label
                 ><p v-else class="date-line" data-testid="movement-date">
                   Data: agora
                   <button
@@ -1576,6 +1578,7 @@ onUnmounted(() => {
               type="datetime-local"
               required
               :disabled="busy"
+              @click="openPicker"
           /></label>
           <p v-else class="date-line" data-testid="movement-date">
             Data: agora

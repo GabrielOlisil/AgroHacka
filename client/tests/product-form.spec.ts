@@ -98,4 +98,16 @@ describe("cadastro de insumos", () => {
     expect(save.mock.calls[0]![0].fornecedor).toBeUndefined();
     wrapper.unmount();
   });
+  it("tocar em qualquer parte do campo Validade abre o calendário", async () => {
+    const showPicker = vi.fn();
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", {
+      configurable: true,
+      value: showPicker,
+    });
+    const wrapper = mount(ProductForm, { props: { categories: [], save: vi.fn() } });
+    await wrapper.get('[name="validade"]').trigger("click");
+    expect(showPicker).toHaveBeenCalledTimes(1);
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", { configurable: true, value: undefined });
+    wrapper.unmount();
+  });
 });

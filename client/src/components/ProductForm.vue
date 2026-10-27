@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { parseProductInput, type ProductInput } from "../offline/types";
 import UiIcon from "./UiIcon.vue";
+import { openPicker } from "../open-picker";
 
 const props = defineProps<{
   categories: string[];
@@ -117,7 +118,11 @@ async function submit() {
       </div>
       <div class="split">
         <label
-          >Validade<input v-model="validade" name="validade" type="date"
+          >Validade<input
+            v-model="validade"
+            name="validade"
+            type="date"
+            @click="openPicker"
         /></label>
         <label
           >Lote<input

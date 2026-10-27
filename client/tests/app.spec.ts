@@ -182,6 +182,28 @@ describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", (
     wrapper.unmount();
   });
 
+  it("tocar em qualquer parte do campo de data abre o calendário, mesmo sem suporte do navegador", async () => {
+    const showPicker = vi.fn();
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", {
+      configurable: true,
+      value: showPicker,
+    });
+    const wrapper = mount(App, { props: { controller: withDiesel(controller("OPERADOR")) as never } });
+    const panel = wrapper.get(".movement-panel");
+    await panel.get('[data-testid="change-date"]').trigger("click");
+    await panel.get('input[type="datetime-local"]').trigger("click");
+    expect(showPicker).toHaveBeenCalledTimes(1);
+    // Navegador que recusa (sem gesto do usuário) ou não tem showPicker: o campo segue normal.
+    showPicker.mockImplementation(() => {
+      throw new DOMException("sem gesto", "NotAllowedError");
+    });
+    await panel.get('input[type="datetime-local"]').trigger("click");
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", { configurable: true, value: undefined });
+    await panel.get('input[type="datetime-local"]').trigger("click");
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it("a janela de entrada/saída do Estoque segue o mesmo padrão de data e destinos", async () => {
     const state = controller("OPERADOR");
     const product = {
