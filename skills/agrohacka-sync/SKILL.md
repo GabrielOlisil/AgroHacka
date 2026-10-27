@@ -40,10 +40,15 @@ credenciais/configuração externa como efeito colateral.
 
 ## Invariantes compartilhadas
 
+0. **Somente nuvem.** Desde a tarefa 5.7 a sincronização é exclusivamente pela API
+   central: não há LAN, heartbeat, IP local nem comunicação entre aparelhos. As
+   seções de LAN de `regra_de_sync.md` são históricas; não reintroduza esse
+   transporte sem nova decisão da equipe.
+
 1. **Registro não é saldo.** Sincronize movimentações e derive o saldo. Não use o
    saldo absoluto de um aparelho nem last-write-wins para substituir o histórico.
 2. **Identidade técnica é estável.** Um rascunho recebe um ID uma vez; clique duplo,
-   retry, relay LAN e restauração preservam esse ID. Mesmo ID/conteúdo repete o
+   retry e restauração preservam esse ID. Mesmo ID/conteúdo repete o
    resultado; mesmo ID/conteúdo diferente gera conflito, não edição silenciosa.
 3. **Identidade física é outra garantia.** Duas saídas iguais no mesmo dia podem
    ser legítimas. Deduplicação física exige referência compartilhada da operação,

@@ -12,7 +12,6 @@ describe('DevicesController', () => {
     devicesService = {
       createPairingToken: vi.fn(),
       connectDevice: vi.fn(),
-      updateLocalIp: vi.fn(),
       listOperators: vi.fn(),
     };
     auth = { authenticateSync: vi.fn().mockResolvedValue(identity) };
@@ -22,16 +21,6 @@ describe('DevicesController', () => {
     );
   });
 
-  it('deve chamar updateLocalIp quando autenticado como gestor da fazenda', async () => {
-    const dto = { farmId: 'farm-1', localIp: '192.168.1.50', localPort: 3333 };
-    const mockRes = { sucesso: true, localIp: '192.168.1.50', localPort: 3333 };
-    devicesService.updateLocalIp.mockResolvedValue(mockRes);
-
-    const result = await devicesController.updateLocalIp(dto, 'Bearer signed');
-    expect(auth.authenticateSync).toHaveBeenCalledWith('Bearer signed');
-    expect(devicesService.updateLocalIp).toHaveBeenCalledWith(dto);
-    expect(result).toEqual(mockRes);
-  });
   it('derives the listing scope from the authenticated manager instead of request data', async () => {
     devicesService.listOperators.mockResolvedValue({
       farmId: 'farm-1',
@@ -57,30 +46,6 @@ describe('DevicesController', () => {
       'Unauthorized',
     );
     expect(devicesService.listOperators).not.toHaveBeenCalled();
-  });
-
-  it('deve rejeitar updateLocalIp se usuario for operador ou de outra fazenda', async () => {
-    auth.authenticateSync.mockResolvedValueOnce({
-      role: 'OPERADOR',
-      farmId: 'farm-1',
-    });
-    await expect(
-      devicesController.updateLocalIp(
-        { farmId: 'farm-1', localIp: '1.2.3.4' },
-        'Bearer token',
-      ),
-    ).rejects.toThrow();
-
-    auth.authenticateSync.mockResolvedValueOnce({
-      role: 'GESTOR',
-      farmId: 'outra-fazenda',
-    });
-    await expect(
-      devicesController.updateLocalIp(
-        { farmId: 'farm-1', localIp: '1.2.3.4' },
-        'Bearer token',
-      ),
-    ).rejects.toThrow();
   });
 
   it('deve chamar createPairingToken com os parâmetros corretos', async () => {

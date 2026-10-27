@@ -1,7 +1,5 @@
 export interface SeedFarm {
   nome: string;
-  localIp: string;
-  localPort: number;
 }
 
 export interface SeedGestor {
@@ -60,8 +58,6 @@ export function getOfficialSeedDataset(): OfficialSeedDataset {
 
   const farm: SeedFarm = {
     nome: 'Fazenda Modelo AgroHack',
-    localIp: '192.168.1.100',
-    localPort: 3333,
   };
 
   const gestor: SeedGestor = {

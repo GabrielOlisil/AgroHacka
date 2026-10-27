@@ -30,7 +30,9 @@ consultada no servidor. Produto e dispositivo do body são confrontados com ela.
 JWT expirado ou dispositivo revogado retornam 401; o cliente conserva sua outbox.
 Pareamentos só podem ser emitidos pelo gestor da fazenda; a conexão por código
 manual agora também devolve o token do dispositivo. Sessões manuais antigas sem
-token precisam reconectar. O heartbeat exige gestor autenticado.
+token precisam reconectar. A sincronização é somente pela internet: desde a
+tarefa 5.7 não há heartbeat nem registro de IP local, e pareamento e conexão não
+devolvem IP/porta.
 
 Um lote contém `protocolVersion: 2` e até 100 movimentações. Não há conversão de
 unidades: a quantidade refere-se à unidade do produto. Datas trafegam em ISO.

@@ -8,7 +8,7 @@ const identity: SyncIdentity = {
   role: 'GESTOR',
   nome: 'Ana',
 };
-describe('SyncService - authenticated sync and heartbeat', () => {
+describe('SyncService - authenticated sync', () => {
   const update = vi.fn();
   const create = vi.fn();
   const receipt = vi.fn();
@@ -61,34 +61,8 @@ describe('SyncService - authenticated sync and heartbeat', () => {
     service = new SyncService(prisma as never, mockStockService as never);
   });
 
-  it('updates heartbeat only for the authenticated manager farm', async () => {
-    update.mockResolvedValue({
-      id: identity.farmId,
-      localIp: '192.168.1.55',
-      localPort: 3333,
-    });
-    const result = await service.updateHeartbeat(
-      { farmId: identity.farmId, localIp: '192.168.1.55' },
-      identity,
-    );
-    expect(update).toHaveBeenCalledWith({
-      where: { id: identity.farmId },
-      data: { localIp: '192.168.1.55', localPort: 3333 },
-    });
-    expect(result.sucesso).toBe(true);
-    await expect(
-      service.updateHeartbeat(
-        { farmId: 'foreign', localIp: '127.0.0.1' },
-        identity,
-      ),
-    ).rejects.toThrow();
-    await expect(
-      service.updateHeartbeat(
-        { farmId: identity.farmId, localIp: '127.0.0.1' },
-        { ...identity, role: 'OPERADOR' },
-      ),
-    ).rejects.toThrow();
-    expect(update).toHaveBeenCalledOnce();
+  it('no longer offers a local IP heartbeat (tarefa 5.7-B)', () => {
+    expect('updateHeartbeat' in service).toBe(false);
   });
   it('creates an immutable movement and its individual receipt using verified authorship', async () => {
     const item = {

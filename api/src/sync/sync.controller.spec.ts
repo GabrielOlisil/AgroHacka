@@ -16,7 +16,6 @@ describe('SyncController', () => {
   beforeEach(() => {
     syncService = {
       syncData: vi.fn(),
-      updateHeartbeat: vi.fn(),
     };
     auth = { authenticateSync: vi.fn().mockResolvedValue(identity) };
     syncController = new SyncController(syncService as SyncService, auth);
@@ -39,18 +38,8 @@ describe('SyncController', () => {
     expect(result).toEqual(mockRes);
   });
 
-  it('deve chamar updateHeartbeat com o ip e porta da fazenda', async () => {
-    const payload = {
-      farmId: 'farm-1',
-      localIp: '192.168.1.10',
-      localPort: 3333,
-    };
-    const mockRes = { sucesso: true, localIp: '192.168.1.10' };
-    syncService.updateHeartbeat.mockResolvedValue(mockRes);
-
-    const result = await syncController.heartbeat(payload, 'Bearer signed');
-    expect(syncService.updateHeartbeat).toHaveBeenCalledWith(payload, identity);
-    expect(result).toEqual(mockRes);
+  it('não expõe mais heartbeat de IP local (tarefa 5.7-B)', () => {
+    expect('heartbeat' in syncController).toBe(false);
   });
   it('does not touch storage when authentication fails', async () => {
     auth.authenticateSync.mockRejectedValue(new Error('unauthorized'));

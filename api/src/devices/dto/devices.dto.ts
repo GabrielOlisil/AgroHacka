@@ -7,12 +7,6 @@ export class ConnectDeviceDto {
   tokenOrCode!: string;
 }
 
-export class UpdateLocalIpDto {
-  farmId!: string;
-  localIp!: string;
-  localPort?: number;
-}
-
 export class PairedOperatorDto {
   id!: string;
   farmId!: string;

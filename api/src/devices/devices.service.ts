@@ -16,12 +16,6 @@ export interface ConnectDeviceDto {
   tokenOrCode: string;
 }
 
-export interface UpdateLocalIpDto {
-  farmId: string;
-  localIp: string;
-  localPort?: number;
-}
-
 @Injectable()
 export class DevicesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -85,8 +79,6 @@ export class DevicesService {
       farmNome: farm.nome,
       nomeOperador: dto.nomeOperador,
       deviceToken,
-      localIp: farm.localIp,
-      localPort: farm.localPort || 3333,
     };
 
     return {
@@ -126,34 +118,6 @@ export class DevicesService {
       farmId: device.farmId,
       farmNome: device.farm.nome,
       nomeOperador: device.nomeOperador,
-      localIp: device.farm.localIp,
-      localPort: device.farm.localPort || 3333,
-    };
-  }
-
-  async updateLocalIp(dto: UpdateLocalIpDto) {
-    const farm = await this.prisma.farm.findUnique({
-      where: { id: dto.farmId },
-    });
-
-    if (!farm) {
-      throw new NotFoundException('Fazenda não encontrada');
-    }
-
-    const port = dto.localPort ?? 3333;
-    const updated = await this.prisma.farm.update({
-      where: { id: dto.farmId },
-      data: {
-        localIp: dto.localIp,
-        localPort: port,
-      },
-    });
-
-    return {
-      sucesso: true,
-      farmId: updated.id,
-      localIp: updated.localIp,
-      localPort: updated.localPort,
     };
   }
 }

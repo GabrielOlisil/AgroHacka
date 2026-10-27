@@ -61,7 +61,8 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
         'nomeOperador',
         'Carlos Silva - Tratorista',
       );
-      expect(result.qrPayload).toHaveProperty('localIp', '192.168.1.100');
+      expect(result.qrPayload).not.toHaveProperty('localIp');
+      expect(result.qrPayload).not.toHaveProperty('localPort');
     });
 
     it('deve lançar erro se a fazenda não for encontrada', async () => {
@@ -180,6 +181,8 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
       expect(result.sucesso).toBe(true);
       expect(result.nomeOperador).toBe('Carlos Silva');
       expect(result.farmId).toBe('farm-123');
+      expect(result).not.toHaveProperty('localIp');
+      expect(result).not.toHaveProperty('localPort');
     });
 
     it('deve conectar com sucesso via pairingCode alfanumérico', async () => {
@@ -224,45 +227,7 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
     });
   });
 
-  describe('updateLocalIp', () => {
-    it('deve atualizar o IP e porta locais da fazenda com sucesso', async () => {
-      prismaService.farm.findUnique.mockResolvedValue({
-        id: 'farm-1',
-        nome: 'Fazenda Boa Vista',
-      });
-      prismaService.farm.update.mockResolvedValue({
-        id: 'farm-1',
-        localIp: '192.168.1.50',
-        localPort: 3333,
-      });
-
-      const result = await devicesService.updateLocalIp({
-        farmId: 'farm-1',
-        localIp: '192.168.1.50',
-        localPort: 3333,
-      });
-
-      expect(prismaService.farm.update).toHaveBeenCalledWith({
-        where: { id: 'farm-1' },
-        data: {
-          localIp: '192.168.1.50',
-          localPort: 3333,
-        },
-      });
-      expect(result.sucesso).toBe(true);
-      expect(result.localIp).toBe('192.168.1.50');
-      expect(result.localPort).toBe(3333);
-    });
-
-    it('deve lançar erro se a fazenda não existir', async () => {
-      prismaService.farm.findUnique.mockResolvedValue(null);
-
-      await expect(
-        devicesService.updateLocalIp({
-          farmId: 'farm-invalida',
-          localIp: '192.168.1.50',
-        }),
-      ).rejects.toThrow('Fazenda não encontrada');
-    });
+  it('não oferece mais atualização de IP local (tarefa 5.7-B)', () => {
+    expect('updateLocalIp' in devicesService).toBe(false);
   });
 });

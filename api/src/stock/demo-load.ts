@@ -177,8 +177,6 @@ export async function loadDemoFarm(
       data: {
         nome: dataset.farm.nome,
         gestorId: 'temp',
-        localIp: dataset.farm.localIp,
-        localPort: dataset.farm.localPort,
       },
     });
     const gestor = await tx.user.create({

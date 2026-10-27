@@ -278,12 +278,14 @@
 - [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
 - [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
 - **5.6. [EM CONJUNTO] Servidor LAN — CANCELADA por decisão de 26/10:** não implementar e não manter como backlog. Substituída pela retirada dos resíduos em 5.7; não foi concluída como funcionalidade.
-- [ ] **5.7. [DEV 2 + DEV 1] Remover completamente a funcionalidade LAN e sincronizar somente pela internet:**
+- [x] **5.7. [DEV 2 + DEV 1] Remover completamente a funcionalidade LAN e sincronizar somente pela internet:**
   - [x] Registrar decisão, responsabilidades, ordem de publicação e critérios no roadmap ao final deste arquivo.
   - [x] **A — DEV 2:** substituir o transporte híbrido por API direta e retirar helpers, publicação/uso de IP, script de firewall e testes exclusivos de LAN; preservar sessões/QR legados ignorando os campos locais.
     > Implementado em 27/10 na branch `feat/dev2-cloud-only-and-analysis`. `cloud-only.spec.ts` valida ausência de chamada LAN inclusive com sessão antiga, compatibilidade e falhas; `cloud-restart.spec.ts` verifica persistência em SQLite temporário no disco, reabertura e retry com resposta perdida sem duplicidade. API e contrato gerado não foram alterados.
-  - [ ] **B — DEV 1:** retirar endpoints/DTOs de IP e heartbeat, emissão dos campos LAN e código exclusivo; coordenar compatibilidade e eventual migration nova, sem reset de banco.
-  - [ ] **C — DEV 1 + DEV 2:** publicar contrato pela ferramenta existente, regenerar por `npm run openapi` e atualizar documentação/orientações dos agentes, sem editar o contrato gerado à mão.
+  - [x] **B — DEV 1:** retirar endpoints/DTOs de IP e heartbeat, emissão dos campos LAN e código exclusivo; coordenar compatibilidade e eventual migration nova, sem reset de banco.
+    > 27/10: removidos `POST /devices/local-ip`, `PUT /sync/heartbeat`, seus DTOs e serviços; pareamento e conexão não devolvem IP/porta; a base simulada não tem campos LAN. **Sem migration:** `localIp`/`localPort` ficam inertes no `schema.prisma`, porque o deploy roda `prisma db push` e removê-las derrubaria a subida da API por perda de dados. `lan-removal.http.spec.ts` comprova 404 nas rotas, QR e código manual sem IP e o OpenAPI sem as rotas.
+  - [x] **C — DEV 1 + DEV 2:** publicar contrato pela ferramenta existente, regenerar por `npm run openapi` e atualizar documentação/orientações dos agentes, sem editar o contrato gerado à mão.
+    > 27/10: `contract.d.ts` regenerado com `npm run openapi` contra a API local (Postgres descartável). O contrato passou a declarar o cabeçalho `authorization` e incluiu `/auth/telefone`, então `client.ts` passou a usar `params.header` em `testWhatsApp` e o `PATCH` tipado em `updateTelefone`. Skill `agrohacka-sync` atualizada (somente nuvem), README e `api/SYNC.md`.
   - [x] **Aceite do cliente em testes automatizados:** sessão antiga com IP envia apenas à API configurada; sem internet, salvar/reabrir mantém a outbox; retry não duplica; nenhum servidor, permissão ou regra de firewall LAN exigido. O teste físico permanece em 5.2.
 
 ---
