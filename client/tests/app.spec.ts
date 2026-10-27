@@ -21,6 +21,7 @@ vi.mock("qrcode", () => ({
   },
 }));
 import App from "../src/App.vue";
+import { analyzeInventory } from "../src/offline/analysis";
 
 function controller(role?: "GESTOR" | "OPERADOR") {
   return {
@@ -59,10 +60,7 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     dispose: vi.fn(),
   };
 }
-async function goToTab(
-  wrapper: ReturnType<typeof mount>,
-  label: string,
-) {
+async function goToTab(wrapper: ReturnType<typeof mount>, label: string) {
   await wrapper
     .get('nav[aria-label="Navegação principal"]')
     .findAll("button")
@@ -77,6 +75,107 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   return state;
 }
 describe("telas responsivas dos perfis", () => {
+  it.each([
+    [0, "Estimativa indisponível"],
+    [1, "Base limitada"],
+    [3, "Base intermediária"],
+    [5, "Base ampliada"],
+  ] as const)(
+    "qualifica a autonomia junto ao produto com %i retiradas",
+    async (count, label) => {
+      const state = controller("GESTOR");
+      const product = {
+        id: "p",
+        farmId: "f",
+        nome: "Diesel",
+        categoria: "Combustível",
+        unidadeMedida: "L",
+        estoqueMinimo: 0,
+        precoAquisicao: 6,
+        validade: null,
+      };
+      const entry = {
+        id: "e",
+        productId: "p",
+        farmId: "f",
+        tipo: "ENTRADA" as const,
+        quantidade: 100,
+        dataMovimento: "2026-10-01",
+        responsavel: "Ana",
+      };
+      const withdrawals = Array.from({ length: count }, (_, i) => ({
+        ...entry,
+        id: `s${i}`,
+        tipo: "SAIDA" as const,
+        quantidade: 1,
+        dataMovimento: `2026-10-${16 - i}T10:00:00Z`,
+      }));
+      state.analysis.value = analyzeInventory(
+        [product],
+        [entry, ...withdrawals],
+        new Date("2026-10-16T12:00:00Z"),
+      ) as never;
+      const wrapper = mount(App, { props: { controller: state as never } });
+      await goToTab(wrapper, "Estoque");
+      const estimate = wrapper.get('[data-testid="estimate-p"]');
+      expect(estimate.text()).toContain(label);
+      expect(estimate.get("small").classes()).toContain("estimate-context");
+      if (count) {
+        expect(estimate.text()).toContain(`${count} retirada(s)`);
+        expect(estimate.text()).toContain("dia(s) de calendário");
+        expect(estimate.text()).toContain("não é garantia");
+      }
+      wrapper.unmount();
+    },
+  );
+  it.each([6, null, 0])(
+    "apresenta cobertura financeira sem transformar preço ausente em zero: %s",
+    async (price) => {
+      const state = controller("GESTOR");
+      const product = {
+        id: "p",
+        farmId: "f",
+        nome: "Diesel",
+        categoria: "Combustível",
+        unidadeMedida: "L",
+        estoqueMinimo: 0,
+        precoAquisicao: price,
+        validade: null,
+      };
+      const unknown = {
+        ...product,
+        id: "unknown",
+        nome: "Insumo sem preço",
+        precoAquisicao: null,
+      };
+      const entry = {
+        id: "e",
+        productId: "p",
+        farmId: "f",
+        tipo: "ENTRADA" as const,
+        quantidade: 10,
+        dataMovimento: "2026-10-01",
+        responsavel: "Ana",
+      };
+      state.analysis.value = analyzeInventory(
+        [product, unknown],
+        [entry, { ...entry, id: "e2", productId: "unknown" }],
+        new Date("2026-10-16T12:00:00Z"),
+      ) as never;
+      const wrapper = mount(App, { props: { controller: state as never } });
+      const value = wrapper.get('[data-testid="stock-value"]');
+      expect(value.text()).toContain("PARCIAL");
+      expect(value.text()).toContain("com saldo sem preço");
+      expect(value.text().includes("Não disponível")).toBe(price === null);
+      await goToTab(wrapper, "Estoque");
+      expect(wrapper.get('[data-testid="abc-unknown"]').text()).toBe(
+        "Não classificado",
+      );
+      expect(wrapper.text()).toContain("Classificação parcial");
+      expect(wrapper.text()).toContain("Preço não informado");
+      wrapper.unmount();
+    },
+  );
   it("refreshes existing pairings after connecting a new operator using the same dialog", async () => {
     const state = controller("GESTOR");
     state.pair.mockResolvedValue({
@@ -376,7 +475,9 @@ describe("telas responsivas dos perfis", () => {
       return { stop: vi.fn() };
     });
     const state = controller();
-    state.connect.mockRejectedValue(new Error("Código de pareamento inválido."));
+    state.connect.mockRejectedValue(
+      new Error("Código de pareamento inválido."),
+    );
     const wrapper = await openCamera(state);
     onResult({ getText: () => "lixo" });
     await flushPromises();

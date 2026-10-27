@@ -18,11 +18,12 @@ npm run tauri:dev
 `npm run dev` abre somente a interface no navegador. O armazenamento SQLite e os
 backups exigem o processo Tauri; o cliente avisa quando não está nesse ambiente.
 
-A URL HTTP é uma constante explícita em `src/api/client.ts`: inicialmente
-`http://localhost:3000`, como o script OpenAPI que já existia. Para acessar a VPS
-ou testar no Android, ajuste essa constante para o endereço acessível pelo
-aparelho. `localhost` no celular aponta para o próprio celular. Não foram criadas
-variáveis de ambiente.
+A URL HTTP vem de `VITE_API_URL`, lida pelo Vite: `.env.development` no
+desenvolvimento, `.env.production` no build e `.env.test` nos testes. Esses arquivos
+locais não são versionados; consulte `.env.example` para configurar seu ambiente.
+Não é necessário editar `src/api/client.ts`. No CI, o workflow injeta a URL de
+produção. Ela fica embutida no build: mudar um arquivo depois de instalar o app
+não altera sua URL. `localhost` no Android aponta para o próprio celular.
 
 O primeiro cadastro, login ou pareamento exige a API. Após obter a sessão e
 sincronizar o catálogo, leituras, movimentações e análises funcionam offline.
@@ -107,12 +108,19 @@ para atualizar os resultados.
   primeira amostra da janela até a referência, incluindo dias sem saída.
 - Duração: saldo positivo dividido pelo consumo diário; sem consumo observado,
   a previsão permanece indisponível. Baixo estoque também considera o mínimo.
+- Base da estimativa: exibe quantidade de retiradas e dias de calendário por
+  insumo. Menos de 3 amostras indica base limitada, 3–4 intermediária e 5 ou mais
+  ampliada. É uma heurística de amostragem, não confiança estatística nem garantia
+  de duração; os limiares seguem a referência já existente no motor da API.
 - Vencimento: saldo positivo, data de validade e consumo observado; atenção a
   sobras previstas em até 30 dias. Data vencida ou vencimento hoje é urgente.
 - Anomalia: última saída de pelo menos três vezes a média de três ou mais
   retiradas anteriores da janela. Não implica fraude ou desperdício comprovado.
-- Financeiro: saldo positivo × preço de aquisição informado. Preço ausente
-  aparece como desconhecido e não acrescenta valor ao total.
+- Financeiro: saldo positivo × preço de aquisição informado. Preço ausente mantém
+  valor desconhecido (`null`), não contribui ao subtotal e deixa o item sem classe
+  ABC. Se houver saldo sem preço, a interface sinaliza capital/ABC parciais e
+  quantos itens não estão valorados; sem qualquer preço conhecido para o saldo,
+  apresenta valor indisponível, não R$ 0. Preço zero informado é válido.
 - ABC: produtos ordenados pelo capital armazenado, com faixas acumuladas de
   80%, 95% e 100%; item que cruza uma faixa fica na faixa em que começou.
 - Estoque parado: saldo positivo sem saída há pelo menos 30 dias.
@@ -120,16 +128,18 @@ para atualizar os resultados.
   sazonalidade. Os critérios são referências explícitas do protótipo.
 - Saldos são agrupados por unidade, sem um total que misture litros e quilos.
 
-As fórmulas locais estão isoladas no cliente: o cálculo temporal do motor atual
-da API usa outro critério (média por registro). O DEV 1 precisa alinhar as regras
-ou extrair o pacote compartilhado antes de prometer resultados idênticos nas
-duas pontas. As alterações atuais de backend limitam-se à sincronização e sua autenticação.
+As fórmulas locais estão isoladas no cliente. O alinhamento do caminho efetivamente
+utilizado pelo serviço da API, incluindo unidades, parado/excesso e metadados
+financeiros, permanece nas tarefas 2.4/10.3/10.4 do DEV 1. Não prometer paridade
+total antes dessa validação. Esta entrega não modifica o backend nem o OpenAPI.
 
 ## Pareamento e backups
 
 O gestor gera código e QR Code pelo endpoint existente. O operador pode digitar
 o código, selecionar uma imagem QR ou usar a câmera quando a WebView oferecer
-permissão e suporte. A câmera ainda exige validação em aparelhos reais.
+permissão e suporte. A leitura conecta automaticamente. Câmera e permissão foram
+validadas pelo usuário no Motorola g75 5G com Android 16 em 26/10 (tarefa 3.5);
+outros aparelhos ainda precisam de validação própria.
 
 O SQLite fica no diretório de configuração do aplicativo, conforme o plugin
 SQL. Os snapshots ficam na subpasta `backups` desse diretório. Há no máximo uma
@@ -145,14 +155,14 @@ baixá-los novamente.
 
 ## Pendências para integração completa
 
-- **Sincronização por LAN: não será implementada a tempo para a apresentação**
-  (decisão de 26/10). O servidor LAN no aparelho gestor, mDNS, heartbeat do gestor
-  e encaminhamento LAN → nuvem não existem. O app sincroniza **somente pela
-  nuvem**: sem internet, os registros ficam no SQLite do aparelho e são enviados
-  ao reconectar, sem duplicidade. A API já tem os endpoints de IP local e
-  heartbeat, mas nenhum aparelho publica o IP, e o helper `createHybridTransport`
-  sempre cai na nuvem por falta de IP e de servidor. O desenho previsto
-  (relay do gestor) está em `../regra_de_sync.md` §12 e no backlog da tarefa 5.6.
+- **Sincronização exclusivamente pela internet:** decisão de 26/10; LAN está
+  cancelada e não integra o backlog. O cliente deve enviar diretamente à API
+  central, sem servidor no gestor, descoberta de IP ou fallback local. Os registros
+  offline continuam no SQLite/outbox e são enviados ao reconectar. **5.7-A concluída
+  no cliente:** removidos os helpers LAN, publicação de IP e script de firewall;
+  sessões/QR legados ignoram esses campos. Endpoints e campos ainda existentes na
+  API/contrato são pendências do DEV 1 (5.7-B/C). Não apagar dados locais nem
+  regenerar tokens para atualizar. Ver `../ROADMAP_FINALIZACAO.md`.
 - O backend desta branch implementa autenticação de `/sync`, recibos individuais
   e conflitos imutáveis. Exige a atualização aditiva do banco descrita em
   `../api/SYNC.md`, ainda não aplicada a bancos reais. Cursor seguro, tombstones,
@@ -164,9 +174,13 @@ baixá-los novamente.
   cofre nativo é uma pendência antes de tratar o armazenamento como seguro.
 - O fluxo HTTP da API real com PostgreSQL descartável e dois SQLite é testado por
   `npm run test:sync` na pasta `api`. Isso não substitui testes no dispositivo.
-- Ainda faltam a extração do motor compartilhado,
-  WhatsApp ponta a ponta, validação física offline/câmera, instalador/firewall e
-  empacotamento Android.
+- A pendência de aceite do DEV 2 no MVP é a validação offline no Android real
+  (tarefa 5.2), adiada pelo usuário. O roteiro e os critérios estão em
+  [VALIDACAO_OFFLINE.md](VALIDACAO_OFFLINE.md). Testes automatizados não comprovam
+  esse aceite. Instalação limpa no Windows, APK instalado, câmera e WhatsApp
+  real já foram registrados em `../tarefas.md`; isso não dispensa testar uma
+  nova versão nos aparelhos. A extração do motor compartilhado e o cofre nativo
+  continuam como evoluções, sem ampliar o escopo desta validação.
 
 ## Operadores pareados e recuperação do código
 

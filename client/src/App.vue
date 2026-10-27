@@ -90,6 +90,18 @@ const selectedProduct = computed(
     analysis.value.products.find((p) => p.id === productId.value) ??
     analysis.value.products[0],
 );
+const financialPartial = computed(
+  () => analysis.value.unpricedProductCount > 0,
+);
+const financialUnavailable = computed(
+  () => financialPartial.value && analysis.value.pricedProductCount === 0,
+);
+const evidenceLabels = {
+  BAIXA: "Base limitada",
+  MEDIA: "Base intermediária",
+  ALTA: "Base ampliada",
+  INDISPONIVEL: "Estimativa indisponível",
+};
 const money = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value,
@@ -217,13 +229,13 @@ function describeWhatsAppFailure(cause: unknown) {
     return "sem conexão com o servidor. Verifique a internet e tente novamente.";
   return cause instanceof Error ? cause.message : String(cause);
 }
-const cameraFallback =
-  " Digite o código ou escolha uma imagem do QR Code.";
+const cameraFallback = " Digite o código ou escolha uma imagem do QR Code.";
 const cameraErrors: Record<string, string> = {
   NotAllowedError:
     "Sem permissão para usar a câmera. Libere o acesso nas configurações do aparelho." +
     cameraFallback,
-  NotFoundError: "Nenhuma câmera foi encontrada neste aparelho." + cameraFallback,
+  NotFoundError:
+    "Nenhuma câmera foi encontrada neste aparelho." + cameraFallback,
   NotReadableError:
     "A câmera está em uso por outro aplicativo ou não pôde ser aberta." +
     cameraFallback,
@@ -424,7 +436,8 @@ onUnmounted(() => {
               /><small class="muted"
                 >Receba avisos automáticos caso falte insumo ou lote vença.
                 Deixe em branco se preferir não receber.</small
-              ></label>
+              ></label
+            >
           </template>
           <template v-else>
             <label
@@ -672,10 +685,22 @@ onUnmounted(() => {
       </section>
       <template v-if="tab === 'overview'">
         <section class="metrics" aria-label="Resumo da propriedade">
-          <article>
-            <span>CAPITAL EM ESTOQUE</span
-            ><strong>{{ money(analysis.totalValue) }}</strong
-            ><small>Quantidade disponível × preço de aquisição</small>
+          <article data-testid="stock-value">
+            <span>{{
+              financialPartial
+                ? "CAPITAL CONHECIDO (PARCIAL)"
+                : "CAPITAL EM ESTOQUE"
+            }}</span
+            ><strong>{{
+              financialUnavailable
+                ? "Não disponível"
+                : money(analysis.totalValue)
+            }}</strong>
+            <small v-if="financialPartial"
+              >{{ analysis.unpricedProductCount }} insumo(s) com saldo sem
+              preço. Total e ABC consideram apenas os preços informados.</small
+            >
+            <small v-else>Quantidade disponível × preço de aquisição</small>
           </article>
           <article>
             <span>INSUMOS ACOMPANHADOS</span
@@ -876,9 +901,9 @@ onUnmounted(() => {
               :class="{ success: !whatsappSimulated }"
               role="status"
             >
-              <UiIcon :name="whatsappSimulated ? 'info' : 'circle-check'" /><span
-                >{{ whatsappFeedback }}</span
-              >
+              <UiIcon
+                :name="whatsappSimulated ? 'info' : 'circle-check'"
+              /><span>{{ whatsappFeedback }}</span>
             </p>
             <p v-if="whatsappError" class="notice error" role="alert">
               <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
@@ -933,6 +958,10 @@ onUnmounted(() => {
               Classificação pelo valor financeiro armazenado: faixas acumuladas
               de 80%, 95% e 100%.
             </p>
+            <p v-if="financialPartial" class="helper">
+              Classificação parcial: itens sem preço não são classificados; as
+              faixas consideram somente o capital conhecido.
+            </p>
           </div>
           <div class="search-field">
             <UiIcon name="search" /><input
@@ -967,22 +996,38 @@ onUnmounted(() => {
                 </td>
                 <td>{{ unitValue(p.saldo) }} {{ p.unidadeMedida }}</td>
                 <td>{{ unitValue(p.estoqueMinimo) }} {{ p.unidadeMedida }}</td>
-                <td>
+                <td :data-testid="`estimate-${p.id}`">
                   {{
                     p.diasRestantes === null
                       ? "Sem histórico"
                       : `${unitValue(p.diasRestantes)} dias`
                   }}
+                  <small
+                    v-if="p.diasRestantes === null"
+                    class="estimate-context"
+                    >Estimativa indisponível: sem retiradas recentes suficientes
+                    para projetar consumo.</small
+                  >
+                  <small v-else class="estimate-context"
+                    >{{ evidenceLabels[p.confiabilidade] }} ·
+                    {{ p.amostrasConsumo }} retirada(s) em
+                    {{ p.diasAmostra }} dia(s) de calendário. Indicador por
+                    amostragem; não é garantia de duração.</small
+                  >
                 </td>
                 <td>
                   {{
-                    p.precoAquisicao === null
+                    p.valorEstoque === null
                       ? "Preço não informado"
                       : money(p.valorEstoque)
                   }}
                 </td>
                 <td>
-                  <span class="badge">{{ p.classeAbc }}</span>
+                  <span :data-testid="`abc-${p.id}`" class="badge">{{
+                    p.classeAbc === null
+                      ? "Não classificado"
+                      : `${p.classeAbc}${financialPartial ? " (parcial)" : ""}`
+                  }}</span>
                 </td>
                 <td>
                   {{

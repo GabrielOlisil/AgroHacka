@@ -44,7 +44,8 @@ const products: Product[] = [
     categoria: "Defensivos",
     unidadeMedida: "L",
     estoqueMinimo: 10,
-    precoAquisicao: 85,
+    // Demonstrates partial valuation without using real inventory data.
+    precoAquisicao: null,
     validade: date(3),
     lote: "HER-2026-09",
   },
@@ -194,9 +195,6 @@ const controller: Workspace = {
   },
   async createBackup() {},
   async restoreBackup() {},
-  async updateLocalIp() {
-    return { sucesso: true };
-  },
   dispose() {},
 };
 createApp(App, { controller }).mount("#app");
