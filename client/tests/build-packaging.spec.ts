@@ -94,16 +94,29 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(existsSync(resolve(root, "ANDROID_RELEASE.md"))).toBe(false);
   });
 
-  it("preserva publicação somente por tag, sem reutilizar a release de entrega", () => {
+  it("publica Android na main e em tags, sem depender do job Windows comentado", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
     );
     const release = workflow.split("  create-release:")[1]!;
+    expect(release).toContain("needs: [build-mobile-android]");
+    expect(release).toContain("needs.build-mobile-android.result == 'success'");
+    expect(release).toContain("github.ref == 'refs/heads/main'");
     expect(release).toContain("startsWith(github.ref, 'refs/tags/v')");
-    expect(release).not.toContain("github.ref == 'refs/heads/main'");
-    expect(release).toContain("tag_name: ${{ github.ref_name }}");
+    expect(release).not.toContain("needs.build-desktop-windows");
+    expect(release).not.toContain("release-assets/windows");
+    expect(release).toContain("fail_on_unmatched_files: true");
+    expect(release).toContain("release-assets/android/**/*.apk");
     expect(release).not.toContain("v1.0.0-entrega");
+  });
+
+  it("vincula a pré-release da main ao commit compilado e usa tag exclusiva por execução", () => {
+    const workflow = readFileSync(resolve(repoRoot, ".github/workflows/build-release.yml"), "utf-8");
+    const release = workflow.split("  create-release:")[1]!;
+    expect(release).toContain("tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('android-build-{0}', github.run_number) }}");
+    expect(release).toContain("target_commitish: ${{ github.sha }}");
+    expect(release).toContain("prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}");
   });
 
   it("job Android não instala bibliotecas GTK/GLib do host: eram paliativo do `tauri dev` indevido (Tarefa 5.3)", () => {
@@ -127,7 +140,7 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(workflow).not.toMatch(/VITE_API_URL:.*localhost/);
   });
 
-  it("workflow do GitHub Actions deve disparar apenas na main ou tags e conter jobs de build Windows e Android", () => {
+  it("workflow dispara na main ou tags e mantém somente o build Android ativo", () => {
     const workflowPath = resolve(
       repoRoot,
       ".github/workflows/build-release.yml",
@@ -138,7 +151,8 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     // Restrição solicitada pelo usuário: rodar na main
     expect(workflowContent).toMatch(/branches:\s*(\n\s*-\s*main)/);
     expect(workflowContent).toContain("workflow_dispatch");
-    expect(workflowContent).toContain("build-desktop-windows");
-    expect(workflowContent).toContain("build-mobile-android");
+    expect(workflowContent).toMatch(/^  # build-desktop-windows:/m);
+    expect(workflowContent).not.toMatch(/^  build-desktop-windows:/m);
+    expect(workflowContent).toMatch(/^  build-mobile-android:/m);
   });
 });
