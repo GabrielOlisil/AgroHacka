@@ -34,6 +34,16 @@ describe("alvos de toque no celular (tarefa 11.6)", () => {
     expect(backdrop).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   });
 
+  it("o ícone nativo de data/hora some e vira desenho de fundo: o toque nele não fecha o calendário", () => {
+    const indicator =
+      /input\[type="date"\]::-webkit-calendar-picker-indicator,\s*input\[type="time"\]::-webkit-calendar-picker-indicator \{([^}]*)\}/.exec(
+        css,
+      )?.[1] ?? "";
+    expect(indicator).toMatch(/display:\s*none/);
+    expect(/input\[type="date"\] \{([^}]*)\}/.exec(css)?.[1]).toMatch(/background-image:\s*url\("data:image\/svg\+xml/);
+    expect(/input\[type="time"\] \{([^}]*)\}/.exec(css)?.[1]).toMatch(/background-image:\s*url\("data:image\/svg\+xml/);
+  });
+
   it("fora do celular, o botão Mais e o menu dele não aparecem", () => {
     const desktop = css.slice(0, start);
     expect(desktop).toMatch(/\.nav-more,\s*\.more-menu \{[^}]*display:\s*none/);
