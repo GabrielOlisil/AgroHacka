@@ -101,9 +101,31 @@ dispositivo revogado. Não comprova WebView, Android/iOS, LAN ou ambiente de pro
 - Quantidades continuam `Float` no schema existente. A soma central usa Decimal,
   mas isso não torna o armazenamento original exato; precisão fixa é evolução
   contratual separada, não garantia desta versão.
-- O lock coordena `/sync`; não existe log de mudanças comum a todos os escritores.
+- O lock coordena `/sync` e `POST /products`; não existe log de mudanças comum a todos os escritores.
   Outros endpoints e a segurança global da API precisam de revisão própria.
 - Credenciais de pareamento continuam reutilizáveis pelo fluxo existente; expiração,
   uso único e rate limiting são trabalho adicional. Tokens locais não têm cofre.
 - O saldo local é validado pela fila do cliente, não como reserva global nem como
   garantia contra processos/janelas independentes escrevendo simultaneamente.
+
+## Cadastro de insumos do gestor
+
+`POST /products` exige JWT de gestor e deriva a fazenda da identidade autenticada.
+O cliente envia `CreateProductDto` com UUID estável, nome, categoria, unidade e
+estoque mínimo. Preço, validade (`YYYY-MM-DD`), lote e fornecedor são opcionais;
+preço ausente é desconhecido, enquanto zero informado é válido.
+
+Mesmo UUID/conteúdo normalizado devolve o produto original; conteúdo diferente
+ou colisão com outra fazenda recebe 409 genérico, sem expor o cadastro alheio.
+A criação usa a mesma trava transacional de fazenda do sync e não insere saldo
+nem movimentação de abertura. Não exige migration: o schema existente já contém
+esses campos. Não há edição ou exclusão por essa rota.
+
+O produto aparece em `newProducts` no download completo já existente, inclusive
+para operadores. O cadastro exige internet; as entradas/saídas continuam offline.
+Publicar a nova API antes do cliente que usa a rota. O contrato foi gerado pelo
+`npm run openapi` a partir do Swagger compilado; não foi escrito à mão.
+
+`npm run test:sync` também executa `test/products.postgres.integration.ts`: dois
+clientes PostgreSQL independentes, mesmo ID, conflito de conteúdo/fazenda,
+rollback e recebimento pelo sync, sempre em container descartável sem volumes.
