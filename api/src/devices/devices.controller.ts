@@ -8,14 +8,21 @@ import {
   ForbiddenException,
   HttpCode,
   HttpStatus,
+  Patch,
+  Delete,
+  Param,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from '../auth/auth.service';
-import { ApiHeader } from '@nestjs/swagger';
+import { ApiHeader, ApiBearerAuth } from '@nestjs/swagger';
 import { DevicesService } from './devices.service';
 import {
   CreatePairingDto,
   ConnectDeviceDto,
   OperatorsResponseDto,
+  UpdateOperatorDto,
+  OperatorMutationResponseDto,
 } from './dto/devices.dto';
 
 @Controller('devices')
@@ -24,6 +31,36 @@ export class DevicesController {
     private readonly devicesService: DevicesService,
     private readonly auth: AuthService,
   ) {}
+
+  private async manager(request: Request) {
+    const identity = await this.auth.authenticateSync(
+      request.get('authorization'),
+      request.get('x-device-token'),
+    );
+    if (identity.role !== 'GESTOR') throw new ForbiddenException();
+    return identity;
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  async updateOperator(
+    @Param('id') id: string,
+    @Body() dto: UpdateOperatorDto,
+    @Req() request: Request,
+  ): Promise<OperatorMutationResponseDto> {
+    const identity = await this.manager(request);
+    return this.devicesService.updateOperator(identity.farmId, id, dto);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  async deleteOperator(
+    @Param('id') id: string,
+    @Req() request: Request,
+  ): Promise<OperatorMutationResponseDto> {
+    const identity = await this.manager(request);
+    return this.devicesService.deleteOperator(identity.farmId, id);
+  }
 
   @Get()
   @ApiHeader({

@@ -20,3 +20,14 @@ export class OperatorsResponseDto {
   farmId!: string;
   operators!: PairedOperatorDto[];
 }
+
+export class UpdateOperatorDto {
+  nomeOperador?: string;
+  ativo?: boolean;
+}
+
+export class OperatorMutationResponseDto {
+  farmId!: string;
+  id!: string;
+  sucesso!: boolean;
+}

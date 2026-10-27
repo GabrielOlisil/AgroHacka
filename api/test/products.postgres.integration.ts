@@ -5,6 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { PrismaClient } from '@prisma/client';
 import { ProductsService } from '../src/products/products.service';
 import { SyncService } from '../src/sync/sync.service';
+import { DevicesService } from '../src/devices/devices.service';
+import { AuthService } from '../src/auth/auth.service';
 
 // This suite never reads DATABASE_URL. It exclusively owns a disposable container
 // on a random loopback port, with no mounts or connection to application data.
@@ -248,5 +250,139 @@ describe('Product creation on real PostgreSQL', () => {
     }
     expect((await service.create(dto, identity)).id).toBe(dto.id);
     expect(await db.stockMovement.count()).toBe(0);
+  });
+});
+
+describe('Operator removal on real PostgreSQL without movement FK', () => {
+  async function device() {
+    return db.device.create({
+      data: {
+        farmId: identity.farmId,
+        nomeOperador: 'Bruno',
+        deviceToken: randomUUID(),
+        pairingCode: randomUUID(),
+      },
+    });
+  }
+  it('keeps historical names, receipts and balances after rename and hard deletion', async () => {
+    const d = await device();
+    const p = await new ProductsService(db as never).create(input(), identity);
+    const auth = new AuthService(db as never);
+    const operator = await auth.authenticateSync(undefined, d.deviceToken);
+    const movement = {
+      id: randomUUID(),
+      farmId: identity.farmId,
+      productId: p.id,
+      tipo: 'ENTRADA' as const,
+      quantidade: 10,
+      dataMovimento: '2026-10-27T12:00:00.000Z',
+      responsavel: 'forged',
+    };
+    const sync = new SyncService(db as never);
+    await sync.syncData(
+      { farmId: identity.farmId, pendingMovements: [movement] },
+      operator,
+    );
+    const before = await db.stockMovement.findMany();
+    const receipts = await db.syncReceipt.findMany();
+    const admin = new DevicesService(second as never);
+    await admin.updateOperator(identity.farmId, d.id, {
+      nomeOperador: 'Nome novo',
+    });
+    expect((await auth.authenticateSync(undefined, d.deviceToken)).nome).toBe(
+      'Nome novo',
+    );
+    await admin.deleteOperator(identity.farmId, d.id);
+    await admin.deleteOperator(identity.farmId, d.id);
+    expect(await db.device.count()).toBe(0);
+    expect(await db.stockMovement.findMany()).toEqual(before);
+    expect(await db.syncReceipt.findMany()).toEqual(receipts);
+    const managerSnapshot = await sync.syncData(
+      { farmId: identity.farmId, pendingMovements: [] },
+      identity,
+    );
+    expect(managerSnapshot.newMovements).toMatchObject([
+      { responsavel: 'Bruno', quantidade: 10 },
+    ]);
+    await expect(
+      auth.authenticateSync(undefined, d.deviceToken),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+  it('isolates foreign devices and supports disabling and reactivating without rotating credentials', async () => {
+    const d = await device();
+    const admin = new DevicesService(db as never);
+    await admin.deleteOperator(foreign.farmId, d.id);
+    await expect(
+      admin.updateOperator(foreign.farmId, d.id, { nomeOperador: 'Forged' }),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(await db.device.findUnique({ where: { id: d.id } })).toEqual(d);
+    await admin.updateOperator(identity.farmId, d.id, { ativo: false });
+    await expect(
+      new AuthService(db as never).authenticateSync(undefined, d.deviceToken),
+    ).rejects.toMatchObject({ status: 401 });
+    await admin.updateOperator(identity.farmId, d.id, { ativo: true });
+    expect(
+      (await admin.listOperators(identity.farmId)).operators[0]?.pairingCode,
+    ).toBe(d.pairingCode);
+    expect(
+      (
+        await new AuthService(db as never).authenticateSync(
+          undefined,
+          d.deviceToken,
+        )
+      ).deviceId,
+    ).toBe(d.id);
+  });
+  it('refuses a device authenticated before deletion while its sync waits for the farm lock', async () => {
+    const d = await device();
+    const stale = await new AuthService(db as never).authenticateSync(
+      undefined,
+      d.deviceToken,
+    );
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const deletion = observer.$transaction(
+      async (tx) => {
+        await tx.$queryRawUnsafe(
+          'SELECT id FROM farms WHERE id = $1 FOR UPDATE',
+          identity.farmId,
+        );
+        entered();
+        await gate;
+        await tx.device.deleteMany({
+          where: { farmId: identity.farmId, id: d.id },
+        });
+      },
+      { timeout: 15000 },
+    );
+    await ready;
+    const attempted = new SyncService(second as never)
+      .syncData({ farmId: identity.farmId, pendingMovements: [] }, stale)
+      .catch((error) => error);
+    try {
+      await expect
+        .poll(
+          async () => {
+            const rows = await db.$queryRawUnsafe<{ count: bigint }[]>(
+              "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%SELECT id FROM farms%'",
+            );
+            return Number(rows[0]?.count);
+          },
+          { timeout: 5000 },
+        )
+        .toBeGreaterThan(0);
+    } finally {
+      release();
+      await deletion;
+    }
+    expect(await attempted).toMatchObject({ status: 401 });
+    expect(await db.stockMovement.count()).toBe(0);
+    expect(await db.syncReceipt.count()).toBe(0);
   });
 });
