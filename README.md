@@ -84,6 +84,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 - **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico de 6 caracteres gerado pelo Gestor).
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
 - **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações.
+- **Gestão de Operadores:** O gestor edita nomes, ativa/desativa acesso e exclui operadores da própria fazenda, com confirmação. Movimentações preservam somente o nome histórico do responsável, sem FK ao operador. O aplicativo Desktop/Android fica exclusivamente em `client/`.
 - **Protocolo de Sincronização Confiável (v2):** Outbox transacional com UUIDs imutáveis, recibos individuais auditáveis, idempotência e tratamento explícito de divergências de saldo sem descartar fatos físicos.
 - **Backup Automático Estilo Anki:** Snapshots atômicos locais via `VACUUM INTO`, retenção automática de 7 dias e restauração garantida em 1 clique.
 - **Alertas WhatsApp (Twilio API):** Notificações automáticas para o WhatsApp do Gestor quando uma sincronização gera um alerta de nível urgente. O Gestor cadastra, troca ou desativa o número e testa o envio no painel *Alertas de emergência via WhatsApp* (pré-requisitos e limites na seção 4.4).
@@ -237,8 +238,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 371 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 29 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração e cadastro concorrente/idempotente de produtos, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 434 testes Vitest de cadastro, SQLite, interface e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK/cadastro ainda exigem validação no aparelho.
+- **API NestJS:** 400 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, também aprovados.
+- **Desktop/Mobile (Tauri + Vue):** 463 testes Vitest de cadastro, SQLite, interface, gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
