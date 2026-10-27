@@ -175,6 +175,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ProductsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -276,6 +292,38 @@ export interface components {
             newMovements: components["schemas"]["SyncMovementDto"][];
             newProducts: components["schemas"]["SyncProductDto"][];
             divergences: components["schemas"]["SyncDivergenceDto"][];
+        };
+        CreateProductDto: {
+            /** @description UUID criado pelo cliente uma única vez e preservado nos retries. */
+            id: string;
+            nome: string;
+            /** @description Categoria livre, incluindo Unicode. */
+            categoria: string;
+            /** @description Texto livre; aliases conhecidos são normalizados sem conversão de quantidade. */
+            unidadeMedida: string;
+            /** @description Número finito maior ou igual a zero; não representa saldo inicial. */
+            estoqueMinimo: number;
+            /** @description Ausente/null significa preço desconhecido; zero informado é válido. */
+            precoAquisicao?: number | null;
+            /** @description Data de calendário válida em YYYY-MM-DD; ausente/null significa desconhecida. */
+            validade?: string | null;
+            lote?: string | null;
+            fornecedor?: string | null;
+        };
+        ProductResponseDto: {
+            id: string;
+            farmId: string;
+            nome: string;
+            categoria: string;
+            unidadeMedida: string;
+            estoqueMinimo: number;
+            precoAquisicao: number | null;
+            /** @description ISO 8601 à meia-noite UTC, compatível com newProducts no download de sync. */
+            validade: string | null;
+            lote: string | null;
+            fornecedor: string | null;
+            createdAt: string;
+            updatedAt: string;
         };
     };
     responses: never;
@@ -545,6 +593,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncResponseDto"];
+                };
+            };
+        };
+    };
+    ProductsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductResponseDto"];
                 };
             };
         };
