@@ -73,16 +73,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
-      # Chave release persistente; nunca reutilizar o debug.keystore.
-      # Estes quatro secrets são obrigatórios em Settings > Secrets and variables > Actions.
-      - name: Validar secrets da assinatura Android
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: node ./client/src/scripts/assinar-android-release.ts --validate-secrets
-
       - name: Configurar Java 17
         uses: actions/setup-java@v5
         with:
@@ -98,7 +88,6 @@ jobs:
           if [ -n "$SDKMANAGER" ]; then
             yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
           fi
-          "$SDKMANAGER" "build-tools;35.0.0"
           NDK_PATH=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -mindepth 1 2>/dev/null | sort -V | tail -n 1)
           if [ -z "$NDK_PATH" ] && [ -n "$ANDROID_NDK_LATEST_HOME" ]; then
             NDK_PATH="$ANDROID_NDK_LATEST_HOME"
@@ -137,27 +126,13 @@ jobs:
 
       - name: Compilar Pacote Android (.apk)
         working-directory: client
-        run: npx @tauri-apps/cli android build --apk --target aarch64 --ci
-
-      # Só este passo recebe as credenciais durante o empacotamento. O script remove
-      # o keystore temporário em finally e só copia o APK após todas as verificações.
-      - name: Assinar e verificar APK release
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: >-
-          node ./client/src/scripts/assinar-android-release.ts --sign
-          client/src-tauri/gen/android/app/build/outputs/apk/
-          "$RUNNER_TEMP/agrohacka-release/agrohacka-arm64-release.apk"
-          "$ANDROID_HOME/build-tools/35.0.0"
+        run: npx @tauri-apps/cli android build --apk --debug --target aarch64 --ci
 
       - name: Upload Artefatos Android (.apk)
         uses: actions/upload-artifact@v4
         with:
           name: agrohacka-mobile-android
-          path: ${{ runner.temp }}/agrohacka-release/agrohacka-arm64-release.apk
+          path: client/src-tauri/gen/android/app/build/outputs/apk/**/debug/*.apk
           if-no-files-found: error
 
   create-release:

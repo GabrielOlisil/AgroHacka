@@ -2,7 +2,7 @@
 
 Status em 27/10/2026: **teste no Android confirmado com sucesso pelo usuário**,
 referente ao APK já instalado. Modelo, versão do pacote e medições não foram
-informados nesta confirmação. O novo cadastro e o novo APK release precisam de
+informados nesta confirmação. O novo cadastro e o novo APK debug precisam de
 aceite próprio; o relato anterior não comprova essas alterações. A sincronização do MVP é somente
 pela nuvem; o mesmo Wi-Fi, sem internet, não sincroniza celular e computador.
 
@@ -52,10 +52,10 @@ dados pessoais em capturas de tela:
 | APK/release, aparelho e Android | Não informados nesta confirmação |
 | Saldo inicial, quantidade/unidade e saldo final | Medições não fornecidas |
 | Persistência, reconexão e repetição de sync | Aceite geral do roteiro informado; sem evidências detalhadas anexadas |
-| Novo cadastro e APK release desta alteração | Ainda não validados no aparelho |
+| Novo cadastro e APK debug desta alteração | Ainda não validados no aparelho |
 
 A tarefa 5.2 foi concluída com base no aceite informado; a validação do novo
-release permanece na tarefa 5.8 em `../tarefas.md`. Se falhar, anotar a etapa, o aviso e
+APK permanece na tarefa 5.8 em `../tarefas.md`. Se falhar, anotar a etapa, o aviso e
 a contagem de pendências; preservar o app e o SQLite para diagnóstico. Não apagar
 banco, editar migrations nem tentar corrigir o resultado diretamente na nuvem.
 

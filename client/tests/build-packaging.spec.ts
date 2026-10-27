@@ -45,7 +45,7 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     }
   });
 
-  it("workflow compila release arm64 e assina antes de enviar somente o APK verificado", () => {
+  it("workflow compila e publica somente APK debug arm64", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
@@ -53,23 +53,20 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     const android = workflow
       .split("  build-mobile-android:")[1]!
       .split("  create-release:")[0]!;
-    expect(android).toMatch(/cli android build --apk --target aarch64 --ci/);
-    expect(android).not.toContain("--debug");
-    expect(
-      android.indexOf("assinar-android-release.ts --sign"),
-    ).toBeGreaterThan(android.indexOf("cli android build"));
+    expect(android).toMatch(
+      /cli android build --apk --debug --target aarch64 --ci/,
+    );
     expect(android.indexOf("actions/upload-artifact")).toBeGreaterThan(
-      android.indexOf("assinar-android-release.ts --sign"),
+      android.indexOf("cli android build"),
     );
     expect(android).toContain(
-      "path: ${{ runner.temp }}/agrohacka-release/agrohacka-arm64-release.apk",
+      "path: client/src-tauri/gen/android/app/build/outputs/apk/**/debug/*.apk",
     );
     expect(android).toContain("if-no-files-found: error");
-    expect(android).not.toContain("outputs/apk/**/*.apk");
-    expect(android).toContain('"build-tools;35.0.0"');
+    expect(android).not.toContain("--sign");
   });
 
-  it("valida credenciais antes do build e limita secrets aos passos de assinatura", () => {
+  it("não exige chave release ou secrets Android nem mantém scripts de assinatura", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
@@ -77,30 +74,13 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     const android = workflow
       .split("  build-mobile-android:")[1]!
       .split("  create-release:")[0]!;
-    const steps = android.split("      - name:");
-    const preflight = steps.findIndex((step) =>
-      step.includes("assinar-android-release.ts --validate-secrets"),
+    expect(android).not.toMatch(
+      /ANDROID_KEYSTORE|ANDROID_KEY_ALIAS|ANDROID_KEY_PASSWORD|assinar-android-release/,
     );
-    const build = steps.findIndex((step) => step.includes("cli android build"));
-    expect(preflight).toBeGreaterThan(-1);
-    expect(preflight).toBeLessThan(build);
-    for (const step of steps) {
-      if (step.includes("assinar-android-release.ts")) {
-        for (const secret of [
-          "ANDROID_KEYSTORE_BASE64",
-          "ANDROID_KEY_ALIAS",
-          "ANDROID_KEYSTORE_PASSWORD",
-          "ANDROID_KEY_PASSWORD",
-        ]) {
-          expect(step).toContain(secret + ": ${{ secrets." + secret + " }}");
-        }
-        const run = step.slice(step.indexOf("run:"));
-        expect(run).not.toContain("secrets.");
-        expect(run).not.toMatch(/echo|printenv|set -x|GITHUB_ENV/);
-      } else {
-        expect(step).not.toContain("secrets.ANDROID_");
-      }
-    }
+    expect(
+      existsSync(resolve(root, "src/scripts/assinar-android-release.ts")),
+    ).toBe(false);
+    expect(existsSync(resolve(root, "ANDROID_RELEASE.md"))).toBe(false);
   });
 
   it("preserva publicação somente por tag, sem reutilizar a release de entrega", () => {

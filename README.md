@@ -94,10 +94,10 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 **Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
-A próxima compilação Android está configurada para **release assinado**. A chave
-e os quatro secrets exigidos pelo CI estão documentados em
-[Android release](client/ANDROID_RELEASE.md). O pacote novo ainda não foi
-publicado; as alterações de cadastro exigem publicar também a API atualizada.
+A compilação Android permanece em **debug**, com assinatura automática de
+desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
+as melhorias de estoque ainda precisa ser gerado; o cadastro exige publicar
+também a API atualizada.
 
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
@@ -238,7 +238,7 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 371 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 29 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração e cadastro concorrente/idempotente de produtos, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 471 testes Vitest aprovados em 27/10, incluindo cadastro, SQLite, interface e assinatura real de APK mínimo com chave descartável. Sem as ferramentas opcionais, apenas esse teste de assinatura fica ignorado. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo release/cadastro ainda exigem validação no aparelho.
+- **Desktop/Mobile (Tauri + Vue):** 434 testes Vitest de cadastro, SQLite, interface e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK/cadastro ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações

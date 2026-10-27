@@ -199,8 +199,8 @@ baixá-los novamente.
   `npm run test:sync` na pasta `api`. Isso não substitui testes no dispositivo.
 - O usuário confirmou o teste offline no Android em 27/10 (tarefa 5.2), conforme
   [VALIDACAO_OFFLINE.md](VALIDACAO_OFFLINE.md). O novo cadastro e o novo pacote
-  release ainda precisam de validação própria. A assinatura de distribuição e
-  os secrets necessários estão em [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
+  debug ainda precisam de validação própria. O workflow continua compilando com
+  `--debug`, usando assinatura automática e sem exigir secrets de assinatura.
   Instalação limpa no Windows, câmera e WhatsApp real estão em `../tarefas.md`.
   A extração do motor compartilhado e o cofre nativo
   continuam como evoluções, sem ampliar o escopo desta validação.

@@ -9,7 +9,7 @@
 > **Fechamento vigente (27/10):** roadmap detalhado ao final deste arquivo.
 > Sincronização exclusivamente pela internet; LAN cancelada, não adiada.
 > Retirada de LAN concluída no cliente, na API e no contrato (5.7).
-> Teste offline Android confirmado pelo usuário; novo release/cadastro em 3.10/5.8.
+> Teste offline Android confirmado pelo usuário; novo APK debug/cadastro em 3.10/5.8.
 > Os itens 10.1–10.7 complementam este checklist com as lacunas do regulamento.
 
 ---
@@ -272,7 +272,7 @@
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
   - [x] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
     - [x] Preparar roteiro reproduzível com persistência após reabrir, confirmação no gestor e novo sync sem duplicidade: `client/VALIDACAO_OFFLINE.md`.
-    > Teste físico confirmado com sucesso pelo usuário em 27/10. Aceite referente ao APK já instalado; o novo build release e o novo cadastro exigem validação própria.
+    > Teste físico confirmado com sucesso pelo usuário em 27/10. Aceite referente ao APK já instalado; o novo APK e o novo cadastro exigem validação própria.
     > Regressão DEV 2 em `test/dev2-offline-readiness`: 254 testes Vitest, checagem TypeScript, build da interface e 5 testes Rust de transação/backup aprovados. Sem alterações na API, contrato, envs ou migrations; sem novo APK/instalador nesta etapa.
   - [x] App respeita as barras do sistema no aparelho real (insets), confirmado em 26/10.
   - [x] `.apk` da release gerado pelo GitHub Actions instalado e funcionando no aparelho (26/10). O download direto pelo navegador do celular corrompeu o arquivo de 155 MB ("problem parsing the package"); o mesmo arquivo enviado pelo WhatsApp instalou. Baixar no PC e transferir.
@@ -298,12 +298,13 @@
 
 ---
 
-- [ ] **5.8. [DEV 2] Android em modo release:**
-  - [x] Configurar o workflow para compilar release arm64, alinhar, assinar e verificar; upload somente do APK verificado, sem fallback debug.
-  - [x] Documentar configuração da chave de assinatura no GitHub e a transição da instalação debug, preservando os dados do usuário (`client/ANDROID_RELEASE.md`).
-  - [x] Validar workflow/scripts, inclusive assinatura real v2/v3 e alinhamento de APK mínimo com chave descartável, recusa de senha incorreta/debug e limpeza do material temporário; incluído nos 471 testes cliente aprovados.
-  - [ ] Configurar os quatro secrets de assinatura no GitHub e executar o workflow com o aplicativo completo. Não foram criados secrets nem chave de distribuição nesta tarefa.
-  - [ ] Validar o novo APK release e o novo cadastro no aparelho. Debug e release têm identificadores/SQLite diferentes; sincronizar pendências antes da transição, sem desinstalar/apagar o debug.
+- [ ] **5.8. [DEV 2] Manter APK debug e validar a nova versão:**
+  - [x] Decisão de 27/10: manter debug por solicitação do usuário. A assinatura release personalizada foi cancelada nesta entrega, sem pendência de configurar chave/secrets.
+  - [x] Restaurar `--debug --target aarch64 --ci` e publicar somente os APKs em `outputs/apk/**/debug/*.apk`; manter falha explícita quando não houver artefato.
+  - [x] Remover preflight de secrets, assinatura manual, script/testes exclusivos de release e instruções de configuração de chave.
+  - [x] Executar RED → GREEN do empacotamento: 2 falhas esperadas antes da mudança, depois 10 testes aprovados.
+  - [x] Regressão após a volta ao debug: `npm test` com 434 testes aprovados e `npm run check` aprovado. A redução de 471 para 434 corresponde à retirada dos testes exclusivos da assinatura release, não à remoção dos testes de estoque/interface.
+  - [ ] Executar o CI e validar o novo APK debug/cadastro no aparelho. O aceite de 5.2 corresponde à versão anterior; não apagar SQLite nem desinstalar para atualizar.
 
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
@@ -377,7 +378,7 @@
 Ordem, dependências e critérios detalhados na seção de roadmap ao final deste arquivo.
 Não são funcionalidades já concluídas. A retirada de LAN está em 5.7; seu servidor
 foi cancelado em 5.6. O aceite físico Android anterior foi confirmado em 5.2;
-o pacote release e as novas telas ainda exigem validação em 5.8/10.5.
+o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 - [x] **10.0. [EM CONJUNTO] Registrar o roadmap de finalização e a decisão de sincronizar exclusivamente pela internet.**
 - [x] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
@@ -401,8 +402,8 @@ o pacote release e as novas telas ainda exigem validação em 5.8/10.5.
     > Feito pela 10.3: a análise da API devolve valor/ABC nulos sem preço, `pricedProductCount`/`unpricedProductCount`, amostras, dias e confiabilidade, iguais ao cliente. `parity.spec.ts` cobre sem histórico, poucas/muitas amostras, todos/alguns/nenhum com preço e preço zero. A resposta de `/stock/analyze` não tem schema no contrato e o cliente não a consome, então não houve adaptação de cliente.
 - [ ] **10.5. [DEV 2 + DEV 1] Regressão integrada:**
   - [x] **DEV 2:** 283 testes do cliente, checagem TypeScript, build da interface e 5 testes Rust aprovados em 27/10; reabertura offline e resposta perdida validadas com SQLite temporário real e servidor simulado. Revisão visual no navegador com dados fictícios (não substitui aparelhos). Sem novo APK/instalador, mudança de API, contrato, envs ou migrations.
-  - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. O aceite anterior de 5.2 foi informado pelo usuário; o novo pacote release e o novo cadastro exigem teste próprio em aparelhos.
-    > Baseline anterior: `dev` com 10.1–10.4 e 5.7 tinha 245 testes API, 24 PostgreSQL e 283 cliente. Nesta alteração, 3.10/5.8: 371 API, 29 PostgreSQL, 471 cliente, TypeScript e builds aprovados. Código Rust inalterado; os 5 testes nativos anteriores não foram reexecutados. O aceite anterior de 5.2 foi informado pelo usuário. **Faltam:** execução CI com assinatura da equipe, atualização/instalação do novo pacote e teste do cadastro em aparelhos.
+  - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. O aceite anterior de 5.2 foi informado pelo usuário; o novo APK debug e o novo cadastro exigem teste próprio em aparelhos.
+    > Baseline anterior: `dev` com 10.1–10.4 e 5.7 tinha 245 testes API, 24 PostgreSQL e 283 cliente. Antes da volta ao debug, 3.10/5.8 passou com 371 API, 29 PostgreSQL, 471 cliente, TypeScript e builds. Os scripts/testes de assinatura release foram depois removidos por decisão do usuário; o resultado atual do cliente fica registrado em 5.8. Código Rust inalterado; os 5 testes nativos anteriores não foram reexecutados. **Faltam:** execução CI, atualização/instalação do novo APK debug e teste do cadastro em aparelhos.
 - [ ] **10.6. [EM CONJUNTO] Fechar documentação verificável:** concluir 7.1, origem dos dados, responsável, links dos pacotes/vídeo, declaração de IA efetiva e licença consistente.
 - [ ] **10.7. [EM CONJUNTO] Congelar e publicar a versão avaliada:** PRs para `dev`, fluxo existente de release, commit/tag identificável e conclusão das tarefas 8/9 sem alegar testes não executados.
 
@@ -448,8 +449,9 @@ As demais pendências seguem os checkboxes acima, que registram o estado de exec
 Também foi implementada a parte local de 10.4: amostragem junto à previsão,
 financeiro parcial e itens sem preço fora da ABC. A tarefa 3.10 acrescenta cadastro
 online de insumos e ações de estoque. Regressão atual: 471 testes cliente, 371
-API, 29 PostgreSQL, TypeScript e builds aprovados. Aceite Android anterior
-confirmado pelo usuário; novo APK release/cadastro aguardam validação em 5.8.
+API, 29 PostgreSQL, TypeScript e builds aprovados antes da volta ao debug (resultado
+atual do cliente em 5.8). Aceite Android anterior confirmado pelo usuário;
+novo APK debug/cadastro aguardam validação em 5.8.
 Nenhum novo APK/instalador foi publicado nesta alteração.
 
 ### 2. Ordem de execução e paralelismo
@@ -462,7 +464,7 @@ Nenhum novo APK/instalador foi publicado nesta alteração.
 | 2 | 10.3: corrigir unidades e unificar a análise utilizada | DEV 1 | Mesmos cenários e critérios do cliente |
 | 3A | 10.4: incerteza e valores financeiros parciais | DEV 2 + DEV 1 quando houver mudança contratual | Interface clara e contrato publicado antes de adaptar o cliente |
 | 3B | 5.7-B/C: retirar a superfície LAN da API e do contrato | DEV 1, depois DEV 2 | Cliente cloud-only preparado; transição compatível |
-| 4 | 10.5, 5.2 e 5.8: regressões e aceite em aparelhos | DEV 2; validação conjunta da API | Android anterior aprovado pelo usuário; novo release/cadastro pendentes |
+| 4 | 10.5, 5.2 e 5.8: regressões e aceite em aparelhos | DEV 2; validação conjunta da API | Android anterior aprovado pelo usuário; novo APK debug/cadastro pendentes |
 | 5 | 10.6 e 7.1: fechar documentação e acesso | Ambos | Material corresponde ao comportamento real |
 | 6 | 10.7, 8.1 e 8.2: release, vídeo e apresentação | Ambos | Versão identificada e reproduzível |
 
@@ -599,7 +601,7 @@ e da cobertura financeira sem interpretar dado ausente como zero.
   histórico ou fila. Nenhuma necessidade de editar a migration SQLite 001.
 - Executar no Android real o roteiro `client/VALIDACAO_OFFLINE.md` e registrar
   evidências. **Aceite do APK anterior informado pelo usuário em 27/10; o novo
-  release e o novo cadastro ainda exigem teste próprio (5.8/10.5).**
+  APK debug e o novo cadastro ainda exigem teste próprio (5.8/10.5).**
 - Retestar Windows e Android se a remoção de LAN afetar o novo build. A aprovação
   dos instaladores anteriores não comprova a aprovação da versão modificada.
 
