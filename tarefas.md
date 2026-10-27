@@ -315,16 +315,17 @@
 *Critério rigoroso do regulamento do IFRO.*
 
 - [ ] **7.1. [EM CONJUNTO] Fechar o README e as evidências de entrega (reaberta após revisão do regulamento; ver 10.6):**
-  - [ ] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS).
+  - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
   - [ ] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores).
-  - [ ] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises).
+  - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
-  - [ ] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana).
+  - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
-  - [x] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
+    > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.1-entrega` (nova tag; `v1.0.0-entrega` preservada). Desde 27/10 só tags `v*` publicam release.*
 
 ---
 
@@ -376,7 +377,7 @@ foi cancelado em 5.6. O aceite físico Android continua em 5.2.
   - `analyzeStockInventory` alinhado ao cliente: preço ausente fica desconhecido (não R$ 0), aviso de base limitada, confiabilidade e amostras, autonomia sem arredondar e alertas ordenados (antes a ordenação era descartada).
   - `parity.spec.ts` roda API e cliente com as mesmas fixtures e data de referência: base simulada, litros/quilos, validade hoje/vencida/30/31 dias, poucas amostras, limiares 7/15/90/91 e saldo = mínimo, janela da anomalia, parado, zerado/negativo, preço zero/ausente, futuras e listas vazias.
   - Ciclo dos alertas: situação que deixou de existir é resolvida; atenção → urgente atualiza o alerta e volta a notificar (`stock.service.spec.ts`).
-- [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
+- [x] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
   - [x] **DEV 2:** expor amostras, dias de calendário e base limitada/intermediária/ampliada por produto; explicitar que não é garantia de duração. Alertas de falta/validade/excesso com apenas 1–2 retiradas também avisam sobre a base limitada.
   - [x] **DEV 2:** valor/ABC desconhecidos permanecem nulos; indicar subtotal parcial, quantidade de insumos com saldo sem preço e indisponibilidade quando nenhum estiver valorado; preço zero informado continua válido.
   - [x] **DEV 2:** validar cálculo e interface com listas vazias/nulas, amostragem, dados ausentes, zero e inválidos (`analysis-disclosure.spec.ts`, `app.spec.ts`).
