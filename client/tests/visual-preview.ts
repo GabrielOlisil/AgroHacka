@@ -147,6 +147,17 @@ const controller: Workspace = {
   async refresh() {},
   async maintainBackups() {},
   async sync() {},
+  async createProduct(input) {
+    const product: Product = {
+      ...input,
+      farmId: "f",
+      validade: input.validade ? new Date(input.validade).toISOString() : null,
+      precoAquisicao: input.precoAquisicao ?? null,
+    };
+    products.push(product);
+    analysis.value = analyzeInventory(products, movements.value);
+    return product;
+  },
   async login() {
     session.value = gestor;
   },

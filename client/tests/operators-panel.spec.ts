@@ -23,6 +23,14 @@ function setup(operators = [paired]) {
   return { props, wrapper: mount(OperatorsPanel, { props }) };
 }
 describe("paired operators and code recovery", () => {
+  it("mantém a orientação de compartilhamento junto ao código, sem explicar a API", async () => {
+    const { wrapper } = setup();
+    expect(wrapper.text()).not.toContain("conexão com a API");
+    expect(wrapper.text()).not.toContain("São os mesmos registros criados");
+    await wrapper.get('[data-testid="reveal-ana"]').trigger("click");
+    expect(wrapper.text()).toMatch(/compartilhe.*Ana/i);
+    wrapper.unmount();
+  });
   it("reveals and hides the original pairing code without creating another operator", async () => {
     const { wrapper, props } = setup();
     expect(wrapper.text()).toContain("Ana");

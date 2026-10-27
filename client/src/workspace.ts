@@ -11,6 +11,8 @@ import { LocalStore } from "./offline/local-store";
 import { pairingCredential } from "./offline/pairing";
 import { SyncCoordinator } from "./offline/sync";
 import {
+  parseProduct,
+  parseProductInput,
   text,
   type LoginInput,
   type Movement,
@@ -19,6 +21,8 @@ import {
   type Session,
   type SyncReview,
   type PairedOperator,
+  type Product,
+  type ProductInput,
 } from "./offline/types";
 
 interface WorkspaceDependencies {
@@ -37,6 +41,20 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const draftIds = new Map<string, string>();
   let maintainingBackups = false;
   let refreshVersion = 0;
+  let catalogVersion = 0;
+  let changingSession = false;
+  const catalogWrites = new Set<Promise<void>>();
+  const productDrafts = new Map<
+    string,
+    { payload: string; version: number; pending?: Promise<Product> }
+  >();
+  async function invalidateCatalog() {
+    catalogVersion++;
+    refreshVersion++;
+    // Uma transação já iniciada termina antes de trocar sessão/restaurar o banco.
+    // Escritas ainda na fila serão recusadas pelo guard de upsertProducts.
+    await Promise.allSettled([...catalogWrites]);
+  }
   const ready = ref(false);
   const session = ref<Session | null>(null);
   const analysis = ref<InventoryAnalysis>(analyzeInventory([], []));
@@ -168,11 +186,17 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   async function acceptSession(value: Session) {
     if (syncing.value || restoring)
       throw new Error("Aguarde a operação atual antes de trocar a sessão.");
-    await requireStore().saveSession(value);
-    clearOperators();
-    session.value = value;
-    error.value = "";
-    await refresh();
+    changingSession = true;
+    try {
+      await invalidateCatalog();
+      await requireStore().saveSession(value);
+      clearOperators();
+      session.value = value;
+      error.value = "";
+      await refresh();
+    } finally {
+      changingSession = false;
+    }
   }
   async function sync() {
     if (
@@ -236,6 +260,74 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     refresh,
     sync,
     maintainBackups,
+    async createProduct(input: ProductInput): Promise<Product> {
+      if (disposed)
+        throw new Error("Workspace encerrado; abra uma sessão novamente.");
+      if (restoring) throw new Error("Aguarde a restauração do backup.");
+      if (changingSession) throw new Error("Aguarde a troca de sessão.");
+      const current = session.value;
+      if (current?.role !== "GESTOR")
+        throw new Error("Somente o gestor pode cadastrar produtos.");
+      text(current.accessToken, "token do gestor");
+      const db = requireStore();
+      const body = Object.freeze(parseProductInput(input));
+      const key = JSON.stringify([current.farmId, body.id]);
+      const payload = JSON.stringify({
+        ...body,
+        lote: body.lote ?? null,
+        fornecedor: body.fornecedor ?? null,
+      });
+      let draft = productDrafts.get(key);
+      if (draft && draft.payload !== payload)
+        throw new Error(
+          "Identificador já utilizado com outro conteúdo. Preserve o cadastro original para tentar novamente.",
+        );
+      if (draft?.pending && draft.version === catalogVersion)
+        return draft.pending;
+      draft = { payload, version: catalogVersion };
+      productDrafts.set(key, draft);
+      const version = catalogVersion;
+      const isCurrent = () =>
+        !disposed &&
+        !restoring &&
+        catalogVersion === version &&
+        session.value === current;
+      const assertCurrent = () => {
+        if (!isCurrent())
+          throw new Error(
+            "Sessão alterada durante o cadastro; sincronize o catálogo ao retornar.",
+          );
+      };
+      const pending = (async () => {
+        const response = await api.createProduct(body, current);
+        assertCurrent();
+        const product = parseProduct(response, current.farmId);
+        if (product.id !== body.id)
+          throw new Error("Resposta de outro identificador de produto.");
+        const writing = db.upsertProducts(current.farmId, [product], isCurrent);
+        catalogWrites.add(writing);
+        try {
+          await writing;
+        } finally {
+          catalogWrites.delete(writing);
+        }
+        assertCurrent();
+        try {
+          await refresh();
+        } catch (cause) {
+          assertCurrent();
+          error.value = `Produto salvo, mas não foi possível atualizar a tela: ${message(cause)}`;
+        }
+        assertCurrent();
+        return product;
+      })();
+      draft.pending = pending;
+      try {
+        return await pending;
+      } finally {
+        draft.pending = undefined;
+      }
+    },
     async login(input: LoginInput) {
       requireStore();
       await acceptSession(await api.login(input));
@@ -253,15 +345,21 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     async logout() {
       if (syncing.value)
         throw new Error("Aguarde a sincronização terminar antes de sair.");
-      await requireStore().clearSession();
-      clearOperators();
-      session.value = null;
-      analysis.value = analyzeInventory([], []);
-      movements.value = [];
-      pendingCount.value = 0;
-      reviews.value = [];
-      confirmedBalances.value = {};
-      lastSync.value = null;
+      changingSession = true;
+      try {
+        await invalidateCatalog();
+        await requireStore().clearSession();
+        clearOperators();
+        session.value = null;
+        analysis.value = analyzeInventory([], []);
+        movements.value = [];
+        pendingCount.value = 0;
+        reviews.value = [];
+        confirmedBalances.value = {};
+        lastSync.value = null;
+      } finally {
+        changingSession = false;
+      }
     },
     async record(input: MovementInput) {
       if (restoring) throw new Error("Aguarde a restauração do backup.");
@@ -335,6 +433,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       if (restoring) throw new Error("Uma restauração já está em andamento.");
       restoring = true;
       try {
+        await invalidateCatalog();
         await backupService.restore(name);
         await refresh();
         backups.value = await backupService.list();
@@ -344,6 +443,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     },
     dispose() {
       disposed = true;
+      catalogVersion++;
       clearOperators();
     },
   };
