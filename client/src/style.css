@@ -938,6 +938,57 @@ td small {
   max-width: 28ch;
   white-space: normal;
 }
+.stock-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.stock-filters .search-field {
+  flex: 2 1 240px;
+}
+.stock-filters > select {
+  flex: 1 1 180px;
+  width: auto;
+}
+.stock-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.stock-actions button {
+  padding-inline: var(--space-2);
+}
+.stock-panel td:first-child {
+  white-space: normal;
+  min-width: 140px;
+  max-width: 240px;
+}
+.estimate-details {
+  max-width: 28ch;
+  white-space: normal;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.estimate-details summary {
+  cursor: pointer;
+  margin-top: var(--space-1);
+}
+.estimate-details p {
+  margin-block: var(--space-2);
+}
+.product-modal {
+  width: min(100%, 640px);
+}
+.reconciliation > summary {
+  cursor: pointer;
+  font-weight: var(--font-semibold);
+}
+.reconciliation > summary .badge {
+  margin-left: var(--space-2);
+}
+.reconciliation[open] > summary {
+  margin-bottom: var(--space-4);
+}
 .backup-list {
   margin: 0;
   padding: 0;
@@ -1108,6 +1159,49 @@ td small {
   }
 }
 @media (max-width: 760px) {
+  .stock-panel table,
+  .stock-panel tbody {
+    display: block;
+  }
+  .stock-panel thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+  }
+  .stock-panel tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--border-default);
+    padding-block: var(--space-3);
+    white-space: normal;
+  }
+  .stock-panel td {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border: 0;
+    min-width: 0;
+  }
+  .stock-panel td[data-label]::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+  }
+  .stock-panel td:first-child,
+  .stock-panel .movement-cell {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+  .stock-panel .stock-actions {
+    width: 100%;
+  }
+  .stock-panel .stock-actions button {
+    flex: 1;
+  }
   .sidebar {
     position: static;
     display: grid;

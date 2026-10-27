@@ -104,6 +104,20 @@ export class LocalStore {
     );
     return rows.map((row) => parseMovement(JSON.parse(row.payload), farmId));
   }
+  async upsertProducts(
+    farmId: string,
+    products: Product[],
+    isCurrent: () => boolean = () => true,
+  ): Promise<void> {
+    const safeFarm = text(farmId, "fazenda");
+    if (!Array.isArray(products)) throw new Error("Catálogo inválido.");
+    const safeProducts = products.map((p) => parseProduct(p, safeFarm));
+    return this.write(async () => {
+      // A sessão pode mudar enquanto a operação aguarda outra escrita local.
+      if (!isCurrent()) throw new Error("Sessão alterada durante o cadastro.");
+      await this.database.transaction(safeProducts.map(upsertProduct));
+    });
+  }
   async recordMovement(
     session: Session,
     input: MovementInput,
