@@ -127,9 +127,9 @@ const financialUnavailable = computed(
   () => financialPartial.value && analysis.value.pricedProductCount === 0,
 );
 const evidenceLabels = {
-  BAIXA: "Base limitada",
-  MEDIA: "Base intermediária",
-  ALTA: "Base ampliada",
+  BAIXA: "Poucos dados",
+  MEDIA: "Dados razoáveis",
+  ALTA: "Bons dados",
   INDISPONIVEL: "Estimativa indisponível",
 };
 const money = (value: number) =>
@@ -732,7 +732,7 @@ onUnmounted(() => {
           </p>
         </div>
         <button
-          v-if="session.role === 'GESTOR'"
+          v-if="session.role === 'GESTOR' && tab === 'operators'"
           data-testid="pairing"
           class="primary"
           @click="showPairing = true"

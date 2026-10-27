@@ -442,7 +442,8 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 **Linguagem (pedido do usuário em 27/10: o público é rural, não técnico)**
 - [x] **11.14. Telas sem termos de informática:** "Atualizar agora" (sincronizar), "Sem internet" (offline), "lançamentos esperando envio" (pendências), "Cópias de segurança" (backups), "código de acesso" (pareamento), "Saldos a conferir" (conciliação), "Saldo confirmado / Com os lançamentos deste aparelho" (confirmado/provisório), "Precisa de internet para cadastrar…" (requer internet), sem IDs técnicos e com a data no nome das cópias. `plain-language.spec.ts` percorre todas as telas e modais dos dois perfis e a tela de entrada e falha se aparecer jargão.
-- [ ] **11.15. Textos dos alertas em linguagem simples:** "autonomia", "dias de calendário", "Base limitada", "Referência de acompanhamento" vêm do motor de análise, que existe igual no cliente e na API (`parity.spec.ts`); mudar os dois juntos e estender o teste de linguagem aos alertas.
+- [x] **11.15. Textos dos alertas em linguagem simples:** os dois motores (cliente e API) passam a dizer "Restam 20 L, no mínimo ou abaixo do mínimo de 50 L. Com o uso médio de 5,65 L por dia (últimos 23 dias), dura cerca de 3,5 dia(s).", "Previsão com poucos dados…; pode mudar", "Venceu em DD/MM/AAAA", "devem sobrar cerca de…", "15,8 vezes a média", "nenhuma retirada nos últimos 30 dias", "Considere a época do ano"; números com vírgula e sem ponto de milhar. Rótulos da estimativa: "Poucos dados / Dados razoáveis / Bons dados". `alert-language.spec.ts` cobre todos os tipos; `parity.spec.ts` segue exigindo textos idênticos; o teste de linguagem simples passa a incluir os alertas.
+- [x] **11.16. "Conectar operador" só na aba Operadores:** o botão saiu do cabeçalho das outras abas (`app.spec.ts`); título "Operadores conectados".
 
 ---
 

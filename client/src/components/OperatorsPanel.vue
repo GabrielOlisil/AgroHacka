@@ -68,7 +68,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
   <section class="panel" aria-labelledby="operators-title">
     <div class="section-heading">
       <div>
-        <h2 id="operators-title">Operadores pareados</h2>
+        <h2 id="operators-title">Operadores conectados</h2>
       </div>
       <button
         class="secondary"
