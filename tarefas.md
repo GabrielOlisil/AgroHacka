@@ -312,6 +312,8 @@
   - [x] Executar RED → GREEN do empacotamento: 2 falhas esperadas antes da mudança, depois 10 testes aprovados.
   - [x] Regressão após a volta ao debug: `npm test` com 434 testes aprovados e `npm run check` aprovado. A redução de 471 para 434 corresponde à retirada dos testes exclusivos da assinatura release, não à remoção dos testes de estoque/interface.
   - [x] Executar o CI e validar o novo APK debug/cadastro no aparelho. O aceite de 5.2 corresponde à versão anterior; não apagar SQLite nem desinstalar para atualizar. Validado pelo usuário em 27/10/2026.
+  - [x] Corrigir publicação Android após push na `main` e pausar o build de PC (27/10): job Windows preservado como comentário; publicação depende apenas do Android. Na `main`, cria pré-release `android-build-<run_number>` no commit compilado; tags `v*` continuam publicando releases oficiais. RED: 3 falhas esperadas; GREEN: 23 testes de empacotamento/câmera, regressão com 539 testes e TypeScript aprovados; YAML validado com apenas os jobs Android e publicação ativos.
+  - [ ] Confirmar o primeiro APK publicado pelo workflow corrigido após integração na `main` (complementa 10.7). A execução anterior `40600736900` compilou Android e Windows com sucesso, mas pulou a publicação por exigir tag `v*`.
 
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
@@ -348,7 +350,7 @@
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
     > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
-  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.4-entrega`, com o app na versão 1.0.4 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.4-entrega`, com o app na versão 1.0.4 (as tags anteriores ficam preservadas). Tags `v*` publicam releases oficiais; a correção de 5.8 adiciona pré-releases Android por execução na `main`.*
 
 ---
 
