@@ -110,7 +110,9 @@ export function createApi(
       telefone: string,
     ): Promise<string | undefined> {
       if (session.role !== "GESTOR")
-        throw new Error("Somente o gestor pode alterar o WhatsApp dos alertas.");
+        throw new Error(
+          "Somente o gestor pode alterar o WhatsApp dos alertas.",
+        );
       const trimmed = telefone.trim();
       const result = object(
         await unpack(
@@ -170,8 +172,6 @@ export function createApi(
         farmNome: result.farmNome,
         nome: result.nomeOperador,
         deviceId: text(result.deviceId, "dispositivo"),
-        localIp: result.localIp,
-        localPort: result.localPort,
         ...(typeof result.deviceToken === "string"
           ? { deviceToken: text(result.deviceToken, "token do dispositivo") }
           : body.tokenOrCode.startsWith("tok_")
@@ -212,8 +212,6 @@ export function createApi(
           farmNome: text(qr.farmNome, "nome da fazenda"),
           nomeOperador: text(qr.nomeOperador, "operador"),
           deviceToken: text(qr.deviceToken, "token"),
-          localIp: typeof qr.localIp === "string" ? qr.localIp : null,
-          localPort: typeof qr.localPort === "number" ? qr.localPort : 3333,
         },
       };
     },
@@ -234,23 +232,6 @@ export function createApi(
         session.farmId,
         body.pendingMovements ?? [],
       );
-    },
-    async updateLocalIp(
-      body: { farmId: string; localIp: string; localPort?: number },
-      session: Session,
-    ) {
-      if (session.role !== "GESTOR" || body.farmId !== session.farmId)
-        throw new Error("Somente o gestor pode atualizar o IP da fazenda.");
-      const result = object(
-        await unpack(
-          await (client as any).POST("/devices/local-ip", {
-            body,
-            headers: headers(session),
-            signal: signal(),
-          }),
-        ),
-      );
-      return result;
     },
   };
 }

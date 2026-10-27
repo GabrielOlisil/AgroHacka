@@ -6,6 +6,11 @@
 > **Premiação:** R$ 2.000,00  
 > **Formação da Equipe:** 2 integrantes  
 
+> **Fechamento vigente (26/10):** ver `ROADMAP_FINALIZACAO.md`. Sincronização
+> exclusivamente pela internet; LAN cancelada, não adiada. A remoção do código
+> legado ainda será implementada na tarefa 5.7. Os itens 10.1–10.7 complementam
+> este checklist com as lacunas identificadas na revisão do regulamento.
+
 ---
 
 ## 🏗️ Arquitetura e Decisões Técnicas Consolidadas
@@ -20,9 +25,9 @@
 | **Perfis de Dispositivo** | **Nó Gestor** vs. **Nó Operador** | **Central Dinâmica:** qualquer aparelho pode ser Gestor (com login) ou Operador (via pareamento) |
 | **Banco Local** | **SQLite local** (Tauri SQL Plugin) | Funcionamento **100% Offline-First** em todos os dispositivos |
 | **Backup Automático** | **Snapshots SQLite (Estilo Anki)** | Snapshots atômicos diários (`VACUUM INTO`), retenção de 7 dias e restauração em 1 clique |
-| **Sincronização Híbrida** | **Nuvem (HTTPS); LAN não implementada** | O app sincroniza **pela nuvem**. A rota Wi-Fi local (LAN) primeiro foi planejada e **não será implementada a tempo** (ver 5.6) |
-| **Descoberta de IP** | **Não implementada** (heartbeat e mDNS planejados) | Os endpoints de IP local existem na API, mas nenhum aparelho publica o IP; depende do servidor LAN (5.6) |
-| **Firewall do Windows** | **Script pronto, sem uso** | A regra da porta 3333 só serviria ao servidor LAN, não implementado (5.6); o instalador não a executa |
+| **Sincronização** | **Somente internet (HTTPS)** | SQLite/outbox offline e envio direto à API central; cliente sem LAN em 5.7-A, retirada da superfície da API pendente em 5.7-B/C |
+| **Descoberta de IP** | **Cancelada** | Retirar endpoints, campos e consumo de IP local; sem mDNS nem heartbeat LAN (5.7) |
+| **Firewall do Windows** | **Sem porta de sincronização local** | Script LAN retirado em 5.7-A; nenhuma regra do sistema do usuário é alterada automaticamente |
 | **Pareamento Flexível** | **QR Code + Código Manual Alternativo** | Pareamento com nome do operador; funciona com ou sem câmera |
 | **Inteligência de Estoque** | **Motor Híbrido (TypeScript puro)** | Regras de alertas executam localmente no SQLite e também no Backend |
 | **Notificações Críticas** | **Twilio API (WhatsApp)** | Envio automático de alertas urgentes para o WhatsApp do Gestor |
@@ -113,7 +118,7 @@
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
   - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
-- [x] **2.4. [EM CONJUNTO / DEV 1] Alinhamento do Pacote Compartilhado:** Alinhar as fórmulas com o motor atual da API e unificar as regras agronômicas. Fórmulas de consumo por dias de calendário (janela de 30 dias UTC, incluindo dias sem retiradas), cálculo de autonomia, sobra por validade, detecção de anomalias (>= 3x da média anterior), estoque parado (>= 30 dias) e excesso (> 90 dias) 100% alinhadas entre backend e frontend, validadas via TDD (63 testes API e 98 testes Desktop aprovados).
+- [ ] **2.4. [EM CONJUNTO / DEV 1] Alinhar o caminho analítico realmente utilizado (reaberta; ver 10.3):** Existem funções e testes para consumo, autonomia, validade, anomalias, estoque parado e excesso. A auditoria identificou que `StockService.analyzeStock()` não usa integralmente o motor integrado; validar paridade de comportamento pela rota/serviço efetivos, sem afirmar alinhamento de 100% antes dessa comprovação.
 
 ---
 
@@ -128,7 +133,7 @@
   - [x] Recebe fila de movimentações locais com timestamp `updated_at` e UUID.
   - [x] Retorna registros novos/atualizados e recalcula alertas.
 - [x] **3.3. Endpoint de Descoberta de IP (`PUT /farm/heartbeat`):**
-  - [x] Registra o IP local do Nó Gestor na VPS para consulta do Operador. *Somente o endpoint na API: nenhum cliente o chama, pois a LAN não será implementada a tempo (ver 5.6).*
+  - [x] Implementação histórica do endpoint de IP local. *Recurso cancelado; retirada da superfície da API planejada em 5.7. Não é requisito da sincronização pela internet.*
 
 #### 🔹 [DEV 2] Interface do Usuário (Vue 3 Responsivo)
 - [x] **3.4. Tela de Boas-Vindas e Central Dinâmica:**
@@ -183,18 +188,18 @@
 #### 🔹 [DEV 1] Integração Twilio WhatsApp & Sync Backend
 - [x] **4.1. Configuração da Conta Twilio:**
   - [x] Criar conta gratuita na Twilio e ativar a WhatsApp Sandbox.
-  - [ ] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`). *Reaberta em 26/10: o log da API em produção mostra "Twilio não configurado" e o teste do app responde em modo de simulação, então as variáveis não estão no ambiente da API (ver 4.9).*
+  - [x] Configurar variáveis no Coolify (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE`, e `TWILIO_CONTENT_SID` para a conta trial). *Reaberta e concluída em 26/10: depois do novo deploy, o log da API mostra "Twilio WhatsApp Client inicializado com sucesso" (ver 4.9).*
 - [x] **4.2. Módulo de Disparo Automático:**
   - [x] Disparar mensagem WhatsApp para o número cadastrado do Gestor sempre que um alerta atingir nível CRÍTICO.
   - [x] Endpoint de teste manual para demonstração durante o pitch.
 
 #### 🔹 [DEV 2] Sincronização no Cliente & Backup Estilo Anki
-- [x] **4.3. Motor de Sincronização Híbrida:**
+- [x] **4.3. Motor de Sincronização Cloud (com transporte legado a retirar em 5.7):**
   - [x] Implementar outbox transacional, envio à API existente com `openapi-fetch`, reenvios por UUID, proteção de pendências e download completo enquanto o backend não oferece cursor seguro.
   - [x] Validar convergência de dois SQLite locais e perda de resposta após gravação em servidor simulado, sem duplicidade de movimentações.
-  - [x] Endpoints de IP local da fazenda (`POST /devices/local-ip`) e inclusão do IP nos payloads de pareamento, **somente no lado da API**: nenhum aparelho publica o IP, então ele sempre chega vazio (ver 5.6).
-  - [x] Transporte híbrido no cliente (`createHybridTransport`) com fallback transparente para a nuvem (VPS Coolify), testado: sem IP local, ou se a LAN falhar, o app sincroniza pela nuvem.
-  - [ ] Caminho LAN do transporte (ping rápido no gestor e sincronização sem internet): depende do servidor LAN do gestor, que **não será implementado a tempo** (ver 5.6).
+  - [x] Implementação histórica dos endpoints de IP local e campos de pareamento na API; não corresponde a servidor LAN funcional. Retirada planejada em 5.7.
+  - [x] Registro histórico do transporte legado com fallback testado. Em 27/10, 5.7-A removeu os helpers e qualquer tentativa LAN do cliente; sessões antigas ignoram IP/porta.
+  > Caminho LAN cancelado por decisão de 26/10. Não implementar servidor nem fallback local.
 - [x] **4.4. Backup Automático no SQLite (Estilo Anki):**
   - [x] Snapshot atômico diário via `VACUUM INTO 'backups/backup-[data].db'`.
   - [x] Retenção automática dos últimos 7 dias.
@@ -219,45 +224,48 @@
 > o rollout aditivo e as limitações estão em `api/SYNC.md`. Revisão é leitura das
 > tentativas preservadas, não resolução/estorno. WebView/mobile real continuam pendentes.
 
-- [ ] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
+- [x] **4.8. [EM CONJUNTO] Alertas de emergência via WhatsApp: validação ponta a ponta, interface do gestor e segurança:**
   > Auditoria de 26/10: as tarefas 4.1, 4.2 e 6.2 entregaram o backend (envio pela Twilio com modo simulação; após um `/sync` que aceita movimentações, a reanálise grava o alerta e avisa o gestor dos alertas urgentes ainda não notificados). Faltavam a interface do gestor (a branch `feat/whatsapp-manager-ui` nunca foi mergeada), a proteção dos endpoints e a validação real.
   - [x] Auditar o que existe e o que falta (backend `NotificationsService`, `StockService.reanalyzeAndPersistAlerts`, gatilho em `SyncService`).
   - [x] Segurança: `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT de um gestor; o teste só vai ao WhatsApp cadastrado do gestor da própria fazenda e o disparo só vale para a fazenda da identidade (`api/src/notifications/*.spec.ts`, 28 testes).
   - [x] Interface do gestor: painel *"Alertas de emergência via WhatsApp"* na Visão geral (status Ativo/Não configurado e *Testar envio de alerta*), com a sessão trazendo o `telefone` (login, cadastro e SQLite local). O teste distingue envio real, **modo de simulação** (servidor sem Twilio configurada, nada é enviado) e falha com o motivo; a API responde HTTP 200 mesmo quando a Twilio recusa (`client/tests/whatsapp-alerts*.spec.ts`).
   - [x] Número do gestor: o gestor cadastra, troca ou desativa o WhatsApp depois do registro (`PATCH /auth/telefone` e campo no painel). O número é normalizado para `+<dígitos>` no cadastro, na edição e no envio; antes um número digitado como `+55 69 99999-9999` chegava inválido à Twilio. **O gestor do seed continua com o número fictício `+5569999999999` até ser trocado pelo painel.**
-  - [ ] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), celular do gestor conectado ao *Try out WhatsApp* e recebimento real de uma mensagem (passos na 4.9).
+  - [x] Validar em produção: `TWILIO_*` no Coolify (log *"Twilio WhatsApp Client inicializado"*), celular do gestor conectado ao *Try out WhatsApp* e recebimento real de uma mensagem pelo *Testar envio de alerta* (26/10, passos na 4.9). O ensaio do alerta automático está na 4.9.
   - [x] Roteiro da demonstração: o alerta é gravado uma vez por produto e tipo e não se resolve sozinho, então um novo lançamento no mesmo insumo não reenvia a mensagem. Para repetir a demonstração, marcar os alertas da fazenda como resolvidos (`UPDATE alerts SET resolvido = true WHERE "farmId" = '<id>'`); a próxima sincronização os recria e notifica (README §4.4).
   - [x] Documentar no README os pré-requisitos (variáveis `TWILIO_*`, conexão do celular de teste, número com código do país) e os limites (um aviso por alerta, só nível urgente) (README §4.4; atualizado na 4.9 para o fluxo *Try out WhatsApp*).
 
-- [ ] **4.9. [EM CONJUNTO] Twilio no fluxo novo *Try out WhatsApp* e o nono dígito dos celulares brasileiros:**
+- [x] **4.9. [EM CONJUNTO] Twilio no fluxo novo *Try out WhatsApp* e o nono dígito dos celulares brasileiros:**
   > Descoberto em 26/10 ao conectar o celular do gestor: a conta usa o fluxo novo da Twilio, com remetente próprio (`+1 737 250 8034`) e código `join twilio-trial`; o Sandbox antigo compartilhado (`+1 415 523 8886`) recusa o código. O `join` só foi reconhecido com o número de teste verificado **sem o 9 depois do DDD**, que é como o WhatsApp identifica esse celular.
   - [x] Diagnóstico do fluxo novo e do nono dígito (confirmado pelo usuário em 26/10).
   - [x] API exige `TWILIO_PHONE`: sem ele, ou com valor inválido, roda em modo de simulação com aviso no log, em vez de usar o Sandbox antigo como padrão (`api/src/notifications/notifications.config.spec.ts`).
   - [x] `.env.example` e README §4.4 atualizados: remetente do Console, um número de teste por vez, 100 mensagens grátis e a regra do nono dígito (`api/src/notifications/env-example.spec.ts`).
-  - [ ] Coolify: configurar `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE=+17372508034` e refazer o deploy da API. Diagnóstico de 26/10: a API publicada inicia com *"Twilio não configurado"*; o painel do app já salva o número no formato verificado (sem o 9) e o teste chega à API, mas fica em simulação até as variáveis existirem. Depois do deploy, o log deve mostrar *"Twilio WhatsApp Client inicializado com sucesso"*.
-  - [x] Levar `dev` para a `main` para publicar a API que exige `TWILIO_PHONE`, os endpoints de telefone e de teste e o app com o painel (PRs #47 e #51; release `v1.0.0-entrega` recompilada em 26/10 com Windows, Android e publicação em `success`). O deploy da API no Coolify ainda precisa ser confirmado.
+  - [x] Coolify: configurar `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_PHONE=+17372508034` e refazer o deploy da API. Concluído em 26/10: a API só lê as variáveis ao iniciar, então foi preciso refazer o deploy depois de defini-las. Diagnóstico de 26/10: a API publicada inicia com *"Twilio não configurado"*; o painel do app já salva o número no formato verificado (sem o 9) e o teste chega à API, mas fica em simulação até as variáveis existirem. Depois do deploy, o log deve mostrar *"Twilio WhatsApp Client inicializado com sucesso"*.
+  - [x] Levar `dev` para a `main` para publicar a API que exige `TWILIO_PHONE`, os endpoints de telefone e de teste e o app com o painel (PRs #47 e #51; release `v1.0.0-entrega` recompilada em 26/10 com Windows, Android e publicação em `success`). Deploy da API no Coolify confirmado pelo log de inicialização.
   - [x] Conta trial exige modelo: o envio de texto livre falhou com `ContentSid Required` (26/10). A API passa a enviar o modelo quando `TWILIO_CONTENT_SID` está definido, com `TWILIO_CONTENT_VARIABLES` opcional; sem eles, segue o texto formatado (`api/src/notifications/notifications.template.spec.ts`). Nesse modo o WhatsApp leva o texto do modelo da Twilio e o detalhe do alerta fica no app.
-  - [ ] Coolify: definir `TWILIO_CONTENT_SID` (e `TWILIO_CONTENT_VARIABLES`, se o modelo tiver variáveis) com os valores do trecho de código do *Try out WhatsApp* e refazer o deploy.
-  - [ ] No app, entrar como gestor, salvar o WhatsApp **no mesmo formato do número de teste verificado** (sem o 9) e tocar em *Testar envio de alerta*: a mensagem deve chegar (e não aparecer "modo de simulação").
-  - [ ] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp.
+  - [x] Coolify: definir `TWILIO_CONTENT_SID` com o `ContentSid` de um modelo pronto do *Try out WhatsApp* (os modelos disponíveis não têm variáveis, então `TWILIO_CONTENT_VARIABLES` fica vazio) e refazer o deploy. Sem avisos de valor ignorado no log (26/10).
+  - [x] No app, entrar como gestor, salvar o WhatsApp **no mesmo formato do número de teste verificado** (sem o 9) e tocar em *Testar envio de alerta*: a mensagem do modelo chegou ao celular e o app confirmou o envio real, sem "modo de simulação" (26/10).
+  - [x] Ensaiar o alerta automático: marcar os alertas como resolvidos, registrar uma saída que deixe um insumo urgente, sincronizar e confirmar o WhatsApp. Validado em 26/10: a sincronização com uma saída gerou 4 alertas, 2 de `ESTOQUE_CRITICO` (`ALTA`, `notificadoWhatsapp = true`, um WhatsApp para cada) e 2 de atenção (`CONSUMO_ANOMALO` e `RISCO_VENCIMENTO`, `MEDIA`, só no app). Para repetir na gravação, rodar o `UPDATE` do README §4.4 antes.
 
 ---
 
 ### ETAPA 5: Empacotamento do .exe e .apk *(Dia 11)*
 *Geração dos artefatos finais para entrega.*
 
-- [ ] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
+- [x] **5.1. [DEV 2] Build do Desktop (.exe) com Regra de Firewall:**
   - [x] Configurar pipeline de compilação Windows no GitHub Actions (`.github/workflows/build-release.yml`) restrito à branch `main` e tags `v*`.
   - [x] Embutir script pós-instalação para liberar porta TCP local no Firewall do Windows (`client/scripts/liberar-firewall.bat`):
     `netsh advfirewall firewall add rule name="AgroHack Local Server" dir=in action=allow protocol=TCP localport=3333 profile=private`
-    > O script existe, mas o instalador não o executa, e a porta 3333 só seria usada pelo servidor LAN, que não será implementado a tempo (ver 5.6).
+    > Registro histórico: o script existia, mas o instalador não o executava. Em 27/10, 5.7-A retirou o script e os testes que o exigiam, sem alterar o firewall do usuário.
   - [x] Build Windows executado no GitHub Actions na `main` (26/10): `.exe` e `.msi` publicados na release `v1.0.0-entrega`, substituindo os de 21/10 (que apontavam para `localhost`).
   - [x] `.exe` da release instalado no PC de desenvolvimento (26/10): abre e sincroniza com a nuvem.
-  - [ ] Testar instalação limpa em máquina Windows sem versão anterior instalada.
+  - [x] Testar instalação limpa em máquina Windows sem versão anterior instalada (concluído pelo usuário em 26/10).
 - [ ] **5.2. [DEV 2] Build do Mobile (.apk):**
   - [x] Configurar pipeline de compilação Android (.apk) no GitHub Actions (`.github/workflows/build-release.yml`) com Java, Android SDK, NDK e targets Rust.
   - [x] APK debug instalado em celular Android real (26/10): abre, login com as contas do seed funcionando contra a API.
   - [ ] Testar o funcionamento offline em celular Android real (modo avião, movimentação e sincronização ao reconectar).
+    - [x] Preparar roteiro reproduzível com persistência após reabrir, confirmação no gestor e novo sync sem duplicidade: `client/VALIDACAO_OFFLINE.md`.
+    > Teste físico adiado pelo usuário em 26/10. O roteiro e os testes automatizados não concluem esta validação.
+    > Regressão DEV 2 em `test/dev2-offline-readiness`: 254 testes Vitest, checagem TypeScript, build da interface e 5 testes Rust de transação/backup aprovados. Sem alterações na API, contrato, envs ou migrations; sem novo APK/instalador nesta etapa.
   - [x] App respeita as barras do sistema no aparelho real (insets), confirmado em 26/10.
   - [x] `.apk` da release gerado pelo GitHub Actions instalado e funcionando no aparelho (26/10). O download direto pelo navegador do celular corrompeu o arquivo de 155 MB ("problem parsing the package"); o mesmo arquivo enviado pelo WhatsApp instalou. Baixar no PC e transferir.
 - [x] **5.3. [DEV 2] Corrigir falha do build do .apk no GitHub Actions (job `Build Mobile Android (.apk)`):**
@@ -269,26 +277,25 @@
   - [x] Confirmar a execução do job no GitHub Actions até publicar o `.apk` na release: run da `main` (26/10) com Windows, Android e publicação em `success`; o APK do CI foi inspecionado (`com.agrohack.desktop.debug`, assinado, `arm64-v8a`, com `CAMERA`) e está na release `v1.0.0-entrega`.
 - [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
 - [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
-- [ ] **5.6. [EM CONJUNTO] Servidor LAN mínimo no gestor (relay, conforme `regra_de_sync.md` §12) — NÃO SERÁ IMPLEMENTADO A TEMPO (decisão de 26/10; fora do escopo do MVP):**
-  > Decisão: a sincronização por rede local (LAN) **não será entregue na apresentação de 29/10**. O app sincroniza **somente pela nuvem**; sem internet, os registros ficam salvos no SQLite do aparelho e são enviados ao reconectar, sem duplicidade. As subtarefas abaixo ficam como **backlog para uma versão futura**.
-  >
-  > Premissas do desenho: o gestor **recebe de forma durável e encaminha à nuvem**; um recibo LAN não equivale a `ACCEPTED` da nuvem e o operador mantém sua cópia até a confirmação da nuvem; os IDs e as credenciais originais do operador são preservados (proveniência verificável, idempotência independente da rota). Servidor só no gestor **desktop**. O tráfego LAN é HTTP sem TLS: limitação a documentar.
-  - [ ] Servidor HTTP no gestor (Rust/Tauri) em `0.0.0.0:3333` com `GET /health` e `POST /sync`; recebimento durável em SQLite (nova migration local, sem editar a 001); recibo `LAN_RECEIVED` distinto de `ACCEPTED`.
-  - [ ] Encaminhamento do gestor para a nuvem preservando credenciais e IDs do operador, de forma idempotente.
-  - [ ] Cliente do operador: estado *recebido pelo gestor* na outbox, mantendo a cópia até a confirmação da nuvem (nova migration local).
-  - [ ] Descobrir e publicar o IP local do gestor (`POST /devices/local-ip`) e incluí-lo no QR de pareamento.
-  - [ ] Android: permitir HTTP em texto claro para a LAN (patch no manifest gerado pelo CI) e validar que o WebView alcança o gestor.
-  - [ ] Windows: ligar a regra de firewall da porta 3333 ao instalador (hoje `client/scripts/liberar-firewall.bat` existe, mas não é executado pelo instalador).
-  - [ ] Teste ponta a ponta: celular e PC na mesma Wi-Fi sem internet, sincronização por LAN e depois pela nuvem, sem duplicidade.
+- **5.6. [EM CONJUNTO] Servidor LAN — CANCELADA por decisão de 26/10:** não implementar e não manter como backlog. Substituída pela retirada dos resíduos em 5.7; não foi concluída como funcionalidade.
+- [ ] **5.7. [DEV 2 + DEV 1] Remover completamente a funcionalidade LAN e sincronizar somente pela internet:**
+  - [x] Registrar decisão, responsabilidades, ordem de publicação e critérios em `ROADMAP_FINALIZACAO.md`.
+  - [x] **A — DEV 2:** substituir o transporte híbrido por API direta e retirar helpers, publicação/uso de IP, script de firewall e testes exclusivos de LAN; preservar sessões/QR legados ignorando os campos locais.
+    > Implementado em 27/10 na branch `feat/dev2-cloud-only-and-analysis`. `cloud-only.spec.ts` valida ausência de chamada LAN inclusive com sessão antiga, compatibilidade e falhas; `cloud-restart.spec.ts` verifica persistência em SQLite temporário no disco, reabertura e retry com resposta perdida sem duplicidade. API e contrato gerado não foram alterados.
+  - [ ] **B — DEV 1:** retirar endpoints/DTOs de IP e heartbeat, emissão dos campos LAN e código exclusivo; coordenar compatibilidade e eventual migration nova, sem reset de banco.
+  - [ ] **C — DEV 1 + DEV 2:** publicar contrato pela ferramenta existente, regenerar por `npm run openapi` e atualizar documentação/orientações dos agentes, sem editar o contrato gerado à mão.
+  - [x] **Aceite do cliente em testes automatizados:** sessão antiga com IP envia apenas à API configurada; sem internet, salvar/reabrir mantém a outbox; retry não duplica; nenhum servidor, permissão ou regra de firewall LAN exigido. O teste físico permanece em 5.2.
 
 ---
 
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
 
-- [x] **6.1. [DEV 1] Carga da Base de Dados Oficial do AgroHack:**
-  - [x] Importar os dados oficiais disponibilizados pela organização para a VPS e para os bancos locais (dataset oficial em `api/src/stock/official-seed.data.ts` cobrindo as 7 categorias obrigatórias, 2 operadores rápidos `AGRO-01`/`AGRO-02`, e os 4 cenários agronômicos: falta em 3 dias da Ureia, risco de vencimento do Trichoderma, anomalia de 950L no Diesel S10 e imobilização de R$ 147k no Adubo MAP).
-  - [x] Validação automatizada via TDD (`api/src/stock/official-seed.spec.ts`) e integração com `api/prisma/seed.ts` e comando `npm run seed`.
+- [ ] **6.1. [DEV 1] Comprovar e carregar a base oficial do AgroHack (reaberta; ver 10.1):**
+  - [x] Disponibilizar seed programático e testes com cenários de falta, vencimento, anomalia e capital parado; existem 2 operadores demonstrativos e 7 categorias representadas.
+  - [ ] Confirmar a origem oficial dos registros e a autorização de uso; enquanto não comprovada, identificar a base como simulada, independentemente do nome `official-seed.data.ts`.
+  - [ ] Demonstrar a solução com os dados oficiais quando disponibilizados. Corrigir a afirmação de cobertura completa: o Anexo III apresenta 8 categorias, incluindo Materiais de Irrigação.
+  > O seed existente exclui globalmente dados antes de recriar a amostra. Não rodá-lo contra banco real para executar esta tarefa; preparar carga não destrutiva e usar testes descartáveis.
 - [x] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
   - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
 - [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
@@ -298,23 +305,23 @@
 - [x] **6.4. [EM CONJUNTO] Registro de Limitações:**
   - [x] Documentar arquitetura do cliente, critérios locais, execução, testes e limites de integração em `client/README.md`.
   - [x] Mapear o que a solução faz com excelência e documentar limitações conhecidas de forma transparente.
-  - [x] Registrar que a sincronização por LAN não será implementada a tempo (README §7.2, `client/README.md`, `regra_de_sync.md` §12 e roteiros do vídeo), mantendo a nuvem como único caminho de sincronização.
+  - [x] Registrar a decisão de sincronizar pela internet e cancelar LAN; a limpeza dos resíduos de implementação permanece aberta em 5.7.
 
 ---
 
 ### ETAPA 7: Documentação Obrigatória (README Anexo II) *(Dia 12)*
 *Critério rigoroso do regulamento do IFRO.*
 
-- [x] **7.1. [EM CONJUNTO] Redação do README.md oficial com os 10 tópicos obrigatórios:**
-  - [x] 1. Equipe (nomes dos 2 integrantes, cursos, papéis e responsável ADS).
+- [ ] **7.1. [EM CONJUNTO] Fechar o README e as evidências de entrega (reaberta após revisão do regulamento; ver 10.6):**
+  - [ ] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS).
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [x] 4. Como testar (instruções reproduzíveis e links para download do `.exe` e `.apk`).
-  - [x] 5. Dados e critérios (campos tratados, regras de runout, Curva ABC e anomalias).
-  - [x] 6. Demonstração (link do vídeo gravado, prints e evidências de reanálise).
+  - [ ] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores).
+  - [ ] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises).
+  - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
-  - [x] 8. Tecnologias e declaração de IA (lista de ferramentas e declaração formal do uso de IA).
-  - [x] 9. Autoria e licença (termos de uso e garantia de nenhuma credencial/token exposto).
+  - [ ] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana).
+  - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
   - [x] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
 
 ---
@@ -344,3 +351,26 @@
 - [ ] **9.1. [EM CONJUNTO] Ensaio do Pitch:** Cronometrar o tempo de fala e divisão entre os 2 integrantes.
 - [ ] **9.2. [EM CONJUNTO] Alinhamento para a Sabatina:** Preparar respostas sobre regras do negócio rural, consistência offline e uso ético de IA.
 - [ ] **9.3. [EM CONJUNTO] Checklist Presencial:** Notebooks carregados, `.exe` rodando offline, celular com a `.apk` instalada e presença confirmada.
+
+---
+
+### ETAPA 10: Fechamento após auditoria do regulamento (26/10)
+
+Ordem, dependências, arquivos e critérios detalhados em `ROADMAP_FINALIZACAO.md`.
+Não são funcionalidades já concluídas. A retirada de LAN está em 5.7; seu servidor
+foi cancelado em 5.6. O aceite físico Android continua em 5.2.
+
+- [x] **10.0. [EM CONJUNTO] Registrar o roadmap de finalização e a decisão de sincronizar exclusivamente pela internet.**
+- [ ] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
+- [ ] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
+- [ ] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
+- [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
+  - [x] **DEV 2:** expor amostras, dias de calendário e base limitada/intermediária/ampliada por produto; explicitar que não é garantia de duração. Alertas de falta/validade/excesso com apenas 1–2 retiradas também avisam sobre a base limitada.
+  - [x] **DEV 2:** valor/ABC desconhecidos permanecem nulos; indicar subtotal parcial, quantidade de insumos com saldo sem preço e indisponibilidade quando nenhum estiver valorado; preço zero informado continua válido.
+  - [x] **DEV 2:** validar cálculo e interface com listas vazias/nulas, amostragem, dados ausentes, zero e inválidos (`analysis-disclosure.spec.ts`, `app.spec.ts`).
+  - [ ] **DEV 1:** alinhar a interpretação financeira e analítica no caminho da API efetivamente usado (10.3); se publicar metadados novos, coordenar a geração do contrato e a adaptação do cliente.
+- [ ] **10.5. [DEV 2 + DEV 1] Regressão integrada:**
+  - [x] **DEV 2:** 283 testes do cliente, checagem TypeScript, build da interface e 5 testes Rust aprovados em 27/10; reabertura offline e resposta perdida validadas com SQLite temporário real e servidor simulado. Revisão visual no navegador com dados fictícios (não substitui aparelhos). Sem novo APK/instalador, mudança de API, contrato, envs ou migrations.
+  - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. Concluir 5.2 somente após o teste físico adiado; mocks e SQLite não comprovam locks PostgreSQL nem execução Android.
+- [ ] **10.6. [EM CONJUNTO] Fechar documentação verificável:** concluir 7.1, origem dos dados, responsável, links dos pacotes/vídeo, declaração de IA efetiva e licença consistente.
+- [ ] **10.7. [EM CONJUNTO] Congelar e publicar a versão avaliada:** PRs para `dev`, fluxo existente de release, commit/tag identificável e conclusão das tarefas 8/9 sem alegar testes não executados.

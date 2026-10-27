@@ -7,7 +7,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const repoRoot = resolve(root, "../");
 
 describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
-  it("tauri.conf.json deve conter identificador, bundle ativo e porta local 3333", () => {
+  it("tauri.conf.json deve manter identificador e bundle ativo", () => {
     const tauriConfPath = resolve(root, "src-tauri/tauri.conf.json");
     expect(existsSync(tauriConfPath)).toBe(true);
 
@@ -16,16 +16,9 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(config.bundle.active).toBe(true);
   });
 
-  it("script de liberação de Firewall (Tarefa 5.1) deve existir com a regra exata exigida", () => {
+  it("sincronização cloud não exige script para abrir porta no firewall", () => {
     const batPath = resolve(root, "scripts/liberar-firewall.bat");
-    expect(existsSync(batPath)).toBe(true);
-
-    const content = readFileSync(batPath, "utf-8");
-    expect(content).toContain('name="AgroHack Local Server"');
-    expect(content).toContain("protocol=TCP");
-    expect(content).toContain("localport=3333");
-    expect(content).toContain("profile=private");
-    expect(content).toContain("netsh advfirewall firewall add rule");
+    expect(existsSync(batPath)).toBe(false);
   });
 
   it("script npm 'tauri' deve ser a CLI pura: o Gradle do Android executa `npm run tauri android android-studio-script`", () => {
@@ -83,7 +76,10 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
   });
 
   it("workflow do GitHub Actions deve disparar apenas na main ou tags e conter jobs de build Windows e Android", () => {
-    const workflowPath = resolve(repoRoot, ".github/workflows/build-release.yml");
+    const workflowPath = resolve(
+      repoRoot,
+      ".github/workflows/build-release.yml",
+    );
     expect(existsSync(workflowPath)).toBe(true);
 
     const workflowContent = readFileSync(workflowPath, "utf-8");
