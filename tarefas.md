@@ -435,7 +435,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - [x] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens. O gestor vê Visão geral, Estoque, Histórico e Mais (Operadores e Cópias); o operador vê Visão geral, Estoque, Histórico e Cópias. No computador, o menu lateral não muda. Testes em `app.spec.ts` (Mais abre, navega e fecha) e `mobile-touch.spec.ts` (menu fixo embaixo, abas de 56 px, conteúdo não fica coberto).
 
 **Prioridade 3 — depois da apresentação**
-- [ ] **11.10. Visão geral por perfil:** operador vê saldos e alertas do que usa; capital em estoque fica para o gestor.
+- [x] **11.10. Visão geral por perfil:** o capital em estoque fica só para o gestor. O operador vê "Insumos acompanhados" e "Atenção imediata" lado a lado, além dos alertas e dos saldos. Não há filtro por "o que o operador usa": o sistema não registra essa relação. Teste em `app.spec.ts`.
 - [ ] **11.11. Busca na escolha do insumo** (lista longa sem filtro hoje).
 - [ ] **11.12. Sugestão de destinos recentes** ("Talhão 04", "Trator").
 - [ ] **11.13. Data e hora atrás de "alterar"**, já que quase sempre é "agora".

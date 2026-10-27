@@ -100,6 +100,20 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("visão geral por perfil (tarefa 11.10)", () => {
+  it("o capital em estoque aparece só para o gestor; o operador vê insumos e alertas", () => {
+    const operator = mount(App, { props: { controller: controller("OPERADOR") as never } });
+    expect(operator.find('[data-testid="stock-value"]').exists()).toBe(false);
+    expect(operator.get(".metrics").classes()).toContain("two");
+    expect(operator.get(".metrics").text()).toContain("INSUMOS ACOMPANHADOS");
+    expect(operator.get(".metrics").text()).toContain("ATENÇÃO IMEDIATA");
+    operator.unmount();
+    const manager = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(manager.find('[data-testid="stock-value"]').exists()).toBe(true);
+    expect(manager.get(".metrics").classes()).not.toContain("two");
+    manager.unmount();
+  });
+});
 describe("navegação inferior no celular (tarefa 11.9)", () => {
   const nav = (wrapper: ReturnType<typeof mount>) =>
     wrapper.get('nav[aria-label="Navegação principal"]');
