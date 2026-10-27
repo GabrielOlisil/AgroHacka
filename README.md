@@ -93,7 +93,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
-**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 A compilação Android permanece em **debug**, com assinatura automática de
 desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
@@ -196,12 +196,12 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 | Pergunta Oficial do AgroHack | Regra / Critério de Análise Agronômica | Justificativa Gerada |
 | :--- | :--- | :--- |
-| **1. O que está acabando e precisa ser comprado?** | **Cálculo de Runout Time em Dias de Calendário:**<br>Analisa janela móvel de 30 dias de calendário UTC. Dias amostrados = `today - firstDay + 1` (inclui dias sem retirada). Taxa diária = $\frac{\sum \text{quantidades}}{\text{dias}}$. Autonomia = $\frac{\text{Saldo}}{\text{Taxa}}$. | *“Mantendo o consumo médio de 5.0 sc/dia (últimos 10 dias), o saldo atual será suficiente por ~3 dias.”* |
-| **2. Quais produtos podem vencer antes do uso?** | **Risco de Vencimento vs. Ritmo de Consumo:**<br>Compara os dias até o vencimento ($\Delta t$) com a autonomia. Calcula a sobra estimada: $\text{Sobra} = \text{Saldo} - (\Delta t \times \text{Taxa Diária})$. Se $\text{Sobra} > 0$ e $\Delta t \le 30$ dias, dispara alerta. | *“Atenção: cerca de 38 unidades irão vencer antes de serem utilizadas (vencimento em 12 dias).”* |
+| **1. O que está acabando e precisa ser comprado?** | **Cálculo de Runout Time em Dias de Calendário:**<br>Analisa janela móvel de 30 dias de calendário UTC. Dias amostrados = `today - firstDay + 1` (inclui dias sem retirada). Taxa diária = $\frac{\sum \text{quantidades}}{\text{dias}}$. Autonomia = $\frac{\text{Saldo}}{\text{Taxa}}$. | *“Com o uso médio de 5 sc por dia (últimos 10 dias, contando os dias sem retirada), o estoque dura cerca de 3 dia(s).”* |
+| **2. Quais produtos podem vencer antes do uso?** | **Risco de Vencimento vs. Ritmo de Consumo:**<br>Compara os dias até o vencimento ($\Delta t$) com a autonomia. Calcula a sobra estimada: $\text{Sobra} = \text{Saldo} - (\Delta t \times \text{Taxa Diária})$. Se $\text{Sobra} > 0$ e $\Delta t \le 30$ dias, dispara alerta. | *“Vence em 12 dia(s); no ritmo de uso atual (0,1 L por dia), devem sobrar cerca de 38 L sem uso.”* |
 | **3. Quanto está sendo consumido de cada produto?** | **Histograma de Consumo Diário:**<br>Mapeamento de saídas por dia de calendário na janela de 30 dias, permitindo visualizar sazonalidade e picos. | Gráfico de barras com histórico diário exibido no painel de cada insumo. |
-| **4. Existem consumos fora do padrão?** | **Detecção Estatística de Anomalias:**<br>Exige histórico mínimo de 3 retiradas. Compara a retirada atual com a média das retiradas anteriores. Se $\ge 3\times$ a média, classifica como anomalia grave. | *“Retirada atípica: 950 L é 15.8x superior à média recente (60 L). Critério: pelo menos 3x a média.”* |
-| **5. Por quanto tempo o estoque será suficiente?** | **Autonomia com base da amostragem:**<br>A interface mostra quantidade de retiradas e dias de calendário; base limitada (1–2), intermediária (3–4) ou ampliada (5 ou mais). Sem consumo recente, a previsão fica indisponível. | Indicador heurístico por produto, não confiança estatística nem garantia de duração. |
-| **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.”* |
+| **4. Existem consumos fora do padrão?** | **Detecção Estatística de Anomalias:**<br>Exige histórico mínimo de 3 retiradas. Compara a retirada atual com a média das retiradas anteriores. Se $\ge 3\times$ a média, classifica como anomalia grave. | *“Retirada de 950 L, 15,8 vezes a média das 13 retiradas anteriores (60 L). Consideramos fora do padrão a partir de 3 vezes a média.”* |
+| **5. Por quanto tempo o estoque será suficiente?** | **Autonomia com base da amostragem:**<br>A interface mostra a quantidade de retiradas e os dias usados no cálculo: "Poucos dados" (1–2 retiradas), "Dados razoáveis" (3–4) ou "Bons dados" (5 ou mais). Sem consumo recente, a previsão fica indisponível. | Indicador heurístico por produto, não confiança estatística nem garantia de duração. |
+| **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Há saldo, mas nenhuma retirada nos últimos 30 dias. Avalie antes de comprar mais.”* |
 | **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias ou produto já vencido.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias ou anomalia de consumo.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Ordenação decrescente de severidade na tela principal do Gestor e acionamento do Twilio. |
 
 ### 5.2. Origem dos Dados: Base Simulada
@@ -239,7 +239,7 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 400 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 464 testes Vitest de cadastro, SQLite, interface, gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
+- **Desktop/Mobile (Tauri + Vue):** 538 testes Vitest de cadastro, SQLite, interface (incluindo usabilidade no celular), gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
@@ -282,8 +282,15 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada:** `v1.0.3-entrega` (app versão 1.0.3), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). A tag identifica o commit avaliado.
-- **Versões anteriores:** `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a 1.0.3.
+- **Versão avaliada:** `v1.0.4-entrega` (app versão 1.0.4), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). A tag identifica o commit avaliado.
+  - Traz as melhorias de uso no celular da Etapa 11:
+    - alertas em linguagem simples;
+    - menu inferior;
+    - histórico em cartões com a situação de envio;
+    - data "agora";
+    - busca de insumo e destinos recentes;
+    - urgente em vermelho.
+- **Versões anteriores:** `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
 - **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)

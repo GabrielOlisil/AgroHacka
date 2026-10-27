@@ -4,6 +4,7 @@
   --color-accent: #e3b71a;
   --color-secondary: #4a5b2e;
   --color-support: #6b4a2b;
+  --color-danger: #b42318;
   --color-text: #14181a;
   --color-background: #f2efe6;
   --color-surface: #ffffff;
@@ -361,8 +362,34 @@ small {
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
-.whatsapp-number button {
-  justify-self: start;
+.whatsapp-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.whatsapp-row input {
+  flex: 1;
+  min-width: 0;
+}
+.whatsapp-row button {
+  flex-shrink: 0;
+}
+.action-row {
+  /* Movement and WhatsApp side by side; one column when the screen is narrow
+     or when only one panel is present (operator). */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-6);
+  min-width: 0;
+  margin-bottom: var(--space-6);
+}
+.actions-first > .action-row {
+  /* The operator's main task is recording: show it before the alert list. */
+  order: -1;
+}
+.action-row > .panel {
+  /* The row spaces its panels with gap; their own margin would double it. */
+  margin-bottom: 0;
 }
 .welcome {
   display: grid;
@@ -583,6 +610,11 @@ nav button.active {
   background: var(--selection-background);
   font-weight: var(--font-semibold);
 }
+.nav-more,
+.more-menu {
+  /* Só no celular (tarefa 11.9). */
+  display: none;
+}
 .sidebar-bottom {
   display: flex;
   align-items: center;
@@ -649,6 +681,10 @@ nav button.active {
 .sync-status .lucide {
   color: var(--color-secondary);
 }
+.sync-status.offline {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 .sync-status .pending {
   color: var(--color-support);
 }
@@ -680,6 +716,10 @@ nav button.active {
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
+.metrics.two {
+  /* Operador: sem o capital em estoque, que é assunto do gestor (tarefa 11.10). */
+  grid-template-columns: 1fr 1fr;
+}
 .metrics article {
   display: flex;
   flex-direction: column;
@@ -707,16 +747,15 @@ nav button.active {
   color: var(--text-secondary);
 }
 .metrics article.urgent {
-  border-top-color: var(--color-support);
+  border-top-color: var(--color-danger);
 }
 .metrics article.urgent strong {
-  color: var(--color-support);
+  color: var(--color-danger);
 }
 .dashboard-grid {
+  /* Alerts span the full width; panels keep their own bottom margin as spacing. */
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(304px, 1fr);
-  align-items: start;
-  gap: var(--space-6);
+  min-width: 0;
 }
 .panel {
   min-width: 0;
@@ -779,6 +818,11 @@ nav button.active {
   color: var(--color-surface);
   background: var(--color-secondary);
 }
+.badge.pending {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--border-default);
+}
 .alert-card {
   margin-top: var(--space-3);
   padding: var(--space-4);
@@ -787,7 +831,7 @@ nav button.active {
   background: var(--color-surface);
 }
 .alert-card.urgente {
-  border-left-color: var(--color-support);
+  border-left-color: var(--color-danger);
 }
 .alert-card.atencao {
   border-left-color: var(--color-accent);
@@ -798,7 +842,7 @@ nav button.active {
   background: var(--color-primary);
 }
 .alert-card.urgente .severity {
-  background: var(--color-support);
+  background: var(--color-danger);
 }
 .alert-card.atencao .severity {
   background: var(--color-accent);
@@ -811,6 +855,9 @@ nav button.active {
 .alert-card p {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+}
+.movement-panel form .notice {
+  margin-bottom: 0;
 }
 .movement-panel h2 {
   font-size: var(--font-size-lg);
@@ -846,6 +893,29 @@ nav button.active {
   margin-top: var(--space-3);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
+}
+.date-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.date-line .text-button {
+  text-decoration: underline;
+}
+.recent-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.recent-destinations button {
+  /* Tarefa 11.12: toque rápido no destino de sempre. */
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  background: var(--color-surface);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
 }
 .empty {
   padding: var(--space-7) var(--space-4);
@@ -1032,6 +1102,8 @@ td small {
   inset: 0;
   z-index: 20;
   display: grid;
+  /* A coluna não cresce com o conteúdo: a janela nunca passa da largura da tela. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: var(--space-5);
   background: rgba(20, 24, 26, 0.48);
@@ -1118,9 +1190,6 @@ td small {
   .main-content {
     padding-inline: var(--space-6);
   }
-  .dashboard-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .page-heading {
     align-items: start;
     flex-wrap: wrap;
@@ -1159,25 +1228,35 @@ td small {
   }
 }
 @media (max-width: 760px) {
+  :root {
+    /* Touch targets for field use (gloves, sun): 44–48 px. */
+    --control-md: 44px;
+    --control-lg: 48px;
+  }
   .stock-panel table,
-  .stock-panel tbody {
+  .stock-panel tbody,
+  .history-panel table,
+  .history-panel tbody {
     display: block;
   }
-  .stock-panel thead {
+  .stock-panel thead,
+  .history-panel thead {
     position: absolute;
     width: 1px;
     height: 1px;
     clip-path: inset(50%);
     overflow: hidden;
   }
-  .stock-panel tbody tr {
+  .stock-panel tbody tr,
+  .history-panel tbody tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     border-top: 1px solid var(--border-default);
     padding-block: var(--space-3);
     white-space: normal;
   }
-  .stock-panel td {
+  .stock-panel td,
+  .history-panel td {
     display: flex;
     flex-direction: column;
     align-items: start;
@@ -1186,13 +1265,15 @@ td small {
     border: 0;
     min-width: 0;
   }
-  .stock-panel td[data-label]::before {
+  .stock-panel td[data-label]::before,
+  .history-panel td[data-label]::before {
     content: attr(data-label);
     color: var(--text-secondary);
     font-size: var(--font-size-xs);
   }
   .stock-panel td:first-child,
-  .stock-panel .movement-cell {
+  .stock-panel .movement-cell,
+  .history-panel td:first-child {
     grid-column: 1 / -1;
     max-width: none;
   }
@@ -1229,23 +1310,60 @@ td small {
     display: none;
   }
   .sidebar nav {
-    grid-column: 1 / -1;
+    /* Tarefa 11.9: menu embaixo, na zona do polegar. */
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
     flex-direction: row;
-    gap: var(--space-1);
+    gap: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--color-primary);
+    border-top: 1px solid var(--border-strong);
   }
   .sidebar nav button {
-    flex: 1;
+    flex: 1 1 0;
+    flex-direction: column;
     justify-content: center;
     min-width: 0;
-    padding: 0 var(--space-1);
-    border-left: 1px solid transparent;
-    border-bottom: 2px solid transparent;
-    gap: var(--space-1);
+    min-height: 56px;
+    padding: var(--space-1);
+    border-left: 0;
+    border-top: 2px solid transparent;
+    gap: 2px;
     font-size: var(--font-size-xs);
+    text-align: center;
   }
   .sidebar nav button.active {
-    border-left-color: transparent;
-    border-bottom-color: var(--color-accent);
+    border-top-color: var(--color-accent);
+  }
+  .sidebar nav .nav-secondary {
+    display: none;
+  }
+  .sidebar nav .nav-more {
+    display: flex;
+  }
+  .more-menu {
+    position: fixed;
+    right: var(--space-2);
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-2));
+    z-index: 11;
+    display: grid;
+    min-width: 200px;
+    background: var(--color-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-md);
+  }
+  .more-menu button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: 0 var(--space-4);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    text-align: left;
   }
   .sidebar nav button .lucide {
     width: var(--icon-sm);
@@ -1267,6 +1385,8 @@ td small {
   .main-content {
     margin: 0;
     padding-inline: var(--space-4);
+    /* Espaço para o menu inferior fixo não cobrir o rodapé. */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-4));
   }
   .topbar {
     gap: var(--space-2);
@@ -1276,7 +1396,7 @@ td small {
     font-size: var(--font-size-xs);
   }
   .sync-status {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
   }
   .page-heading {
     gap: var(--space-4);
@@ -1289,7 +1409,7 @@ td small {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-3);
   }
-  .metrics article:first-child {
+  .metrics:not(.two) article:first-child {
     grid-column: 1 / -1;
   }
   .panel {

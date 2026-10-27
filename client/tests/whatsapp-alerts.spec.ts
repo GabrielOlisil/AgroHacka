@@ -46,6 +46,7 @@ function controller(options: {
     }),
     movements: ref([]),
     pendingCount: ref(0),
+    pendingIds: ref([]),
     reviews: ref([]),
     confirmedBalances: ref({}),
     lastSync: ref(null),
@@ -113,7 +114,8 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
 
     const card = wrapper.get(panel);
     expect(card.text()).toContain("Ativo");
-    expect(card.text()).toContain("+5569999999999");
+    expect(card.text()).toContain("Alertas para (69) 99999-9999.");
+    expect(card.text()).not.toContain("+55");
     expect(testButton(wrapper)!.text()).toContain("Testar envio de alerta");
     expect(card.text()).not.toContain("Twilio");
     wrapper.unmount();
@@ -140,7 +142,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
   it("fica só na Visão geral, sem repetir nas outras abas", async () => {
     const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
     expect(wrapper.find(panel).exists()).toBe(true);
-    for (const label of ["Estoque", "Histórico", "Backups"]) {
+    for (const label of ["Estoque", "Histórico", "Cópias"]) {
       await wrapper
         .get('nav[aria-label="Navegação principal"]')
         .findAll("button")
@@ -161,7 +163,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     expect(state.testWhatsApp).toHaveBeenCalledOnce();
     const card = wrapper.get(panel).text();
     expect(card).toContain("Mensagem de teste enviada");
-    expect(card).toContain("+5569999999999");
+    expect(card).toContain("(69) 99999-9999");
     wrapper.unmount();
   });
 
@@ -173,8 +175,8 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     await clickTest(wrapper);
 
     const card = wrapper.get(panel).text();
-    expect(card).toContain("simulação");
-    expect(card).toContain("nenhuma mensagem real");
+    expect(card).toContain("ainda não está ativado");
+    expect(card).toContain("nenhuma mensagem foi enviada");
     expect(card).not.toContain("Mensagem de teste enviada");
     // simulação não é sucesso: nada foi enviado, então não pode ter estilo verde
     expect(wrapper.find(`${panel} .notice.success`).exists()).toBe(false);
@@ -218,7 +220,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     await clickTest(wrapper);
 
     const alert = wrapper.get(`${panel} [role="alert"]`).text();
-    expect(alert).toContain("sem conexão com o servidor");
+    expect(alert).toContain("sem internet");
     expect(alert).not.toContain("Failed to fetch");
     wrapper.unmount();
   });
@@ -246,6 +248,61 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     wrapper.unmount();
   });
 
+  describe("posição e organização na Visão geral", () => {
+    const actionRow = ".dashboard-grid > .action-row";
+
+    it("alertas prioritários ocupam a largura toda e, embaixo, movimentação e WhatsApp ficam lado a lado", () => {
+      expect(rule(".dashboard-grid")).toMatch(/display\s*:\s*grid/);
+      expect(rule(".dashboard-grid")).not.toMatch(/grid-template-columns/);
+      expect(rule(".action-row")).toMatch(/display\s*:\s*grid/);
+      expect(rule(".action-row")).toMatch(/grid-template-columns\s*:\s*repeat\(auto-fit/);
+      expect(rule(".action-row")).toMatch(/gap\s*:/);
+      const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
+      const top = wrapper.findAll(".dashboard-grid > *");
+      expect(top).toHaveLength(2);
+      expect(top[0]!.text()).toContain("Alertas prioritários");
+      expect(top[1]!.classes()).toContain("action-row");
+      const children = wrapper.get(actionRow).findAll(":scope > section");
+      expect(children.map((c) => c.classes())).toEqual([
+        expect.arrayContaining(["movement-panel"]),
+        expect.arrayContaining(["whatsapp-panel"]),
+      ]);
+      wrapper.unmount();
+    });
+
+    it("para o operador o registro vem antes dos alertas (tarefa 11.2)", () => {
+      expect(rule(".actions-first > .action-row")).toMatch(/order\s*:\s*-1/);
+      const operador = mountApp(controller({ role: "OPERADOR" }));
+      expect(operador.get(".dashboard-grid").classes()).toContain("actions-first");
+      operador.unmount();
+      const gestor = mountApp(controller({ telefone: "+5569999999999" }));
+      expect(gestor.get(".dashboard-grid").classes()).not.toContain("actions-first");
+      gestor.unmount();
+    });
+
+    it("para o operador a linha de baixo tem só a movimentação", () => {
+      const wrapper = mountApp(controller({ role: "OPERADOR" }));
+      const children = wrapper.get(actionRow).findAll(":scope > section");
+      expect(children).toHaveLength(1);
+      expect(children[0]!.classes()).toContain("movement-panel");
+      wrapper.unmount();
+    });
+
+    it("campo do número e botão Salvar ficam na mesma linha, com a dica embaixo", () => {
+      expect(rule(".whatsapp-row")).toMatch(/display\s*:\s*flex/);
+      const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
+      const row = wrapper.get(`${panel} .whatsapp-row`);
+      expect(row.find('input[type="tel"]').exists()).toBe(true);
+      expect(row.get("button").text()).toContain("Salvar número");
+      const input = row.get('input[type="tel"]');
+      expect(wrapper.get(`${panel} label[for="${input.attributes("id")}"]`).text()).toContain(
+        "Número do WhatsApp",
+      );
+      expect(testButton(wrapper)!.classes()).toContain("full");
+      wrapper.unmount();
+    });
+  });
+
   it("separa o botão e o resultado do texto com espaçamento", () => {
     expect(rule(".whatsapp-panel > button")).toMatch(/margin-top\s*:/);
     expect(rule(".whatsapp-panel .notice")).toMatch(/margin\s*:/);
@@ -269,9 +326,10 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
 
       expect(
         (wrapper.get(numberInput).element as HTMLInputElement).value,
-      ).toBe("+5569999999999");
+      ).toBe("(69) 99999-9999");
       expect(saveButton(wrapper).exists()).toBe(true);
       expect(wrapper.get(panel).text()).toContain("em branco");
+      expect(wrapper.get(numberInput).attributes("placeholder")).toBe("(69) 91234-1234");
       wrapper.unmount();
     });
 
@@ -285,18 +343,38 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       wrapper.unmount();
     });
 
-    it("envia o número digitado e confirma a atualização", async () => {
+    it("formata enquanto digita, envia com +55 e confirma no formato brasileiro", async () => {
       const state = controller();
       state.updateTelefone.mockResolvedValue("+5569988887777");
       const wrapper = mountApp(state);
 
-      await wrapper.get(numberInput).setValue("+55 69 98888-7777");
+      await wrapper.get(numberInput).setValue("69988887777");
+      expect(
+        (wrapper.get(numberInput).element as HTMLInputElement).value,
+      ).toBe("(69) 98888-7777");
       await saveButton(wrapper).trigger("click");
       await flushPromises();
 
-      expect(state.updateTelefone).toHaveBeenCalledWith("+55 69 98888-7777");
-      expect(wrapper.get(panel).text()).toContain("WhatsApp atualizado");
+      expect(state.updateTelefone).toHaveBeenCalledWith("+5569988887777");
+      expect(wrapper.get(panel).text()).toContain(
+        "Os alertas serão enviados para (69) 98888-7777.",
+      );
       expect(wrapper.find(`${panel} .notice.success`).exists()).toBe(true);
+      wrapper.unmount();
+    });
+
+    it("não envia número incompleto e explica o formato", async () => {
+      const state = controller();
+      const wrapper = mountApp(state);
+
+      await wrapper.get(numberInput).setValue("6991234");
+      await saveButton(wrapper).trigger("click");
+      await flushPromises();
+
+      expect(state.updateTelefone).not.toHaveBeenCalled();
+      expect(wrapper.get(`${panel} [role="alert"]`).text()).toContain(
+        "celular com 9 dígitos",
+      );
       wrapper.unmount();
     });
 
@@ -309,7 +387,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       await saveButton(wrapper).trigger("click");
       await flushPromises();
 
-      expect(state.updateTelefone).toHaveBeenCalledWith("   ");
+      expect(state.updateTelefone).toHaveBeenCalledWith("");
       expect(wrapper.get(panel).text()).toContain("desativados");
       wrapper.unmount();
     });
@@ -321,7 +399,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       );
       const wrapper = mountApp(state);
 
-      await wrapper.get(numberInput).setValue("abc");
+      await wrapper.get(numberInput).setValue("69988887777");
       await saveButton(wrapper).trigger("click");
       await flushPromises();
 
@@ -336,12 +414,12 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       state.updateTelefone.mockRejectedValue(new TypeError("Failed to fetch"));
       const wrapper = mountApp(state);
 
-      await wrapper.get(numberInput).setValue("+5569999999999");
+      await wrapper.get(numberInput).setValue("69999999999");
       await saveButton(wrapper).trigger("click");
       await flushPromises();
 
       const alert = wrapper.get(`${panel} [role="alert"]`).text();
-      expect(alert).toContain("sem conexão com o servidor");
+      expect(alert).toContain("sem internet");
       expect(alert).not.toContain("Failed to fetch");
       wrapper.unmount();
     });
@@ -355,7 +433,7 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
         }),
       );
       const wrapper = mountApp(state);
-      await wrapper.get(numberInput).setValue("+5569999999999");
+      await wrapper.get(numberInput).setValue("69999999999");
 
       await saveButton(wrapper).trigger("click");
       expect(saveButton(wrapper).text()).toContain("Salvando");
@@ -381,9 +459,30 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
 
       expect(
         (wrapper.get(numberInput).element as HTMLInputElement).value,
-      ).toBe("+5569977776666");
+      ).toBe("(69) 97777-6666");
       wrapper.unmount();
     });
+  });
+
+  it("no cadastro, formata o WhatsApp enquanto digita e envia com +55", async () => {
+    const state = controller({ role: null });
+    const wrapper = mountApp(state);
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Criar nova fazenda"))!
+      .trigger("click");
+
+    const input = wrapper.get('input[type="tel"]');
+    expect(input.attributes("placeholder")).toBe("(69) 91234-1234");
+    await input.setValue("69988887777");
+    expect((input.element as HTMLInputElement).value).toBe("(69) 98888-7777");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(state.register).toHaveBeenCalledWith(
+      expect.objectContaining({ telefone: "+5569988887777" }),
+    );
+    wrapper.unmount();
   });
 
   it("limpa o resultado anterior a cada novo teste", async () => {

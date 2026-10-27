@@ -453,6 +453,11 @@ export function prioritizeAlerts<T extends { nivel: 'URGENTE' | 'ATENCAO' | 'INF
 }
 
 const iso = (value: string | Date) => (typeof value === 'string' ? new Date(value) : value).toISOString();
+// Alert texts are read by farmers: Brazilian decimals, no thousands dots.
+// Same helpers and texts as client/src/offline/analysis.ts (parity.spec.ts).
+const num = (value: number, digits = 2) =>
+  value.toLocaleString('pt-BR', { maximumFractionDigits: digits, useGrouping: false });
+const brDate = (isoDate: string) => isoDate.slice(0, 10).split('-').reverse().join('/');
 
 /**
  * 8. Análise Integrada de Estoque.
@@ -493,7 +498,7 @@ export function analyzeStockInventory(
     const daysLeft = rate > 0 ? Math.max(0, saldo) / rate : null;
     const limitedEvidence =
       rate > 0 && out.length < 3
-        ? ` Base limitada: ${out.length} retirada(s) em ${days} dia(s) de calendário; a previsão não é garantia de duração.`
+        ? ` Previsão com poucos dados: ${out.length} retirada(s) em ${days} dia(s); pode mudar.`
         : '';
 
     const add = (tipo: StockInventoryAlert['tipo'], nivel: StockInventoryAlert['nivel'], justificativa: string) =>
@@ -511,13 +516,13 @@ export function analyzeStockInventory(
       add(
         'FALTA',
         'URGENTE',
-        `Saldo de ${saldo.toFixed(2)} ${p.unidadeMedida}, ${saldo <= 0 ? 'zerado ou negativo' : 'no mínimo ou abaixo do mínimo'} de ${p.estoqueMinimo} ${p.unidadeMedida}. ${rate === 0 ? 'Sem histórico suficiente para estimar duração.' : `Consumo médio de ${rate.toFixed(2)} ${p.unidadeMedida}/dia em ${days} dias; autonomia de ${daysLeft?.toFixed(1)} dias.`}`,
+        `${saldo <= 0 ? `Estoque zerado: restam ${num(saldo)} ${p.unidadeMedida}` : `Restam ${num(saldo)} ${p.unidadeMedida}, no mínimo ou abaixo do mínimo de ${num(p.estoqueMinimo)} ${p.unidadeMedida}`}. ${rate === 0 ? 'Sem retiradas recentes para calcular quanto tempo dura.' : `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias), dura cerca de ${num(daysLeft ?? 0, 1)} dia(s).`}`,
       );
     else if (daysLeft !== null && daysLeft <= 15)
       add(
         'FALTA',
         daysLeft <= 7 ? 'URGENTE' : 'ATENCAO',
-        `Mantendo ${rate.toFixed(2)} ${p.unidadeMedida}/dia (últimos ${days} dias, incluindo dias sem saída), o saldo dura aproximadamente ${daysLeft.toFixed(1)} dias.`,
+        `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias, contando os dias sem retirada), o estoque dura cerca de ${num(daysLeft, 1)} dia(s).`,
       );
 
     if (p.validade && saldo > 0) {
@@ -527,13 +532,13 @@ export function analyzeStockInventory(
         add(
           'VENCIMENTO',
           'URGENTE',
-          `Validade em ${p.validade.slice(0, 10)}: há ${Math.abs(remaining)} dias. Saldo de ${saldo.toFixed(2)} ${p.unidadeMedida}.`,
+          `Venceu em ${brDate(p.validade)}, há ${Math.abs(remaining)} dia(s). Ainda há ${num(saldo)} ${p.unidadeMedida} em estoque.`,
         );
       else if (remaining <= 30 && surplus > 0)
         add(
           'VENCIMENTO',
           remaining === 0 ? 'URGENTE' : 'ATENCAO',
-          `Vence ${remaining === 0 ? 'hoje' : `em ${remaining} dias`}; sobra estimada de ${surplus.toFixed(2)} ${p.unidadeMedida}, usando consumo médio de ${rate.toFixed(2)} ${p.unidadeMedida}/dia.${rate === 0 ? ' Sem consumo recente, previsão de baixa confiança.' : ''}`,
+          `Vence ${remaining === 0 ? 'hoje' : `em ${remaining} dia(s)`}; no ritmo de uso atual (${num(rate)} ${p.unidadeMedida} por dia), devem sobrar cerca de ${num(surplus)} ${p.unidadeMedida} sem uso.${rate === 0 ? ' Não houve retiradas recentes, então a previsão é incerta.' : ''}`,
         );
     }
 
@@ -545,7 +550,7 @@ export function analyzeStockInventory(
         add(
           'ANOMALIA',
           'ATENCAO',
-          `Retirada de ${last.quantidade} ${p.unidadeMedida}: ${(last.quantidade / mean).toFixed(1)}x a média de ${mean.toFixed(2)} ${p.unidadeMedida} nas ${previous.length} retiradas anteriores. Critério: pelo menos 3x a média.`,
+          `Retirada de ${num(last.quantidade)} ${p.unidadeMedida}, ${num(last.quantidade / mean, 1)} vezes a média das ${previous.length} retiradas anteriores (${num(mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
         );
     }
 
@@ -555,14 +560,14 @@ export function analyzeStockInventory(
       add(
         'PARADO',
         'INFORMATIVO',
-        'Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.',
+        'Há saldo, mas nenhuma retirada nos últimos 30 dias. Avalie antes de comprar mais.',
       );
 
     if (daysLeft !== null && daysLeft > 90)
       add(
         'EXCESSO',
         'INFORMATIVO',
-        `Estoque para aproximadamente ${daysLeft.toFixed(0)} dias no ritmo recente. Referência de acompanhamento: acima de 90 dias; considerar sazonalidade antes de decidir.`,
+        `Há estoque para cerca de ${num(daysLeft, 0)} dias no ritmo atual, mais de 90 dias. Considere a época do ano antes de decidir.`,
       );
 
     balancesByUnit[p.unidadeMedida] = (balancesByUnit[p.unidadeMedida] ?? 0) + saldo;

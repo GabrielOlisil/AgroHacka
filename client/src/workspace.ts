@@ -61,6 +61,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const analysis = ref<InventoryAnalysis>(analyzeInventory([], []));
   const movements = ref<Movement[]>([]);
   const pendingCount = ref(0);
+  const pendingIds = ref<string[]>([]);
   const reviews = ref<SyncReview[]>([]);
   const confirmedBalances = ref<Record<string, number>>({});
   const lastSync = ref<string | null>(null);
@@ -165,10 +166,10 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     )
       return;
     analysis.value = analyzeInventory(snapshot.products, snapshot.movements);
-    const pendingIds = new Set(pending.map((m) => m.id));
+    const pendingSet = new Set(pending.map((m) => m.id));
     const confirmed = analyzeInventory(
       snapshot.products,
-      snapshot.movements.filter((m) => !pendingIds.has(m.id)),
+      snapshot.movements.filter((m) => !pendingSet.has(m.id)),
     );
     confirmedBalances.value = Object.fromEntries(
       confirmed.products.map((p) => [p.id, p.saldo]),
@@ -177,6 +178,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       b.dataMovimento.localeCompare(a.dataMovimento),
     );
     pendingCount.value = pending.length;
+    pendingIds.value = [...pendingSet];
     reviews.value = reviewItems;
     lastSync.value = timestamp;
     await db.saveAlerts(current.farmId, analysis.value.alerts);
@@ -264,6 +266,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     analysis,
     movements,
     pendingCount,
+    pendingIds,
     reviews,
     confirmedBalances,
     lastSync,
@@ -375,6 +378,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         analysis.value = analyzeInventory([], []);
         movements.value = [];
         pendingCount.value = 0;
+        pendingIds.value = [];
         reviews.value = [];
         confirmedBalances.value = {};
         lastSync.value = null;

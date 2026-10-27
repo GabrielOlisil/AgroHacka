@@ -45,7 +45,7 @@ describe("10.4: uncertainty and partial valuation", () => {
         const alert = result.alerts.find((item) => item.tipo === tipo);
         // One withdrawal predicts >90 days; two predict less, so no excess in that case.
         if (tipo === "EXCESSO" && count === 2) continue;
-        expect(alert?.justificativa).toContain("Base limitada");
+        expect(alert?.justificativa).toContain("poucos dados");
         expect(alert?.justificativa).toContain(`${count} retirada(s)`);
       }
     },

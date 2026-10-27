@@ -5,6 +5,9 @@ import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
+import { APP_VERSION } from "./app-version";
+import { formatPhone, maskPhone, toWhatsApp } from "./phone";
+import { openPicker } from "./open-picker";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -14,6 +17,7 @@ const {
   analysis,
   movements,
   pendingCount,
+  pendingIds,
   reviews,
   confirmedBalances,
   lastSync,
@@ -61,13 +65,15 @@ const video = ref<HTMLVideoElement | null>(null);
 const camera = ref(false);
 const testingWhatsApp = ref(false);
 const savingPhone = ref(false);
-const phoneDraft = ref(session.value?.telefone ?? "");
+const phoneDraft = ref(formatPhone(session.value?.telefone));
 watch(
   () => session.value?.telefone,
   (telefone) => {
-    phoneDraft.value = telefone ?? "";
+    phoneDraft.value = formatPhone(telefone);
   },
 );
+const typedPhone = (event: Event) =>
+  maskPhone((event.target as HTMLInputElement).value);
 const whatsappFeedback = ref("");
 const whatsappSimulated = ref(false);
 const whatsappError = ref("");
@@ -80,8 +86,11 @@ watch(session, () => {
   showPairing.value = false;
   operatorName.value = "";
   productId.value = "";
+  chartProductId.value = "";
   quantity.value = "";
   destination.value = "";
+  productSearch.value = "";
+  customDate.value = false;
   search.value = "";
   category.value = "";
   stockStatus.value = "";
@@ -111,9 +120,11 @@ const filteredProducts = computed(() =>
         (stockStatus.value === "unpriced" && p.precoAquisicao === null)),
   ),
 );
-const selectedProduct = computed(
+// The chart has its own selection: browsing consumption must not change the form.
+const chartProductId = ref("");
+const chartProduct = computed(
   () =>
-    analysis.value.products.find((p) => p.id === productId.value) ??
+    analysis.value.products.find((p) => p.id === chartProductId.value) ??
     analysis.value.products[0],
 );
 const financialPartial = computed(
@@ -123,9 +134,9 @@ const financialUnavailable = computed(
   () => financialPartial.value && analysis.value.pricedProductCount === 0,
 );
 const evidenceLabels = {
-  BAIXA: "Base limitada",
-  MEDIA: "Base intermediária",
-  ALTA: "Base ampliada",
+  BAIXA: "Poucos dados",
+  MEDIA: "Dados razoáveis",
+  ALTA: "Bons dados",
   INDISPONIVEL: "Estimativa indisponível",
 };
 const money = (value: number) =>
@@ -170,14 +181,16 @@ async function act(action: () => Promise<unknown>, success = "") {
 async function authenticate() {
   await act(async () => {
     if (mode.value === "connect") await workspace.connect(code.value);
-    else if (mode.value === "register")
+    else if (mode.value === "register") {
+      const whatsapp = toWhatsApp(telefone.value);
       await workspace.register({
         nome: nome.value,
         email: email.value,
         senha: password.value,
         nomeFazenda: farmName.value,
-        ...(telefone.value ? { telefone: telefone.value } : {}),
+        ...(whatsapp ? { telefone: whatsapp } : {}),
       });
+    }
     else await workspace.login({ email: email.value, senha: password.value });
     password.value = "";
     code.value = "";
@@ -191,13 +204,83 @@ async function record() {
       productId: productId.value,
       tipo: kind.value,
       quantidade: Number(quantity.value),
-      dataMovimento: new Date(movementDate.value).toISOString(),
+      dataMovimento: (customDate.value
+        ? new Date(movementDate.value)
+        : new Date()
+      ).toISOString(),
       ...(destination.value ? { destino: destination.value } : {}),
     });
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
-  }, "Salvo no aparelho · sincronização pendente.");
+    customDate.value = false;
+  }, "Salvo neste aparelho. Será enviado quando houver internet.");
+}
+const formProduct = computed(() =>
+  analysis.value.products.find((p) => p.id === productId.value),
+);
+// 11.11: lista longa ganha busca (sem acento e sem maiúsculas); o escolhido nunca some.
+const productSearch = ref("");
+const plain = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("pt-BR");
+const formOptions = computed(() => {
+  const term = plain(productSearch.value.trim());
+  return analysis.value.products.filter(
+    (p) => !term || p.id === productId.value || plain(p.nome).includes(term),
+  );
+});
+// 11.12: até 4 destinos recentes, do mais novo ao mais antigo, sem repetir.
+const recentDestinations = computed(() => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const m of movements.value) {
+    const value = m.destino?.trim();
+    if (!value || seen.has(plain(value))) continue;
+    seen.add(plain(value));
+    result.push(value);
+    if (result.length === 4) break;
+  }
+  return result;
+});
+// 11.13: quase sempre é "agora"; a data só é usada se a pessoa tocar em alterar.
+const customDate = ref(false);
+// Data e hora em campos separados: o seletor combinado do navegador não cabe no celular.
+const movementDay = computed({
+  get: () => movementDate.value.slice(0, 10),
+  set: (day: string) => {
+    movementDate.value = `${day}T${movementDate.value.slice(11, 16)}`;
+  },
+});
+const movementTime = computed({
+  get: () => movementDate.value.slice(11, 16),
+  set: (time: string) => {
+    movementDate.value = `${movementDate.value.slice(0, 10)}T${time}`;
+  },
+});
+// Offline-first records the fact even past the balance; warn, never block.
+const exceedsBalance = computed(
+  () =>
+    kind.value === "SAIDA" &&
+    !!formProduct.value &&
+    Number(quantity.value) > formProduct.value.saldo,
+);
+// The overview form is far below the page notices on a phone: answer next to it.
+const formFeedback = ref("");
+const formError = ref("");
+async function recordFromForm() {
+  formFeedback.value = "";
+  formError.value = "";
+  await record();
+  if (feedback.value) {
+    formFeedback.value = feedback.value;
+    feedback.value = "";
+  } else if (error.value) {
+    formError.value = error.value;
+    error.value = "";
+  }
 }
 function openMovement(id: string, type: "ENTRADA" | "SAIDA") {
   productId.value = id;
@@ -205,6 +288,7 @@ function openMovement(id: string, type: "ENTRADA" | "SAIDA") {
   quantity.value = "";
   destination.value = "";
   movementDate.value = localDateTime();
+  customDate.value = false;
   movementError.value = "";
   showMovement.value = true;
 }
@@ -246,8 +330,8 @@ async function sendWhatsAppTest() {
     const { simulado } = await workspace.testWhatsApp();
     whatsappSimulated.value = simulado;
     whatsappFeedback.value = simulado
-      ? "Teste em modo de simulação: o serviço de WhatsApp do servidor não está configurado, então nenhuma mensagem real foi enviada."
-      : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
+      ? "O envio por WhatsApp ainda não está ativado no sistema, então nenhuma mensagem foi enviada."
+      : `Mensagem de teste enviada para ${formatPhone(phone)}. Confira o WhatsApp do gestor.`;
   } catch (cause) {
     whatsappError.value = `Não foi possível enviar o teste: ${describeWhatsAppFailure(cause)}`;
   } finally {
@@ -261,9 +345,9 @@ async function saveWhatsAppNumber() {
   whatsappSimulated.value = false;
   whatsappError.value = "";
   try {
-    const telefone = await workspace.updateTelefone(phoneDraft.value);
+    const telefone = await workspace.updateTelefone(toWhatsApp(phoneDraft.value));
     whatsappFeedback.value = telefone
-      ? `WhatsApp atualizado. Os alertas serão enviados para ${telefone}.`
+      ? `WhatsApp atualizado. Os alertas serão enviados para ${formatPhone(telefone)}.`
       : "Alertas de WhatsApp desativados.";
   } catch (cause) {
     whatsappError.value = `Não foi possível salvar o número: ${describeWhatsAppFailure(cause)}`;
@@ -277,7 +361,7 @@ function describeWhatsAppFailure(cause: unknown) {
     (cause instanceof Error &&
       (cause.name === "TimeoutError" || cause.name === "AbortError"));
   if (offline)
-    return "sem conexão com o servidor. Verifique a internet e tente novamente.";
+    return "sem internet no momento. Tente de novo quando tiver sinal.";
   return cause instanceof Error ? cause.message : String(cause);
 }
 const cameraFallback = " Digite o código ou escolha uma imagem do QR Code.";
@@ -295,6 +379,27 @@ function openOperators() {
   tab.value = "operators";
   void workspace.loadOperators();
 }
+// Tarefa 11.9: no celular, o gestor acessa Operadores e Cópias pelo "Mais".
+const showMore = ref(false);
+function chooseMore(next: "operators" | "backups") {
+  showMore.value = false;
+  if (next === "operators") openOperators();
+  else tab.value = next;
+}
+// Fecha ao tocar fora do menu (e fora do próprio botão Mais) ou ao apertar Esc.
+function closeMoreOutside(event: MouseEvent) {
+  const target = event.target as Element | null;
+  if (!target?.closest?.('.more-menu, [data-testid="more-nav"]'))
+    showMore.value = false;
+}
+function closeMoreOnEscape(event: KeyboardEvent) {
+  if (event.key === "Escape") showMore.value = false;
+}
+watch(showMore, (open) => {
+  const method = open ? "addEventListener" : "removeEventListener";
+  document[method]("click", closeMoreOutside as EventListener);
+  document[method]("keydown", closeMoreOnEscape as EventListener);
+});
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
@@ -340,22 +445,58 @@ async function scanImage(event: Event) {
   });
   if (scanned) await authenticate();
 }
+// "backup-2026-10-27.db" → "27/10/2026"; other names are shown as they are.
+function backupDate(name: string) {
+  const match = /(\d{4})-(\d{2})-(\d{2})/.exec(name);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : name;
+}
 async function restore(name: string) {
   if (
     !window.confirm(
-      "Restaurar este backup? O estado atual terá uma cópia de recuperação. Movimentações posteriores ao backup sairão do banco ativo; confira as pendências antes de continuar.",
+      `Voltar para a cópia de ${backupDate(name)}? Os lançamentos feitos depois dela saem deste aparelho. Antes, o estado atual também é guardado.`,
     )
   )
     return;
   await act(
     () => workspace.restoreBackup(name),
-    "Backup restaurado. Confira o histórico antes de sincronizar.",
+    "Cópia restaurada. Confira o histórico antes de atualizar.",
   );
 }
 const online = () => {
   void workspace.sync();
 };
+// navigator.onLine only says there is a network, not that the API answers;
+// pending records still tell what has not reached the cloud.
+const isOnline = ref(navigator.onLine);
+const updateOnline = () => {
+  isOnline.value = navigator.onLine;
+};
+const syncLabel = computed(() => {
+  if (syncing.value) return "Atualizando…";
+  if (!isOnline.value)
+    return pendingCount.value > 0
+      ? `Sem internet · ${pendingCount.value} lançamento(s) esperando envio`
+      : "Sem internet · tudo guardado neste aparelho";
+  if (pendingCount.value > 0)
+    return `${pendingCount.value} lançamento(s) esperando envio`;
+  return lastSync.value
+    ? `Tudo enviado · ${new Date(lastSync.value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+    : "Tudo guardado neste aparelho";
+});
+const syncIcon = computed(() =>
+  syncing.value
+    ? "refresh"
+    : !isOnline.value
+      ? "wifi-off"
+      : pendingCount.value > 0
+        ? "hard-drive"
+        : lastSync.value
+          ? "circle-check"
+          : "hard-drive",
+);
 onMounted(async () => {
+  window.addEventListener("online", updateOnline);
+  window.addEventListener("offline", updateOnline);
   await workspace.initialize();
   if (!props.controller) {
     void workspace.sync();
@@ -371,6 +512,11 @@ onUnmounted(() => {
   if (timer) clearInterval(timer);
   if (backupTimer) clearInterval(backupTimer);
   window.removeEventListener("online", online);
+  window.removeEventListener("online", updateOnline);
+  window.removeEventListener("offline", updateOnline);
+  showMore.value = false;
+  document.removeEventListener("click", closeMoreOutside);
+  document.removeEventListener("keydown", closeMoreOnEscape);
   stopScanner?.();
   workspace.dispose();
 });
@@ -394,8 +540,8 @@ onUnmounted(() => {
         <p>Seu estoque, no campo e no escritório.</p>
       </div>
       <div class="welcome-note">
-        <UiIcon name="wifi-off" :size="20" /> Registre offline. Sincronize com
-        internet.
+        <UiIcon name="wifi-off" :size="20" /> Registre mesmo sem internet. Os
+        dados são enviados quando o sinal voltar.
       </div>
     </section>
     <section class="welcome-form">
@@ -413,8 +559,8 @@ onUnmounted(() => {
         <p class="muted">
           {{
             mode === "connect"
-              ? "Peça ao gestor o QR Code ou código de pareamento."
-              : "Primeiro acesso com internet."
+              ? "Peça ao gestor o QR Code ou o código de acesso."
+              : "No primeiro acesso, é preciso internet."
           }}
         </p>
         <div class="auth-options">
@@ -477,10 +623,11 @@ onUnmounted(() => {
               >WhatsApp para alertas de emergência
               <span class="muted">(opcional)</span
               ><input
-                v-model="telefone"
+                :value="telefone"
                 type="tel"
                 autocomplete="tel"
-                placeholder="+55 69 …"
+                placeholder="(69) 91234-1234"
+                @input="telefone = typedPhone($event)"
               /><small class="muted"
                 >Receba avisos automáticos de estoque e validade.</small
               ></label
@@ -488,7 +635,7 @@ onUnmounted(() => {
           </template>
           <template v-else>
             <label
-              >Código ou conteúdo do QR Code<textarea
+              >Código de acesso<textarea
                 v-model="code"
                 required
                 rows="3"
@@ -543,7 +690,10 @@ onUnmounted(() => {
           </button>
         </form>
       </div>
-      <small>AgroHack 2026 · Gestão inteligente de insumos rurais</small>
+      <small
+        >AgroHack 2026 · Gestão inteligente de insumos rurais · versão
+        {{ APP_VERSION }}</small
+      >
     </section>
   </div>
   <div v-else class="workspace">
@@ -581,19 +731,40 @@ onUnmounted(() => {
         ><button
           v-if="session.role === 'GESTOR'"
           data-testid="operators-nav"
+          class="nav-secondary"
           :class="{ active: tab === 'operators' }"
           :aria-current="tab === 'operators' ? 'page' : undefined"
           @click="openOperators"
         >
           <UiIcon name="users" :size="18" /><span>Operadores</span></button
         ><button
-          :class="{ active: tab === 'backups' }"
+          :class="{
+            active: tab === 'backups',
+            'nav-secondary': session.role === 'GESTOR',
+          }"
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
         >
-          <UiIcon name="database-backup" :size="18" /><span>Backups</span>
+          <UiIcon name="database-backup" :size="18" /><span>Cópias</span></button
+        ><button
+          v-if="session.role === 'GESTOR'"
+          data-testid="more-nav"
+          class="nav-more"
+          :class="{ active: tab === 'operators' || tab === 'backups' }"
+          :aria-expanded="showMore"
+          aria-controls="more-menu"
+          @click="showMore = !showMore"
+        >
+          <UiIcon name="ellipsis" :size="18" /><span>Mais</span>
         </button>
       </nav>
+      <div v-if="showMore" id="more-menu" class="more-menu">
+        <button @click="chooseMore('operators')">
+          <UiIcon name="users" :size="18" />Operadores</button
+        ><button @click="chooseMore('backups')">
+          <UiIcon name="database-backup" :size="18" />Cópias
+        </button>
+      </div>
       <div class="sidebar-bottom">
         <div class="avatar"><UiIcon name="user" :size="18" /></div>
         <div>
@@ -613,27 +784,23 @@ onUnmounted(() => {
     </aside>
     <main class="main-content">
       <header class="topbar">
-        <span class="sync-status" role="status" :aria-busy="syncing"
+        <span
+          class="sync-status"
+          :class="{ offline: !isOnline }"
+          role="status"
+          :aria-busy="syncing"
           ><UiIcon
-            :name="
-              syncing ? 'refresh' : pendingCount > 0 ? 'wifi-off' : 'hard-drive'
-            "
-            :class="{ pending: pendingCount > 0 }"
+            :name="syncIcon"
+            :class="{ pending: pendingCount > 0 || !isOnline }"
           />
-          {{
-            syncing
-              ? "Sincronizando…"
-              : pendingCount > 0
-                ? `${pendingCount} registro(s) pendente(s)`
-                : "Dados salvos neste aparelho"
-          }}</span
+          {{ syncLabel }}</span
         ><button
           class="secondary"
           :disabled="syncing || busy"
           @click="workspace.sync"
         >
           <UiIcon name="refresh" />{{
-            syncing ? "Sincronizando…" : "Sincronizar agora"
+            syncing ? "Atualizando…" : "Atualizar agora"
           }}
         </button>
       </header>
@@ -656,17 +823,17 @@ onUnmounted(() => {
                     ? "Histórico de movimentações"
                     : tab === "operators"
                       ? "Operadores da fazenda"
-                      : "Backups e recuperação"
+                      : "Cópias de segurança"
             }}
           </h1>
           <p v-if="lastSync" class="muted">
             {{
-              lastSync ? `Última sincronização: ${formatDate(lastSync)}` : ""
+              lastSync ? `Última atualização: ${formatDate(lastSync)}` : ""
             }}
           </p>
         </div>
         <button
-          v-if="session.role === 'GESTOR'"
+          v-if="session.role === 'GESTOR' && tab === 'operators'"
           data-testid="pairing"
           class="primary"
           @click="showPairing = true"
@@ -684,17 +851,15 @@ onUnmounted(() => {
         v-if="reviews.length"
         class="panel"
         data-testid="sync-reviews"
-        aria-label="Registros para revisão"
+        aria-label="Lançamentos para conferir"
       >
-        <h2>Registros para revisão</h2>
+        <h2>Lançamentos para conferir</h2>
         <p class="muted">
-          Registros preservados, fora do saldo confirmado. Solicite revisão ao
-          gestor.
+          Estes lançamentos foram guardados, mas não entraram no saldo. Peça ao
+          gestor para conferir.
         </p>
         <p v-for="review in reviews" :key="review.id" class="notice error">
-          <UiIcon name="circle-alert" /><span
-            >{{ review.message }} <small>ID: {{ review.id }}</small></span
-          >
+          <UiIcon name="circle-alert" /><span>{{ review.message }}</span>
         </p>
       </section>
       <details
@@ -702,25 +867,25 @@ onUnmounted(() => {
         class="panel reconciliation"
         :open="hasDeficit || reviews.length > 0"
         data-testid="sync-balances"
-        aria-label="Conciliação do estoque"
+        aria-label="Saldos a conferir"
       >
         <summary>
-          Conciliação
+          Saldos a conferir
           <span class="badge">{{
             hasDeficit
               ? "Saldo negativo"
-              : `${pendingCount} registro(s) pendente(s)`
+              : `${pendingCount} lançamento(s) esperando envio`
           }}</span>
         </summary>
         <p class="muted">
-          Última atualização da nuvem:
-          {{ lastSync ? formatDate(lastSync) : "ainda não confirmada" }}. Outros
-          aparelhos podem ter registros offline ainda não recebidos.
+          Última atualização:
+          {{ lastSync ? formatDate(lastSync) : "ainda nenhuma" }}. Outros
+          celulares podem ter lançamentos que ainda não foram enviados.
         </p>
         <p v-for="p in analysis.products" :key="p.id">
-          <strong>{{ p.nome }}</strong> · Confirmado conhecido:
+          <strong>{{ p.nome }}</strong> · Saldo confirmado:
           {{ unitValue(confirmedBalances[p.id] ?? 0) }} {{ p.unidadeMedida }} ·
-          Provisório neste aparelho: {{ unitValue(p.saldo) }}
+          Com os lançamentos deste aparelho: {{ unitValue(p.saldo) }}
           {{ p.unidadeMedida }}
         </p>
         <p
@@ -730,15 +895,19 @@ onUnmounted(() => {
           data-testid="sync-deficit"
         >
           <UiIcon name="circle-alert" /><span
-            >Saldo consolidado negativo. Os registros foram preservados. O
-            gestor deve conferir entradas, retiradas e possíveis duplicidades
+            >O saldo ficou negativo. Nenhum lançamento foi apagado: o gestor deve
+            conferir entradas e saídas, inclusive se algo foi lançado duas vezes,
             antes de corrigir o estoque.</span
           >
         </p>
       </details>
       <template v-if="tab === 'overview'">
-        <section class="metrics" aria-label="Resumo da propriedade">
-          <article data-testid="stock-value">
+        <section
+          class="metrics"
+          :class="{ two: session.role !== 'GESTOR' }"
+          aria-label="Resumo da propriedade"
+        >
+          <article v-if="session.role === 'GESTOR'" data-testid="stock-value">
             <span>{{
               financialPartial
                 ? "CAPITAL CONHECIDO (PARCIAL)"
@@ -763,7 +932,10 @@ onUnmounted(() => {
             ><strong>{{ urgent.toString().padStart(2, "0") }}</strong>
           </article>
         </section>
-        <div class="dashboard-grid">
+        <div
+          class="dashboard-grid"
+          :class="{ 'actions-first': session.role === 'OPERADOR' }"
+        >
           <section class="panel">
             <div class="section-heading">
               <h2>Alertas prioritários</h2>
@@ -784,7 +956,7 @@ onUnmounted(() => {
                     ? ""
                     : session.role === "GESTOR"
                       ? "Cadastre seu primeiro insumo na aba Estoque."
-                      : "Sincronize para receber os insumos."
+                      : "Com internet, toque em Atualizar agora para receber os insumos."
                 }}
               </p>
             </div>
@@ -816,142 +988,221 @@ onUnmounted(() => {
               <p>{{ alert.justificativa }}</p>
             </article>
           </section>
-          <section class="panel movement-panel">
-            <h2>Movimente seu estoque</h2>
-            <div class="movement-kind">
-              <button
-                :class="{ active: kind === 'SAIDA' }"
-                :aria-pressed="kind === 'SAIDA'"
-                @click="kind = 'SAIDA'"
-              >
-                <UiIcon name="arrow-up-right" /> Baixa rápida</button
-              ><button
-                :class="{ active: kind === 'ENTRADA' }"
-                :aria-pressed="kind === 'ENTRADA'"
-                @click="kind = 'ENTRADA'"
-              >
-                <UiIcon name="arrow-down-left" /> Entrada de compra
-              </button>
-            </div>
-            <form @submit.prevent="record">
-              <label
-                >Insumo<select v-model="productId" required>
-                  <option value="" disabled>Selecione um insumo</option>
-                  <option
-                    v-for="p in analysis.products"
-                    :key="p.id"
-                    :value="p.id"
-                  >
-                    {{ p.nome }} · {{ unitValue(p.saldo) }}
-                    {{ p.unidadeMedida }}
-                  </option>
-                </select></label
-              >
-              <div class="split">
-                <label
-                  >Quantidade<input
-                    v-model="quantity"
-                    type="number"
-                    min="0.000001"
-                    step="any"
-                    required /></label
-                ><label
-                  >Responsável<input
-                    data-testid="responsavel"
-                    :value="session.nome"
-                    readonly
-                    aria-readonly="true"
-                /></label>
+          <div class="action-row">
+            <section class="panel movement-panel">
+              <h2>Movimente seu estoque</h2>
+              <div class="movement-kind">
+                <button
+                  :class="{ active: kind === 'SAIDA' }"
+                  :aria-pressed="kind === 'SAIDA'"
+                  @click="kind = 'SAIDA'"
+                >
+                  <UiIcon name="arrow-up-right" /> Baixa rápida</button
+                ><button
+                  :class="{ active: kind === 'ENTRADA' }"
+                  :aria-pressed="kind === 'ENTRADA'"
+                  @click="kind = 'ENTRADA'"
+                >
+                  <UiIcon name="arrow-down-left" /> Entrada de compra
+                </button>
               </div>
-              <label
-                >Data e hora<input
-                  v-model="movementDate"
-                  type="datetime-local"
-                  required /></label
-              ><label
-                >Destino / observação <span class="muted">(opcional)</span
-                ><input
-                  v-model="destination"
-                  maxlength="300"
-                  placeholder="Talhão, equipamento…" /></label
-              ><button
-                class="primary full"
-                :disabled="busy || !analysis.products.length"
+              <form @submit.prevent="recordFromForm">
+                <label v-if="analysis.products.length > 5"
+                  >Buscar insumo<input
+                    v-model="productSearch"
+                    data-testid="product-search"
+                    type="search"
+                    placeholder="Digite parte do nome"
+                /></label>
+                <label
+                  >Insumo<select v-model="productId" required>
+                    <option value="" disabled>Selecione um insumo</option>
+                    <option
+                      v-for="p in formOptions"
+                      :key="p.id"
+                      :value="p.id"
+                    >
+                      {{ p.nome }} · {{ unitValue(p.saldo) }}
+                      {{ p.unidadeMedida }}
+                    </option>
+                  </select></label
+                >
+                <small
+                  v-if="formProduct"
+                  class="helper"
+                  data-testid="form-balance"
+                  >Saldo: {{ unitValue(formProduct.saldo) }}
+                  {{ formProduct.unidadeMedida }}</small
+                >
+                <div class="split">
+                  <label
+                    >Quantidade{{
+                      formProduct ? ` (${formProduct.unidadeMedida})` : ""
+                    }}<input
+                      v-model="quantity"
+                      type="number"
+                      inputmode="decimal"
+                      min="0.000001"
+                      step="any"
+                      required /></label
+                  ><label
+                    >Responsável<input
+                      data-testid="responsavel"
+                      :value="session.nome"
+                      readonly
+                      aria-readonly="true"
+                  /></label>
+                </div>
+                <p
+                  v-if="exceedsBalance && formProduct"
+                  class="notice"
+                  aria-live="polite"
+                  data-testid="balance-warning"
+                >
+                  <UiIcon name="info" /><span
+                    >A saída é maior que o saldo ({{
+                      unitValue(formProduct.saldo)
+                    }}
+                    {{ formProduct.unidadeMedida }}). Ela será salva mesmo assim,
+                    e o gestor vai conferir a diferença.</span
+                  >
+                </p>
+                <div v-if="customDate" class="split">
+                  <label
+                    >Data<input
+                      v-model="movementDay"
+                      type="date"
+                      required
+                      @click="openPicker" /></label
+                  ><label
+                    >Hora<input
+                      v-model="movementTime"
+                      type="time"
+                      required
+                      @click="openPicker"
+                  /></label>
+                </div>
+                <p v-else class="date-line" data-testid="movement-date">
+                  Data: agora
+                  <button
+                    type="button"
+                    class="text-button"
+                    data-testid="change-date"
+                    @click="customDate = true"
+                  >
+                    alterar
+                  </button>
+                </p>
+                <label
+                  >Destino / observação <span class="muted">(opcional)</span
+                  ><input
+                    v-model="destination"
+                    maxlength="300"
+                    placeholder="Talhão, equipamento…"
+                /></label>
+                <div
+                  v-if="recentDestinations.length"
+                  class="recent-destinations"
+                  aria-label="Destinos recentes"
+                >
+                  <button
+                    v-for="d in recentDestinations"
+                    :key="d"
+                    type="button"
+                    data-testid="recent-destination"
+                    @click="destination = d"
+                  >
+                    {{ d }}
+                  </button>
+                </div>
+                <button
+                  class="primary full"
+                  :disabled="busy || !analysis.products.length"
+                >
+                  <UiIcon name="save" />{{
+                    busy ? "Salvando…" : "Salvar neste aparelho"
+                  }}
+                </button>
+                <p v-if="formFeedback" class="notice success" role="status">
+                  <UiIcon name="circle-check" /><span>{{ formFeedback }}</span>
+                </p>
+                <p v-if="formError" class="notice error" role="alert">
+                  <UiIcon name="circle-alert" /><span>{{ formError }}</span>
+                </p>
+              </form>
+            </section>
+            <section
+              v-if="session.role === 'GESTOR'"
+              class="panel whatsapp-panel"
+              data-testid="whatsapp-alerts"
+              aria-label="Alertas de emergência via WhatsApp"
+            >
+              <div class="section-heading">
+                <h2>Alertas de emergência via WhatsApp</h2>
+                <span class="badge" :class="{ success: session.telefone }">{{
+                  session.telefone ? "Ativo" : "Não configurado"
+                }}</span>
+              </div>
+              <p class="muted">
+                {{
+                  session.telefone
+                    ? `Alertas para ${formatPhone(session.telefone)}.`
+                    : "Nenhum número cadastrado."
+                }}
+              </p>
+              <div class="whatsapp-number">
+                <label for="whatsapp-phone">Número do WhatsApp</label>
+                <div class="whatsapp-row">
+                  <input
+                    id="whatsapp-phone"
+                    :value="phoneDraft"
+                    type="tel"
+                    autocomplete="tel"
+                    placeholder="(69) 91234-1234"
+                    :disabled="savingPhone"
+                    @input="phoneDraft = typedPhone($event)"
+                    @keydown.enter.prevent="saveWhatsAppNumber"
+                  />
+                  <button
+                    type="button"
+                    class="secondary"
+                    :disabled="busy || savingPhone"
+                    @click="saveWhatsAppNumber"
+                  >
+                    {{ savingPhone ? "Salvando…" : "Salvar número" }}
+                  </button>
+                </div>
+                <small class="muted"
+                  >Celular com DDD; em branco desativa os alertas.</small
+                >
+              </div>
+              <button
+                v-if="session.telefone"
+                type="button"
+                class="secondary full"
+                :disabled="busy || testingWhatsApp"
+                @click="sendWhatsAppTest"
               >
-                <UiIcon name="save" />{{
-                  busy ? "Salvando…" : "Salvar neste aparelho"
+                <UiIcon name="circle-check" />
+                {{
+                  testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
                 }}
               </button>
-            </form>
-          </section>
-          <section
-            v-if="session.role === 'GESTOR'"
-            class="panel whatsapp-panel"
-            data-testid="whatsapp-alerts"
-            aria-label="Alertas de emergência via WhatsApp"
-          >
-            <div class="section-heading">
-              <h2>Alertas de emergência via WhatsApp</h2>
-              <span class="badge" :class="{ success: session.telefone }">{{
-                session.telefone ? "Ativo" : "Não configurado"
-              }}</span>
-            </div>
-            <p class="muted">
-              {{
-                session.telefone
-                  ? `Alertas para ${session.telefone}.`
-                  : "Nenhum número cadastrado."
-              }}
-            </p>
-            <div class="whatsapp-number">
-              <label
-                >Número do WhatsApp
-                <input
-                  v-model="phoneDraft"
-                  type="tel"
-                  autocomplete="tel"
-                  placeholder="+55 69 99999-9999"
-                  :disabled="savingPhone"
-                  @keydown.enter.prevent="saveWhatsAppNumber"
-              /></label>
-              <small class="muted"
-                >Código do país; em branco desativa os alertas.</small
+              <p
+                v-if="whatsappFeedback"
+                class="notice"
+                :class="{ success: !whatsappSimulated }"
+                role="status"
               >
-              <button
-                type="button"
-                class="secondary"
-                :disabled="busy || savingPhone"
-                @click="saveWhatsAppNumber"
-              >
-                {{ savingPhone ? "Salvando…" : "Salvar número" }}
-              </button>
-            </div>
-            <button
-              v-if="session.telefone"
-              type="button"
-              class="secondary"
-              :disabled="busy || testingWhatsApp"
-              @click="sendWhatsAppTest"
-            >
-              <UiIcon name="circle-check" />
-              {{
-                testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
-              }}
-            </button>
-            <p
-              v-if="whatsappFeedback"
-              class="notice"
-              :class="{ success: !whatsappSimulated }"
-              role="status"
-            >
-              <UiIcon
-                :name="whatsappSimulated ? 'info' : 'circle-check'"
-              /><span>{{ whatsappFeedback }}</span>
-            </p>
-            <p v-if="whatsappError" class="notice error" role="alert">
-              <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
-            </p>
-          </section>
+                <UiIcon
+                  :name="whatsappSimulated ? 'info' : 'circle-check'"
+                /><span>{{ whatsappFeedback }}</span>
+              </p>
+              <p v-if="whatsappError" class="notice error" role="alert">
+                <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
+              </p>
+            </section>
+          </div>
         </div>
         <section class="panel consumption">
           <div class="section-heading">
@@ -959,7 +1210,7 @@ onUnmounted(() => {
               <h2>Consumo ao longo do tempo</h2>
               <p class="muted">Últimos 30 dias</p>
             </div>
-            <select v-model="productId" aria-label="Insumo para analisar">
+            <select v-model="chartProductId" aria-label="Insumo para analisar">
               <option value="" disabled>Selecione</option>
               <option v-for="p in analysis.products" :key="p.id" :value="p.id">
                 {{ p.nome }}
@@ -967,21 +1218,21 @@ onUnmounted(() => {
             </select>
           </div>
           <div
-            v-if="selectedProduct"
+            v-if="chartProduct"
             class="chart"
-            :aria-label="`Consumo diário de ${selectedProduct.nome}`"
+            :aria-label="`Consumo diário de ${chartProduct.nome}`"
           >
             <div
-              v-for="day in selectedProduct.consumoDiario"
+              v-for="day in chartProduct.consumoDiario"
               :key="day.dia"
               class="chart-column"
             >
               <span
                 class="chart-bar"
                 :style="{
-                  height: `${Math.max(2, (day.quantidade / Math.max(1, ...selectedProduct.consumoDiario.map((d) => d.quantidade))) * 115)}px`,
+                  height: `${Math.max(2, (day.quantidade / Math.max(1, ...chartProduct.consumoDiario.map((d) => d.quantidade))) * 115)}px`,
                 }"
-                :title="`${day.dia}: ${day.quantidade} ${selectedProduct.unidadeMedida}`"
+                :title="`${day.dia}: ${day.quantidade} ${chartProduct.unidadeMedida}`"
               ></span
               ><small>{{ day.dia.slice(8) }}</small>
             </div>
@@ -1000,7 +1251,7 @@ onUnmounted(() => {
               >
             </h2>
             <p v-if="financialPartial" class="helper">
-              Classificação parcial · itens sem preço fora da ABC.
+              Itens sem preço ficam fora da classe de valor (ABC).
             </p>
           </div>
           <button
@@ -1048,7 +1299,7 @@ onUnmounted(() => {
                 <th>Valor armazenado</th>
                 <th>ABC</th>
                 <th>Validade</th>
-                <th v-if="session.role === 'GESTOR'">Movimentar</th>
+                <th>Movimentar</th>
               </tr>
             </thead>
             <tbody>
@@ -1090,8 +1341,9 @@ onUnmounted(() => {
                   >
                     <summary>Detalhes</summary>
                     <p>
-                      {{ p.diasAmostra }} dia(s) de calendário. Indicador por
-                      amostragem; não é garantia de duração.
+                      Calculado com as retiradas dos últimos
+                      {{ p.diasAmostra }} dia(s). É uma estimativa, não uma
+                      garantia.
                     </p>
                   </details>
                 </td>
@@ -1116,7 +1368,7 @@ onUnmounted(() => {
                       : "Não informada"
                   }}
                 </td>
-                <td v-if="session.role === 'GESTOR'" class="movement-cell">
+                <td class="movement-cell">
                   <div class="stock-actions">
                     <button
                       class="secondary"
@@ -1146,7 +1398,7 @@ onUnmounted(() => {
           Nenhum insumo encontrado.
         </p>
       </section>
-      <section v-if="tab === 'history'" class="panel">
+      <section v-if="tab === 'history'" class="panel history-panel">
         <div class="section-heading">
           <h2>Histórico de movimentações</h2>
           <span class="badge">{{ movements.length }} registros</span>
@@ -1161,33 +1413,43 @@ onUnmounted(() => {
                 <th>Quantidade</th>
                 <th>Responsável</th>
                 <th>Destino</th>
+                <th>Situação</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="m in movements" :key="m.id">
                 <td>{{ formatDate(m.dataMovimento) }}</td>
-                <td>
+                <td data-label="Insumo">
                   {{
                     analysis.products.find((p) => p.id === m.productId)?.nome ??
                     m.productId
                   }}
                 </td>
-                <td>
+                <td data-label="Movimento">
                   <span
                     class="badge"
                     :class="m.tipo === 'ENTRADA' ? 'success' : ''"
                     >{{ m.tipo === "ENTRADA" ? "Entrada" : "Saída" }}</span
                   >
                 </td>
-                <td>
+                <td data-label="Quantidade">
                   {{ unitValue(m.quantidade) }}
                   {{
                     analysis.products.find((p) => p.id === m.productId)
                       ?.unidadeMedida
                   }}
                 </td>
-                <td>{{ m.responsavel }}</td>
-                <td>{{ m.destino || "—" }}</td>
+                <td data-label="Responsável">{{ m.responsavel }}</td>
+                <td data-label="Destino">{{ m.destino || "—" }}</td>
+                <td data-label="Situação">
+                  <span
+                    class="badge"
+                    :class="pendingIds.includes(m.id) ? 'pending' : 'success'"
+                    >{{
+                      pendingIds.includes(m.id) ? "Esperando envio" : "Enviado"
+                    }}</span
+                  >
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1197,24 +1459,25 @@ onUnmounted(() => {
       <section v-if="tab === 'backups'" class="panel">
         <div class="section-heading">
           <div>
-            <h2>Backups locais</h2>
-            <p class="muted">Cópias diárias · últimos 7 dias</p>
+            <h2>Cópias de segurança deste aparelho</h2>
+            <p class="muted">Uma cópia por dia · últimos 7 dias</p>
           </div>
           <button
             class="primary"
             :disabled="busy || syncing"
-            @click="act(workspace.createBackup, 'Backup do dia disponível.')"
+            @click="act(workspace.createBackup, 'Cópia de hoje guardada.')"
           >
-            <UiIcon name="database-backup" /> Criar backup do dia
+            <UiIcon name="database-backup" /> Fazer cópia de hoje
           </button>
         </div>
         <p class="notice">
-          Backups neste aparelho. Restauração com cópia de recuperação.
+          As cópias ficam neste aparelho. Antes de voltar para uma cópia, o
+          estado atual também é guardado.
         </p>
         <ul class="backup-list">
           <li v-for="backup in backups" :key="backup.name">
             <div>
-              <strong>{{ backup.name }}</strong
+              <strong>Cópia de {{ backupDate(backup.name) }}</strong
               ><small>{{ unitValue(backup.size / 1024) }} KB</small>
             </div>
             <button
@@ -1227,7 +1490,7 @@ onUnmounted(() => {
           </li>
         </ul>
         <p v-if="!backups.length" class="empty">
-          Nenhum backup disponível ainda.
+          Nenhuma cópia ainda.
         </p>
       </section>
       <OperatorsPanel
@@ -1245,7 +1508,7 @@ onUnmounted(() => {
           }
         "
       />
-      <footer class="page-footer">AgroHacka</footer>
+      <footer class="page-footer">AgroHacka · versão {{ APP_VERSION }}</footer>
     </main>
     <div
       v-if="productStarted && session.role === 'GESTOR'"
@@ -1269,7 +1532,10 @@ onUnmounted(() => {
           <UiIcon name="x" />
         </button>
         <h2 id="product-title">Novo insumo</h2>
-        <p class="muted">Requer internet · saldo adicionado por entrada.</p>
+        <p class="muted">
+          Precisa de internet para cadastrar. Depois, registre uma entrada com a
+          quantidade em estoque.
+        </p>
         <ProductForm
           :key="productFormKey"
           :categories="categories"
@@ -1279,7 +1545,7 @@ onUnmounted(() => {
       </section>
     </div>
     <div
-      v-if="showMovement && session.role === 'GESTOR'"
+      v-if="showMovement"
       class="modal-backdrop"
       @click.self="!busy && (showMovement = false)"
       @keydown.esc="!busy && (showMovement = false)"
@@ -1300,33 +1566,70 @@ onUnmounted(() => {
         </button>
         <h2 id="movement-title">
           {{ kind === "ENTRADA" ? "Entrada" : "Saída" }} ·
-          {{ selectedProduct?.nome }}
+          {{ formProduct?.nome }}
         </h2>
         <p class="muted">
-          Saldo: {{ unitValue(selectedProduct?.saldo ?? 0) }}
-          {{ selectedProduct?.unidadeMedida }}
+          Saldo: {{ unitValue(formProduct?.saldo ?? 0) }}
+          {{ formProduct?.unidadeMedida }}
         </p>
         <p v-if="movementError" class="notice error" role="alert">
           {{ movementError }}
         </p>
         <form @submit.prevent="recordFromStock">
           <label
-            >Quantidade ({{ selectedProduct?.unidadeMedida }})<input
+            >Quantidade ({{ formProduct?.unidadeMedida }})<input
               v-model="quantity"
               type="number"
+              inputmode="decimal"
               min="0.000001"
               step="any"
               required
               autofocus
               :disabled="busy"
           /></label>
-          <label
-            >Data e hora<input
-              v-model="movementDate"
-              type="datetime-local"
-              required
+          <p
+            v-if="exceedsBalance && formProduct"
+            class="notice"
+            aria-live="polite"
+            data-testid="balance-warning"
+          >
+            <UiIcon name="info" /><span
+              >A saída é maior que o saldo ({{
+                unitValue(formProduct.saldo)
+              }}
+              {{ formProduct.unidadeMedida }}). Ela será salva mesmo assim, e o
+              gestor vai conferir a diferença.</span
+            >
+          </p>
+          <div v-if="customDate" class="split">
+            <label
+              >Data<input
+                v-model="movementDay"
+                type="date"
+                required
+                :disabled="busy"
+                @click="openPicker" /></label
+            ><label
+              >Hora<input
+                v-model="movementTime"
+                type="time"
+                required
+                :disabled="busy"
+                @click="openPicker"
+            /></label>
+          </div>
+          <p v-else class="date-line" data-testid="movement-date">
+            Data: agora
+            <button
+              type="button"
+              class="text-button"
+              data-testid="change-date"
               :disabled="busy"
-          /></label>
+              @click="customDate = true"
+            >
+              alterar
+            </button>
+          </p>
           <label
             >Destino / observação<input
               v-model="destination"
@@ -1334,6 +1637,22 @@ onUnmounted(() => {
               placeholder="Opcional"
               :disabled="busy"
           /></label>
+          <div
+            v-if="recentDestinations.length"
+            class="recent-destinations"
+            aria-label="Destinos recentes"
+          >
+            <button
+              v-for="d in recentDestinations"
+              :key="d"
+              type="button"
+              data-testid="recent-destination"
+              :disabled="busy"
+              @click="destination = d"
+            >
+              {{ d }}
+            </button>
+          </div>
           <button class="primary full" :disabled="busy">
             <UiIcon name="save" />{{
               busy ? "Salvando…" : "Salvar neste aparelho"
@@ -1355,8 +1674,8 @@ onUnmounted(() => {
       >
         <button
           class="modal-close"
-          aria-label="Fechar pareamento"
-          title="Fechar pareamento"
+          aria-label="Fechar"
+          title="Fechar"
           @click="showPairing = false"
         >
           <UiIcon name="x" /></button
@@ -1375,8 +1694,8 @@ onUnmounted(() => {
           </button>
         </form>
         <div v-if="pairing" class="pairing-result">
-          <img :src="qrImage" alt="QR Code de pareamento com a fazenda" />
-          <p>Código manual</p>
+          <img :src="qrImage" alt="QR Code de acesso à fazenda" />
+          <p>Ou digite este código no celular</p>
           <strong class="pairing-code">{{ pairing.pairingCode }}</strong
           ><small
             >Compartilhe somente com

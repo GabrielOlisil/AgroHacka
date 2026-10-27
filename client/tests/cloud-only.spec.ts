@@ -130,6 +130,7 @@ describe("5.7-A: internet only, compatible with legacy sessions and QR codes", (
       expect(store.clearSession).not.toHaveBeenCalled();
       expect(workspace.session.value?.deviceToken).toBe("tok_abc");
       expect(workspace.pendingCount.value).toBe(1);
+      expect(workspace.pendingIds.value).toEqual(pending.map((m) => m.id));
       expect(workspace.error.value).toContain(
         "Os registros locais foram preservados",
       );

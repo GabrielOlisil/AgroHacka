@@ -97,7 +97,7 @@ describe("análise offline do estoque", () => {
       analyzeInventory([product], movements, now).alerts.find(
         (a) => a.tipo === "ANOMALIA",
       )?.justificativa,
-    ).toMatch(/8[,.]0|8x/);
+    ).toMatch(/8 vezes a média/);
     expect(JSON.stringify(movements)).toBe(previous);
   });
   it("não soma litros com quilos e calcula ABC pelo capital armazenado", () => {

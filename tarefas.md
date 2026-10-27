@@ -341,14 +341,14 @@
   - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.3-entrega` (27/10) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
+  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.4-entrega` (27/10, com a Etapa 11) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
     > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
-  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.3-entrega`, com o app na versão 1.0.3 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.4-entrega`, com o app na versão 1.0.4 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
 
 ---
 
@@ -411,10 +411,48 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
     > Feito pela 10.3: a análise da API devolve valor/ABC nulos sem preço, `pricedProductCount`/`unpricedProductCount`, amostras, dias e confiabilidade, iguais ao cliente. `parity.spec.ts` cobre sem histórico, poucas/muitas amostras, todos/alguns/nenhum com preço e preço zero. A resposta de `/stock/analyze` não tem schema no contrato e o cliente não a consome, então não houve adaptação de cliente.
 - [ ] **10.5. [DEV 2 + DEV 1] Regressão integrada:**
   - [x] **DEV 2:** 283 testes do cliente, checagem TypeScript, build da interface e 5 testes Rust aprovados em 27/10; reabertura offline e resposta perdida validadas com SQLite temporário real e servidor simulado. Revisão visual no navegador com dados fictícios (não substitui aparelhos). Sem novo APK/instalador, mudança de API, contrato, envs ou migrations.
+  - [x] **Regressão automatizada de 27/10 no `dev` (`fe618e9`, já com a Etapa 11):** API com 400 testes e build OK; integração PostgreSQL descartável (`npm run test:sync`, Docker) com 32 testes; cliente com 510 testes, `npm run check` e build OK. Os testes Rust não rodaram localmente (sem Rust na máquina).
   - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. O aceite anterior de 5.2 foi informado pelo usuário; o novo APK debug e o novo cadastro exigem teste próprio em aparelhos.
     > Baseline anterior: `dev` com 10.1–10.4 e 5.7 tinha 245 testes API, 24 PostgreSQL e 283 cliente. Antes da volta ao debug, 3.10/5.8 passou com 371 API, 29 PostgreSQL, 471 cliente, TypeScript e builds. Os scripts/testes de assinatura release foram depois removidos por decisão do usuário; o resultado atual do cliente fica registrado em 5.8. Código Rust inalterado; os 5 testes nativos anteriores não foram reexecutados. **Faltam:** execução CI, atualização/instalação do novo APK debug e teste do cadastro em aparelhos.
 - [ ] **10.6. [EM CONJUNTO] Fechar documentação verificável:** concluir 7.1, origem dos dados, responsável, links dos pacotes/vídeo, declaração de IA efetiva e licença consistente.
 - [ ] **10.7. [EM CONJUNTO] Congelar e publicar a versão avaliada:** PRs para `dev`, fluxo existente de release, commit/tag identificável e conclusão das tarefas 8/9 sem alegar testes não executados.
+
+---
+
+### ETAPA 11: Melhorias de UI/UX — mobile first e offline first (análise de 27/10)
+*Análise completa das telas nos dois perfis. A interface está boa e consistente; o problema principal é de fluxo: o app foi organizado em torno do painel do gestor no computador, e o operador no campo (celular, offline) ficou com o caminho mais longo. Cada item segue TDD (RED → GREEN → refatoração) e é só de cliente, sem API, contrato ou banco.*
+
+**Prioridade 1 — tarefa principal do operador (fazer antes da apresentação)**
+- [x] **11.1. Operador movimenta pela aba Estoque:** Entrada/Saída em cada insumo também para o operador, com o mesmo modal do gestor; o cadastro de insumo continua só do gestor (`manager-stock.spec.ts`).
+- [x] **11.2. Registro antes dos alertas para o operador:** "Movimente seu estoque" vem antes da lista de alertas na Visão geral do operador (`order` via classe `actions-first`); o gestor mantém alertas em largura total em cima (`whatsapp-alerts.spec.ts`).
+- [x] **11.3. Confirmação junto ao formulário:** "Salvo no aparelho · sincronização pendente" e os erros aparecem logo abaixo do botão Salvar da Visão geral (`app.spec.ts`).
+- [x] **11.4. Prevenir erro na quantidade:** saldo e unidade do insumo escolhido; aviso, sem bloquear, quando a saída passa do saldo (regra offline: registra e o gestor revisa); `inputmode="decimal"` no formulário e no modal (`app.spec.ts`, `manager-stock.spec.ts`).
+- [x] **11.5. Corrigir acoplamento:** o gráfico "Consumo ao longo do tempo" tem seleção própria (`chartProductId`) e não muda mais o insumo do formulário; o modal usa o insumo do formulário (`app.spec.ts`).
+- [x] **11.6. Alvos de toque de 44–48 px no celular:** `--control-md` 44 px e `--control-lg` 48 px até 760 px; abas do menu com 48 px, rótulos inteiros e rolagem lateral quando não cabem (`mobile-touch.spec.ts`).
+
+**Prioridade 2 — offline first e navegação no celular**
+- [x] **11.7. Status de sincronização claro:** "Offline · N registro(s) pendente(s)", "N registro(s) pendente(s) de envio", "Tudo enviado · HH:MM" e "Sincronizando…", reagindo aos eventos `online`/`offline`; offline em destaque (`app.spec.ts`). `navigator.onLine` indica rede, não a API: as pendências seguem como fonte do que não chegou à nuvem.
+- [x] **11.8. Histórico no celular em cartões, com etiqueta de situação** em cada registro: "Esperando envio" (ainda só neste aparelho) ou "Enviado". No celular a tabela vira cartões, com o mesmo estilo do Estoque. O workspace expõe `pendingIds` (`cloud-only.spec.ts`); teste da tela em `app.spec.ts` e do CSS em `mobile-touch.spec.ts`.
+- [x] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens. O gestor vê Visão geral, Estoque, Histórico e Mais (Operadores e Cópias); o operador vê Visão geral, Estoque, Histórico e Cópias. No computador, o menu lateral não muda. Testes em `app.spec.ts` (Mais abre, navega e fecha) e `mobile-touch.spec.ts` (menu fixo embaixo, abas de 56 px, conteúdo não fica coberto).
+
+**Prioridade 3 — depois da apresentação**
+- [x] **11.10. Visão geral por perfil:** o capital em estoque fica só para o gestor. O operador vê "Insumos acompanhados" e "Atenção imediata" lado a lado, além dos alertas e dos saldos. Não há filtro por "o que o operador usa": o sistema não registra essa relação. Teste em `app.spec.ts`.
+- [x] **11.11. Busca na escolha do insumo:** com mais de 5 insumos, aparece "Buscar insumo" acima da lista. A busca ignora acento e maiúsculas, e o insumo já escolhido nunca some da lista.
+- [x] **11.12. Sugestão de destinos recentes:** até 4 botões com os destinos mais recentes do histórico, sem repetir. Um toque preenche o campo. Vale na Visão geral e na janela de entrada/saída do Estoque.
+- [x] **11.13. Data e hora atrás de "alterar":** o formulário mostra "Data: agora · alterar". Sem alterar, o registro recebe a hora do salvamento, e não a hora em que o formulário foi aberto. Vale nos dois formulários. Testes das três tarefas em `app.spec.ts`.
+
+**Linguagem (pedido do usuário em 27/10: o público é rural, não técnico)**
+- [x] **11.14. Telas sem termos de informática:** "Atualizar agora" (sincronizar), "Sem internet" (offline), "lançamentos esperando envio" (pendências), "Cópias de segurança" (backups), "código de acesso" (pareamento), "Saldos a conferir" (conciliação), "Saldo confirmado / Com os lançamentos deste aparelho" (confirmado/provisório), "Precisa de internet para cadastrar…" (requer internet), sem IDs técnicos e com a data no nome das cópias. `plain-language.spec.ts` percorre todas as telas e modais dos dois perfis e a tela de entrada e falha se aparecer jargão.
+- [x] **11.15. Textos dos alertas em linguagem simples:** os dois motores (cliente e API) passam a dizer "Restam 20 L, no mínimo ou abaixo do mínimo de 50 L. Com o uso médio de 5,65 L por dia (últimos 23 dias), dura cerca de 3,5 dia(s).", "Previsão com poucos dados…; pode mudar", "Venceu em DD/MM/AAAA", "devem sobrar cerca de…", "15,8 vezes a média", "nenhuma retirada nos últimos 30 dias", "Considere a época do ano"; números com vírgula e sem ponto de milhar. Rótulos da estimativa: "Poucos dados / Dados razoáveis / Bons dados". `alert-language.spec.ts` cobre todos os tipos; `parity.spec.ts` segue exigindo textos idênticos; o teste de linguagem simples passa a incluir os alertas.
+- [x] **11.22. WhatsApp no formato brasileiro:** o campo do número (cadastro e painel do gestor) mostra e aceita `(69) 91234-1234`, formatando enquanto a pessoa digita; o app acrescenta o +55 ao salvar, então a API não mudou. Exige DDD e celular de 9 dígitos; número colado com +55 também é aceito; em branco continua desativando. O número salvo aparece sem o +55 nas mensagens da tela. Testes em `phone.spec.ts` e `whatsapp-alerts.spec.ts`.
+- [x] **11.21. Toque no ícone de data/hora abre o seletor:** no Firefox, um toque no ícone nativo não abria o calendário nem a hora. O ícone abre o seletor sozinho, e o `showPicker()` chamado por cima fazia ele fechar. Agora o toque nos últimos 40 px do campo, onde fica o ícone, fica com o navegador, e o resto do campo continua chamando `showPicker()`.
+  - A primeira tentativa (#99) escondeu o ícone nativo e desenhou outro. O Firefox não deixa esconder o ícone nativo, então apareciam dois. Essa tentativa foi revertida.
+  - Testes em `open-picker.spec.ts` e `mobile-touch.spec.ts`. O usuário confirmou no Firefox.
+- [x] **11.20. Urgente em vermelho:** o nível urgente (selo e borda dos alertas e o resumo "Atenção imediata") deixa o marrom e passa a usar `--color-danger: #b42318`, que tem contraste AA com texto branco. Teste em `urgent-color.spec.ts`.
+- [x] **11.19. Data e hora em campos separados:** o seletor combinado do navegador (calendário e hora juntos) vazava pela direita da tela no celular. Agora são dois campos, "Data" e "Hora", cada um com um seletor menor, nos dois formulários. Conferido a 414 px. Testes em `app.spec.ts`.
+- [x] **11.18. Calendário abre ao tocar no campo de data:** em alguns navegadores e WebViews, o calendário só abria pelo ícone, ou não abria. Agora um toque em qualquer parte de "Data e hora" (nos dois formulários) e de "Validade" chama `showPicker()`. Onde não há suporte, o campo continua funcionando normalmente. Testes em `app.spec.ts` e `product-form.spec.ts`; conferido no Edge a 414 px com toque real.
+- [x] **11.17. Janelas cabem na tela do celular:** a janela "Novo insumo" passava da borda direita. A coluna do fundo das janelas passa a ser `minmax(0, 1fr)`, o que corrige todas as janelas. Conferido a 414 px: a janela termina em 398 px e a página não rola para o lado. Teste em `mobile-touch.spec.ts`.
+- [x] **11.16. "Conectar operador" só na aba Operadores:** o botão saiu do cabeçalho das outras abas (`app.spec.ts`); título "Operadores conectados".
 
 ---
 

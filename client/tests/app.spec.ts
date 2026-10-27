@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { flushPromises, mount } from "@vue/test-utils";
 import { ref } from "vue";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 const scanner = vi.hoisted(() => ({
   decode: vi.fn(),
   decodeImage: vi.fn(),
@@ -37,6 +39,7 @@ function controller(role?: "GESTOR" | "OPERADOR") {
     }),
     movements: ref([]),
     pendingCount: ref(0),
+    pendingIds: ref<string[]>([]),
     reviews: ref([]),
     confirmedBalances: ref({}),
     lastSync: ref(null),
@@ -68,18 +71,417 @@ async function goToTab(wrapper: ReturnType<typeof mount>, label: string) {
     .trigger("click");
 }
 const balancesPanel = '[data-testid="sync-balances"]';
+describe("versão do aplicativo", () => {
+  const version = JSON.parse(
+    // happy-dom does not expose a file: import.meta.url; Vitest runs from client/.
+    readFileSync(resolve(process.cwd(), "src-tauri/tauri.conf.json"), "utf-8"),
+  ).version as string;
+
+  it("mostra no rodapé a mesma versão dos instaladores (tauri.conf.json)", () => {
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    const wrapper = mount(App, {
+      props: { controller: controller("OPERADOR") as never },
+    });
+    expect(wrapper.get(".page-footer").text()).toBe(
+      `AgroHacka · versão ${version}`,
+    );
+    wrapper.unmount();
+  });
+
+  it("mostra a versão também na tela de entrada, antes do login", () => {
+    const wrapper = mount(App, { props: { controller: controller() as never } });
+    expect(wrapper.get(".welcome").text()).toContain(`versão ${version}`);
+    wrapper.unmount();
+  });
+});
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   state.analysis.value.products = [
     { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },
   ] as never;
   return state;
 }
+describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", () => {
+  const names = ["Diesel", "Ureia", "Glifosato", "Semente de soja", "Calcário", "Óleo 2T", "Adubo NPK"];
+  function withProducts(count: number) {
+    const state = controller("OPERADOR");
+    state.analysis.value.products = names.slice(0, count).map((nome, i) => ({
+      id: `p${i}`,
+      nome,
+      categoria: "Geral",
+      unidadeMedida: "L",
+      saldo: 10,
+    })) as never;
+    return state;
+  }
+  const options = (wrapper: ReturnType<typeof mount>) =>
+    wrapper
+      .get(".movement-panel select")
+      .findAll("option:not([disabled])")
+      .map((o) => o.text().split(" · ")[0]);
+
+  it("11.11: com lista longa, busca o insumo pelo nome, sem perder o já escolhido", async () => {
+    const short = mount(App, { props: { controller: withProducts(5) as never } });
+    expect(short.find('[data-testid="product-search"]').exists()).toBe(false);
+    short.unmount();
+    const wrapper = mount(App, { props: { controller: withProducts(7) as never } });
+    const search = wrapper.get('[data-testid="product-search"]');
+    await search.setValue("URE");
+    expect(options(wrapper)).toEqual(["Ureia"]);
+    await search.setValue("");
+    await wrapper.get(".movement-panel select").setValue("p0");
+    await search.setValue("calc");
+    expect(options(wrapper)).toEqual(["Diesel", "Calcário"]);
+    wrapper.unmount();
+  });
+
+  it("11.12: sugere até 4 destinos recentes, sem repetir, e preenche ao tocar", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const base = { productId: "p", farmId: "f", tipo: "SAIDA", quantidade: 1, responsavel: "Ana" };
+    state.movements.value = [
+      { ...base, id: "1", dataMovimento: "2026-10-27T10:00:00Z", destino: "Talhão 04" },
+      { ...base, id: "2", dataMovimento: "2026-10-26T10:00:00Z", destino: "Trator" },
+      { ...base, id: "3", dataMovimento: "2026-10-25T10:00:00Z", destino: "talhão 04 " },
+      { ...base, id: "4", dataMovimento: "2026-10-24T10:00:00Z" },
+      { ...base, id: "5", dataMovimento: "2026-10-23T10:00:00Z", destino: "Pulverizador" },
+      { ...base, id: "6", dataMovimento: "2026-10-22T10:00:00Z", destino: "Sede" },
+      { ...base, id: "7", dataMovimento: "2026-10-21T10:00:00Z", destino: "Galpão" },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const chips = wrapper.findAll('.movement-panel [data-testid="recent-destination"]');
+    expect(chips.map((c) => c.text())).toEqual(["Talhão 04", "Trator", "Pulverizador", "Sede"]);
+    expect(chips[1]!.attributes("type")).toBe("button");
+    await chips[1]!.trigger("click");
+    expect(
+      (wrapper.get('.movement-panel input[maxlength="300"]').element as HTMLInputElement).value,
+    ).toBe("Trator");
+    wrapper.unmount();
+  });
+
+  it("11.13: a data é 'agora' na hora de salvar, e só abre o campo ao tocar em alterar", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(panel.get('[data-testid="movement-date"]').text()).toContain("agora");
+    await panel.get("select").setValue("p");
+    await panel.get('input[type="number"]').setValue(1);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    const first = state.record.mock.calls[0]![0] as { dataMovimento: string };
+    expect(Math.abs(new Date(first.dataMovimento).getTime() - Date.now())).toBeLessThan(5_000);
+
+    await panel.get('[data-testid="change-date"]').trigger("click");
+    // Data e hora separadas: o seletor de cada uma cabe na tela do celular.
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    await panel.get('input[type="date"]').setValue("2026-10-20");
+    await panel.get('input[type="time"]').setValue("08:30");
+    await panel.get('input[type="number"]').setValue(2);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    expect(state.record.mock.calls[1]![0]).toMatchObject({
+      dataMovimento: new Date("2026-10-20T08:30").toISOString(),
+    });
+    expect(panel.find('input[type="date"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("tocar em qualquer parte do campo de data abre o calendário, mesmo sem suporte do navegador", async () => {
+    const showPicker = vi.fn();
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", {
+      configurable: true,
+      value: showPicker,
+    });
+    const wrapper = mount(App, { props: { controller: withDiesel(controller("OPERADOR")) as never } });
+    const panel = wrapper.get(".movement-panel");
+    await panel.get('[data-testid="change-date"]').trigger("click");
+    await panel.get('input[type="date"]').trigger("click");
+    await panel.get('input[type="time"]').trigger("click");
+    expect(showPicker).toHaveBeenCalledTimes(2);
+    // Navegador que recusa (sem gesto do usuário) ou não tem showPicker: o campo segue normal.
+    showPicker.mockImplementation(() => {
+      throw new DOMException("sem gesto", "NotAllowedError");
+    });
+    await panel.get('input[type="date"]').trigger("click");
+    Object.defineProperty(HTMLInputElement.prototype, "showPicker", { configurable: true, value: undefined });
+    await panel.get('input[type="date"]').trigger("click");
+    expect(panel.find('input[type="date"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("a janela de entrada/saída do Estoque segue o mesmo padrão de data e destinos", async () => {
+    const state = controller("OPERADOR");
+    const product = {
+      id: "p",
+      farmId: "f",
+      nome: "Diesel",
+      categoria: "Combustível",
+      unidadeMedida: "L",
+      estoqueMinimo: 0,
+      precoAquisicao: 6,
+      validade: null,
+    };
+    const entry = {
+      id: "e",
+      productId: "p",
+      farmId: "f",
+      tipo: "ENTRADA" as const,
+      quantidade: 100,
+      dataMovimento: "2026-10-01T12:00:00Z",
+      responsavel: "Ana",
+      destino: "Galpão",
+    };
+    state.analysis.value = analyzeInventory([product], [entry], new Date("2026-10-16T12:00:00Z")) as never;
+    state.movements.value = [entry] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    await wrapper.get('[data-testid="saida-p"]').trigger("click");
+    const modal = wrapper.get('[aria-labelledby="movement-title"]');
+    expect(modal.find('input[type="date"]').exists()).toBe(false);
+    expect(modal.get('[data-testid="movement-date"]').text()).toContain("agora");
+    await modal.get('[data-testid="change-date"]').trigger("click");
+    expect(modal.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(modal.find('input[type="date"]').exists()).toBe(true);
+    expect(modal.find('input[type="time"]').exists()).toBe(true);
+    expect(modal.findAll('[data-testid="recent-destination"]').map((c) => c.text())).toEqual(["Galpão"]);
+    wrapper.unmount();
+  });
+});
+describe("visão geral por perfil (tarefa 11.10)", () => {
+  it("o capital em estoque aparece só para o gestor; o operador vê insumos e alertas", () => {
+    const operator = mount(App, { props: { controller: controller("OPERADOR") as never } });
+    expect(operator.find('[data-testid="stock-value"]').exists()).toBe(false);
+    expect(operator.get(".metrics").classes()).toContain("two");
+    expect(operator.get(".metrics").text()).toContain("INSUMOS ACOMPANHADOS");
+    expect(operator.get(".metrics").text()).toContain("ATENÇÃO IMEDIATA");
+    operator.unmount();
+    const manager = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(manager.find('[data-testid="stock-value"]').exists()).toBe(true);
+    expect(manager.get(".metrics").classes()).not.toContain("two");
+    manager.unmount();
+  });
+});
+describe("navegação inferior no celular (tarefa 11.9)", () => {
+  const nav = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.get('nav[aria-label="Navegação principal"]');
+
+  it("o gestor tem Mais, que abre Operadores e Cópias e fecha ao escolher", async () => {
+    const wrapper = mount(App, { props: { controller: controller("GESTOR") as never } });
+    const secondary = nav(wrapper).findAll("button.nav-secondary").map((b) => b.text());
+    expect(secondary).toEqual(["Operadores", "Cópias"]);
+    const more = nav(wrapper).get('[data-testid="more-nav"]');
+    expect(more.text()).toBe("Mais");
+    expect(more.attributes("aria-expanded")).toBe("false");
+    await more.trigger("click");
+    expect(more.attributes("aria-expanded")).toBe("true");
+    const menu = wrapper.get(".more-menu");
+    expect(menu.findAll("button").map((b) => b.text())).toEqual(["Operadores", "Cópias"]);
+    await menu.findAll("button")[1]!.trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Cópias de segurança deste aparelho");
+    expect(nav(wrapper).get('[data-testid="more-nav"]').classes()).toContain("active");
+    wrapper.unmount();
+  });
+
+  it("o menu Mais fecha ao tocar fora dele ou apertar Esc, mas não ao tocar dentro", async () => {
+    const wrapper = mount(App, {
+      props: { controller: controller("GESTOR") as never },
+      attachTo: document.body,
+    });
+    const more = () => nav(wrapper).get('[data-testid="more-nav"]');
+    await more().trigger("click");
+    await wrapper.get(".more-menu").trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(true);
+    await wrapper.get(".page-heading").trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    expect(more().attributes("aria-expanded")).toBe("false");
+    await more().trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(true);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flushPromises();
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("o operador já cabe em 4 abas: sem Mais, Cópias continua no menu", () => {
+    const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
+    expect(nav(wrapper).find('[data-testid="more-nav"]').exists()).toBe(false);
+    expect(nav(wrapper).findAll("button.nav-secondary")).toHaveLength(0);
+    expect(nav(wrapper).findAll("button").map((b) => b.text())).toEqual([
+      "Visão geral",
+      "Estoque",
+      "Histórico",
+      "Cópias",
+    ]);
+    wrapper.unmount();
+  });
+});
+describe("histórico em cartões com situação de envio (tarefa 11.8)", () => {
+  it("marca cada registro como enviado ou esperando envio e rotula os campos do cartão", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const movement = {
+      productId: "p",
+      farmId: "f",
+      tipo: "SAIDA",
+      quantidade: 5,
+      dataMovimento: "2026-10-27T12:00:00Z",
+      responsavel: "Ana",
+    };
+    state.movements.value = [
+      { ...movement, id: "local" },
+      { ...movement, id: "sent" },
+    ] as never;
+    state.pendingIds.value = ["local"];
+    state.pendingCount.value = 1;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Histórico");
+    const rows = wrapper.findAll(".history-panel tbody tr");
+    expect(rows.map((row) => row.get('[data-label="Situação"]').text())).toEqual([
+      "Esperando envio",
+      "Enviado",
+    ]);
+    const labels = rows[0]!.findAll("td[data-label]").map((td) => td.attributes("data-label"));
+    expect(labels).toEqual(["Insumo", "Movimento", "Quantidade", "Responsável", "Destino", "Situação"]);
+    wrapper.unmount();
+  });
+});
+describe("status de sincronização claro (tarefa 11.7)", () => {
+  function setOnline(value: boolean) {
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      get: () => value,
+    });
+    window.dispatchEvent(new Event(value ? "online" : "offline"));
+  }
+  const status = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.get(".sync-status").text();
+  afterEach(() => setOnline(true));
+
+  it("online e sem pendências: tudo enviado, com a hora da última sincronização", () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.lastSync.value = "2026-10-27T15:40:00.000Z" as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const hour = new Date("2026-10-27T15:40:00.000Z").toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    expect(status(wrapper)).toBe(`Tudo enviado · ${hour}`);
+    wrapper.unmount();
+  });
+
+  it("online com pendências: diz quantos registros aguardam envio", () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.pendingCount.value = 2;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(status(wrapper)).toBe("2 lançamento(s) esperando envio");
+    wrapper.unmount();
+  });
+
+  it("offline: avisa e conta as pendências, e muda quando a conexão cai ou volta", async () => {
+    setOnline(true);
+    const state = controller("OPERADOR");
+    state.pendingCount.value = 2;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    setOnline(false);
+    await flushPromises();
+    expect(status(wrapper)).toBe("Sem internet · 2 lançamento(s) esperando envio");
+    state.pendingCount.value = 0;
+    await flushPromises();
+    expect(status(wrapper)).toBe("Sem internet · tudo guardado neste aparelho");
+    setOnline(true);
+    await flushPromises();
+    expect(status(wrapper)).toBe("Tudo guardado neste aparelho");
+    wrapper.unmount();
+  });
+
+  it("durante o envio mostra Atualizando…", () => {
+    const state = controller("OPERADOR");
+    state.syncing.value = true;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    expect(status(wrapper)).toBe("Atualizando…");
+    wrapper.unmount();
+  });
+});
+describe("formulário de movimentação da Visão geral", () => {
+  async function submitOverviewForm(state: ReturnType<typeof controller>) {
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    await panel.get("select").setValue("p");
+    await panel.get('input[type="number"]').setValue(3);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    return wrapper;
+  }
+
+  it("confirma o salvamento logo abaixo do botão, não só no topo (tarefa 11.3)", async () => {
+    const wrapper = await submitOverviewForm(withDiesel(controller("OPERADOR")));
+    expect(wrapper.get(".movement-panel [role='status']").text()).toContain(
+      "Salvo neste aparelho",
+    );
+    expect(wrapper.find(".page-heading + .notice.success").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("mostra saldo e unidade do insumo escolhido e avisa, sem bloquear, saída maior que o saldo (tarefa 11.4)", async () => {
+    const state = withDiesel(controller("OPERADOR"), 10);
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    const quantity = panel.get('input[type="number"]');
+    expect(quantity.attributes("inputmode")).toBe("decimal");
+    expect(panel.find('[data-testid="form-balance"]').exists()).toBe(false);
+    await panel.get("select").setValue("p");
+    expect(panel.get('[data-testid="form-balance"]').text()).toBe("Saldo: 10 L");
+    expect(panel.text()).toContain("Quantidade (L)");
+    await quantity.setValue(5);
+    expect(panel.find('[data-testid="balance-warning"]').exists()).toBe(false);
+    await quantity.setValue(12);
+    expect(panel.get('[data-testid="balance-warning"]').text()).toContain("maior que o saldo");
+    await panel.findAll(".movement-kind button")[1]!.trigger("click");
+    expect(panel.find('[data-testid="balance-warning"]').exists()).toBe(false);
+    await panel.findAll(".movement-kind button")[0]!.trigger("click");
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    expect(state.record).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: "p", tipo: "SAIDA", quantidade: 12 }),
+    );
+    wrapper.unmount();
+  });
+
+  it("o seletor do gráfico não muda o insumo do formulário, nem o contrário (tarefa 11.5)", async () => {
+    const state = controller("GESTOR");
+    state.analysis.value.products = [
+      { id: "p", nome: "Diesel", unidadeMedida: "L", saldo: 10, consumoDiario: [] },
+      { id: "q", nome: "Ureia", unidadeMedida: "sc", saldo: 5, consumoDiario: [] },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const formSelect = wrapper.get(".movement-panel select");
+    const chartSelect = wrapper.get('select[aria-label="Insumo para analisar"]');
+    await chartSelect.setValue("q");
+    expect((formSelect.element as HTMLSelectElement).value).toBe("");
+    expect(wrapper.get(".chart").attributes("aria-label")).toContain("Ureia");
+    await formSelect.setValue("p");
+    expect((chartSelect.element as HTMLSelectElement).value).toBe("q");
+    expect(wrapper.get(".chart").attributes("aria-label")).toContain("Ureia");
+    wrapper.unmount();
+  });
+
+  it("mostra o erro do salvamento junto ao formulário", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    state.record.mockRejectedValueOnce(new Error("Quantidade inválida."));
+    const wrapper = await submitOverviewForm(state);
+    expect(wrapper.get(".movement-panel [role='alert']").text()).toContain(
+      "Quantidade inválida.",
+    );
+    wrapper.unmount();
+  });
+});
 describe("telas responsivas dos perfis", () => {
   it.each([
     [0, "Estimativa indisponível"],
-    [1, "Base limitada"],
-    [3, "Base intermediária"],
-    [5, "Base ampliada"],
+    [1, "Poucos dados"],
+    [3, "Dados razoáveis"],
+    [5, "Bons dados"],
   ] as const)(
     "qualifica a autonomia junto ao produto com %i retiradas",
     async (count, label) => {
@@ -122,8 +524,8 @@ describe("telas responsivas dos perfis", () => {
       expect(estimate.get("small").classes()).toContain("estimate-context");
       if (count) {
         expect(estimate.text()).toContain(`${count} retirada(s)`);
-        expect(estimate.text()).toContain("dia(s) de calendário");
-        expect(estimate.text()).toContain("não é garantia");
+        expect(estimate.text()).toContain("dia(s)");
+        expect(estimate.text()).toContain("não uma garantia");
       }
       wrapper.unmount();
     },
@@ -171,7 +573,7 @@ describe("telas responsivas dos perfis", () => {
       expect(wrapper.get('[data-testid="abc-unknown"]').text()).toBe(
         "Não classificado",
       );
-      expect(wrapper.text()).toContain("Classificação parcial");
+      expect(wrapper.text()).toContain("fora da classe de valor");
       expect(wrapper.text()).toContain("Preço não informado");
       wrapper.unmount();
     },
@@ -214,7 +616,7 @@ describe("telas responsivas dos perfis", () => {
     const wrapper = mount(App, { props: { controller: state as never } });
     await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     expect(wrapper.get("h1").text()).toBe("Operadores da fazenda");
-    expect(wrapper.text()).toContain("Operadores pareados");
+    expect(wrapper.text()).toContain("Operadores conectados");
     expect(state.loadOperators).toHaveBeenCalledOnce();
     expect(wrapper.find('[data-testid="sync-balances"]').exists()).toBe(false);
     wrapper.unmount();
@@ -229,7 +631,7 @@ describe("telas responsivas dos perfis", () => {
     state.confirmedBalances.value = { p: -20 };
     state.pendingCount.value = 1;
     const wrapper = mount(App, { props: { controller: state as never } });
-    for (const label of ["Visão geral", "Histórico", "Backups"]) {
+    for (const label of ["Visão geral", "Histórico", "Cópias"]) {
       await goToTab(wrapper, label);
       expect(wrapper.find(balancesPanel).exists(), label).toBe(false);
     }
@@ -290,10 +692,10 @@ describe("telas responsivas dos perfis", () => {
     const wrapper = mount(App, { props: { controller: state as never } });
     await goToTab(wrapper, "Estoque");
     expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
-      "Confirmado conhecido: -20 L",
+      "Saldo confirmado: -20 L",
     );
     expect(wrapper.get('[data-testid="sync-balances"]').text()).toContain(
-      "Provisório neste aparelho: -25 L",
+      "Com os lançamentos deste aparelho: -25 L",
     );
     expect(wrapper.get('[data-testid="sync-deficit"]').text()).toMatch(
       /gestor/i,
@@ -315,7 +717,7 @@ describe("telas responsivas dos perfis", () => {
       "Produto indisponível",
     );
     expect(wrapper.get('[data-testid="sync-reviews"]').text()).toContain(
-      "rejected-id",
+      "não entraram no saldo",
     );
     wrapper.unmount();
   });
@@ -565,6 +967,7 @@ describe("telas responsivas dos perfis", () => {
       },
     });
     const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     await wrapper.get('[data-testid="pairing"]').trigger("click");
     await wrapper.get('[role="dialog"] input').setValue("João");
     await wrapper.get('[role="dialog"] form').trigger("submit");
@@ -577,6 +980,7 @@ describe("telas responsivas dos perfis", () => {
       nome: "Ana",
     };
     await flushPromises();
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     await wrapper.get('[data-testid="pairing"]').trigger("click");
     expect(wrapper.text()).not.toContain("AGRO-AB12");
     wrapper.unmount();
@@ -603,12 +1007,17 @@ describe("telas responsivas dos perfis", () => {
     expect(wrapper.find('[data-testid="pairing"]').exists()).toBe(false);
     wrapper.unmount();
   });
-  it("mostra estoque, alertas e pareamento para o gestor", () => {
+  it("mostra estoque e alertas para o gestor; Conectar operador só na aba Operadores", async () => {
     const wrapper = mount(App, {
       props: { controller: controller("GESTOR") as never },
     });
     expect(wrapper.text()).toContain("Alertas");
     expect(wrapper.text()).toContain("Estoque");
+    for (const label of ["Visão geral", "Estoque", "Histórico", "Cópias"]) {
+      await goToTab(wrapper, label);
+      expect(wrapper.find('[data-testid="pairing"]').exists(), label).toBe(false);
+    }
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     expect(wrapper.find('[data-testid="pairing"]').exists()).toBe(true);
     wrapper.unmount();
   });
