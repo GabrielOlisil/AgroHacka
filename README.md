@@ -92,7 +92,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
-**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.2-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 A compilação Android permanece em **debug**, com assinatura automática de
 desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
@@ -281,7 +281,8 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada:** `v1.0.1-entrega`, com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). A tag identifica o commit avaliado.
+- **Versão avaliada:** `v1.0.2-entrega` (app versão 1.0.2), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.2-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega). A tag identifica o commit avaliado.
+- **Versões anteriores:** `v1.0.1-entrega` (27/10, antes do cadastro de produtos e da desativação de operadores), preservada sem alteração.
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
 - **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
