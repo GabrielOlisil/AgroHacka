@@ -820,7 +820,7 @@ onUnmounted(() => {
               <p>{{ alert.justificativa }}</p>
             </article>
           </section>
-          <div class="side-stack">
+          <div class="action-row">
             <section class="panel movement-panel">
               <h2>Movimente seu estoque</h2>
               <div class="movement-kind">
