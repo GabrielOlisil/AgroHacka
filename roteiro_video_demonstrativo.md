@@ -2,7 +2,7 @@
 
 **Equipe:** Oliveira & Oliveira | Gabriel de Oliveira Silva & Kauê Rian Silva Conceição Oliveira
 **Protocolo:** AGRO26-F009CD2F9F | ADS 6º Período — IFRO Campus Ariquemes
-**Versão demonstrada:** `v1.0.1-entrega` ([Releases](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega))
+**Versão demonstrada:** `v1.0.2-entrega` ([Releases](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega))
 **Meta de duração:** 5 a 7 minutos (o regulamento não fixa limite; a tarefa 8.1 previa 3 a 5)
 **Entrega:** YouTube como **Não listado** → link para a coordenação **até 27/10, 22h (horário de Ariquemes)** → link no README
 
@@ -18,10 +18,12 @@ O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração d
 | Solução e arquitetura (API na nuvem + app Windows/Android, offline) | 3 |
 | Alertas com justificativa: falta, vencimento, consumo anômalo, capital parado (ABC) | 4 e 5 |
 | Dados simulados identificados como tal | 5 |
+| Cadastro de insumo pelo gestor | 5b |
 | Pareamento do operador (QR e código) | 6 |
 | Registro offline | 7 |
 | **Atualização dos registros e reanálise** depois de sincronizar | 8 |
 | Alerta urgente no WhatsApp | 9 |
+| Gestor desativa um operador | 9b |
 | Backup e restauração | 10 |
 
 ---
@@ -29,7 +31,7 @@ O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração d
 ## 2. Pré-requisitos (faça antes de começar a gravar)
 
 ### 2.1 Software e aparelhos
-- [ ] **Notebook com Windows** e o instalador da `v1.0.1-entrega` instalado (`agrohacka_0.1.0_x64-setup.exe` da página de Releases). O número `0.1.0` no nome do arquivo é a versão interna do app; o que identifica a entrega é a tag.
+- [ ] **Notebook com Windows** e o instalador da `v1.0.2-entrega` instalado (`agrohacka_1.0.2_x64-setup.exe` da página de Releases).
 - [ ] **Celular Android** com o `app-universal-debug.apk` da mesma release instalado. Se já houver uma versão antiga, instale por cima.
   - O celular precisa começar **sem estar pareado**, para gravar a Cena 6. Se já estiver conectado, toque em **Sair** no app antes de gravar.
 - [ ] **OBS Studio** (gratuito) configurado com captura da tela inteira (1920×1080) e microfone.
@@ -40,7 +42,7 @@ O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração d
 - [ ] **API no ar:** abra o Coolify e confirme que o deploy da `main` (release de 27/10) terminou e o log mostra a API iniciada.
 - [ ] **Conta do gestor:** use a conta da fazenda que já tem a **base simulada** (Ureia, Trichoderma, Diesel S10, MAP, etc.). Faça login no app desktop e confira:
   - **Visão geral → Alertas prioritários** mostra alertas;
-  - **Estoque** mostra os insumos com saldo, a curva ABC e os valores.
+  - **Estoque** mostra a tabela **Insumos** com saldo, duração estimada, valor armazenado e a classe ABC.
 - [ ] **Saldo da Ureia:** anote o saldo atual na aba **Estoque**. Na Cena 7, a saída de Ureia tem de ser **menor que esse saldo** (o roteiro usa 2 sacas; ajuste se precisar).
 
 ### 2.3 WhatsApp (Twilio)
@@ -67,10 +69,10 @@ Depois disso, **a próxima movimentação sincronizada** recria os alertas e dis
 | Bloco | Cenas | Como gravar |
 |---|---|---|
 | A | 1, 2, 3, 11 | Câmera frontal ou slides com voz. Pode ser gravado a qualquer momento. |
-| B | 4, 5, 10 | Captura de tela do desktop. |
-| C | **6, 7, 8, 9** | **Uma tomada contínua**, com captura do desktop e filmagem do celular ao mesmo tempo. Essas cenas dependem umas das outras: pareamento → registro offline → sincronização → WhatsApp. |
+| B | 4, 5, 5b, 10 | Captura de tela do desktop, com internet (o cadastro de insumo da 5b envia o produto para a API). |
+| C | **6, 7, 8, 9, 9b** | **Uma tomada contínua**, com captura do desktop e filmagem do celular ao mesmo tempo. Essas cenas dependem umas das outras: pareamento → registro offline → sincronização → WhatsApp → desativar o operador (por último, porque depois dela o celular não sincroniza mais). |
 
-Rode o SQL da seção 2.4 logo antes de começar o bloco C.
+Grave o bloco B antes e rode o SQL da seção 2.4 logo antes de começar o bloco C.
 
 ---
 
@@ -118,9 +120,25 @@ Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são su
 
 *"No Diesel, uma retirada de 950 litros foi marcada como fora do padrão: é mais de três vezes a média das retiradas anteriores."*
 
-🖱️ Abra a aba **Estoque** e role até **Estoque e curva ABC**; mostre também **Consumo ao longo do tempo**.
+🖱️ Ainda na **Visão geral**, role até **Consumo ao longo do tempo**.
 
-*"Na curva ABC aparece onde está o capital: o adubo MAP concentra o maior valor parado. Se um insumo não tem preço cadastrado, o valor fica como desconhecido, nunca como zero, e o total aparece como parcial. O gráfico mostra o consumo dos últimos 30 dias."*
+*"O gráfico mostra o consumo dos últimos 30 dias, incluindo os dias sem retirada."*
+
+🖱️ Abra a aba **Estoque**: mostre a tabela **Insumos** e as colunas **Duração estimada**, **Valor armazenado** e **ABC**; aponte o **Adubo MAP** com classe **A**.
+
+*"Na aba Estoque, cada insumo mostra saldo, mínimo, duração estimada com a quantidade de retiradas usadas, valor armazenado e a classe da curva ABC. O adubo MAP é classe A: concentra o maior valor parado. Se um insumo não tem preço, o valor aparece como não informado, nunca como zero, e a classificação fica marcada como parcial."*
+
+### 🎬 CENA 5b — Cadastro de insumo (≈ 40 s) · Kauê · desktop (com internet)
+
+🖱️ Na aba **Estoque**: **Novo insumo** → Nome "Luvas nitrílicas" · Categoria "EPI e materiais diversos" · Unidade "un" · Estoque mínimo **20** · Preço **3,50** → **Cadastrar insumo**.
+
+*"O gestor cadastra os insumos da fazenda. Preencho nome, categoria, unidade, estoque mínimo e preço; validade, lote e fornecedor são opcionais. O cadastro vai para a nuvem e chega aos celulares dos operadores na próxima sincronização."*
+
+🖱️ Na linha de **Luvas nitrílicas**: **Entrada** → Quantidade **50** → **Salvar neste aparelho**.
+
+*"E já registro a entrada da compra: cinquenta unidades. O insumo passa a ter saldo, acima do mínimo, então não gera alerta."*
+
+> A entrada é importante: sem ela, o insumo novo fica com saldo zero, abaixo do mínimo, e vira mais um alerta urgente no WhatsApp da Cena 9.
 
 ### 🎬 CENA 6 — Pareamento do operador (≈ 50 s) · Gabriel · desktop + celular
 
@@ -168,6 +186,14 @@ Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são su
 
 *"O envio é feito pela Twilio. Como usamos a conta de testes, a Meta só permite modelos de mensagem pré-aprovados, então o texto que chega é o do modelo de teste. O detalhe do alerta, com produto, nível e motivo, está no app. Em produção, registraríamos um modelo próprio com o nome do insumo e o diagnóstico."*
 
+### 🎬 CENA 9b — Desativar o operador (≈ 30 s) · Kauê · desktop (por último no bloco C)
+
+🖱️ Aba **Operadores** → na linha de "João da Silva", **Desativar** → confirme a mensagem → o status muda para **Inativo**.
+
+*"Se um celular for perdido ou o funcionário sair, o gestor desativa o operador. A partir daí, o aparelho é recusado na sincronização e o código de pareamento deixa de funcionar. O que ele já enviou continua no histórico."*
+
+> Grave esta cena por último: depois dela, o celular pareado não sincroniza mais. Para voltar a usar o mesmo celular, gere um novo pareamento.
+
 ### 🎬 CENA 10 — Backup e restauração (≈ 40 s) · Kauê · desktop
 
 🖱️ Aba **Backups** → **Criar backup do dia** → mostre a lista → **Restaurar** no backup de hoje.
@@ -193,6 +219,8 @@ Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são su
 | O QR não é lido | Use **Código manual** com o código mostrado no painel. |
 | Saldo da Ureia insuficiente para a saída | Use uma quantidade menor, ou registre antes uma **Entrada de compra** de Ureia (fora da gravação). |
 | A API não responde | Confira o deploy no Coolify. O app continua salvando offline; grave as cenas de desktop e repita o bloco C quando a API voltar. |
+| "Cadastrar insumo" dá erro | O cadastro precisa de internet. Confira a conexão e toque em **Tentar novamente**: o mesmo cadastro é confirmado, sem duplicar. |
+| Precisa refazer o bloco C depois da Cena 9b | O operador desativado não volta. No celular, toque em **Sair** e pareie de novo com um novo código (Cena 6). |
 
 ---
 
@@ -201,7 +229,7 @@ Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são su
 1. **Editar:** juntar as cenas na ordem, cortar silêncios e erros. O DaVinci Resolve é gratuito.
 2. **Subir no YouTube** como **Não listado**.
    - Título sugerido: `AgroHack 2026 — Oliveira & Oliveira (AGRO26-F009CD2F9F) — Vídeo demonstrativo`
-   - Descrição sugerida: `Demonstração do AgroHack: gestão inteligente de insumos rurais com alertas, funcionamento offline, sincronização com reanálise e aviso por WhatsApp. Repositório: https://github.com/GabrielOlisil/AgroHacka — Versão demonstrada: v1.0.1-entrega. Dados simulados criados pela equipe.`
+   - Descrição sugerida: `Demonstração do AgroHack: gestão inteligente de insumos rurais com alertas, funcionamento offline, sincronização com reanálise e aviso por WhatsApp. Repositório: https://github.com/GabrielOlisil/AgroHacka — Versão demonstrada: v1.0.2-entrega. Dados simulados criados pela equipe.`
    - Ative as legendas automáticas, se possível.
 3. **Testar o link** numa janela anônima, para garantir que abre sem login.
 4. **Enviar o link para a coordenação** até **22h (horário de Ariquemes)**.

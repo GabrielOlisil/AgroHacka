@@ -334,14 +334,14 @@
   - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.1-entrega` publicada em 27/10 com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
+  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.2-entrega` (27/10) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
     > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
-  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.1-entrega` (nova tag; `v1.0.0-entrega` preservada). Desde 27/10 só tags `v*` publicam release.*
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.2-entrega`, com o app na versão 1.0.2 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
 
 ---
 
