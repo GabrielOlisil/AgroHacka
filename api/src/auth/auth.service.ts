@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { RegisterDto, LoginDto, AuthResponse } from './dto/auth.dto';
 import { normalizeWhatsappNumber } from '../notifications/whatsapp-number';
+import { resolveJwtSecret } from './jwt-secret';
 
 export interface SyncIdentity {
   actorId: string;
@@ -19,8 +20,10 @@ export interface SyncIdentity {
 
 @Injectable()
 export class AuthService {
-  private readonly jwtSecret =
-    process.env.JWT_SECRET || 'agrohack-jwt-secret-key-2026';
+  private readonly jwtSecret = resolveJwtSecret({
+    NODE_ENV: process.env.NODE_ENV,
+    JWT_SECRET: process.env.JWT_SECRET,
+  });
 
   constructor(private readonly prisma: PrismaService) {}
 
