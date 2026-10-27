@@ -16,6 +16,17 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(config.bundle.active).toBe(true);
   });
 
+  it("versão do app (nome dos instaladores) acompanha a release de entrega e é igual no tauri.conf, Cargo.toml e Cargo.lock", () => {
+    const config = JSON.parse(
+      readFileSync(resolve(root, "src-tauri/tauri.conf.json"), "utf-8"),
+    );
+    const cargo = readFileSync(resolve(root, "src-tauri/Cargo.toml"), "utf-8");
+    const lock = readFileSync(resolve(root, "src-tauri/Cargo.lock"), "utf-8");
+    expect(config.version).toBe("1.0.2");
+    expect(cargo).toMatch(/^version = "1\.0\.2"$/m);
+    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.0\.2"/);
+  });
+
   it("sincronização cloud não exige script para abrir porta no firewall", () => {
     const batPath = resolve(root, "scripts/liberar-firewall.bat");
     expect(existsSync(batPath)).toBe(false);
