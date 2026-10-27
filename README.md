@@ -29,6 +29,7 @@
 | **Instituição** | Instituto Federal de Rondônia (IFRO) — Campus Ariquemes |
 | **Integrante 1 (DEV 1)** | **Kauê Rian Silva Conceição Oliveira** — ADS 6º Período (Foco: Backend, Dados, Sincronização e Infraestrutura) |
 | **Integrante 2 (DEV 2)** | **Gabriel de Oliveira Silva** — ADS 6º Período (Foco: Frontend, Tauri v2, SQLite Offline e UX) |
+| **Responsável ADS** | **Gabriel de Oliveira Silva** |
 
 ---
 
@@ -90,6 +91,8 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
 - **Rust e Tauri CLI:** para execução nativa dos clientes (opcional para testes de lógica)
@@ -110,7 +113,7 @@ npx prisma generate
 # 4. Execute a suíte de testes unitários e de integração
 npm test
 
-# 5. Opcional: Execute o seed da base simulada do AgroHack
+# 5. Opcional: carregue a fazenda de demonstração (dados simulados, não destrutiva; ver seção 5.2)
 npx tsx prisma/seed.ts
 
 # 6. Inicie o servidor em modo de desenvolvimento
@@ -161,8 +164,9 @@ O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta
 
 **Como funciona e limites**
 - O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
-- **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto não for resolvido, e a versão atual não resolve alertas sozinha. Um novo lançamento no mesmo insumo **não reenvia** a mensagem.
-- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base oficial, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
+- **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto estiver aberto, e um novo lançamento com a mesma situação **não reenvia** a mensagem.
+- **Ciclo automático:** a cada reanálise, o alerta cuja situação deixou de existir é marcado como resolvido (o histórico fica). Se a situação voltar, um novo alerta é gravado e notificado. Um alerta que sobe de atenção para urgente é atualizado e passa a ser notificado.
+- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base simulada, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
 - Os endpoints `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT do Gestor.
 
 **Para repetir a demonstração:** marque como resolvidos os alertas da fazenda, sem apagar o histórico. A próxima sincronização os recria e notifica de novo.
@@ -175,7 +179,11 @@ UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';
 
 ## 5. Dados e Critérios Agronômicos
 
-O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. A validação da paridade do caminho efetivamente usado na API com `client/src/offline/analysis.ts` está aberta nas tarefas 2.4/10.3; não se deve presumir paridade total apenas pela existência de funções semelhantes.
+O motor analítico responde às **7 perguntas oficiais** do desafio com as mesmas regras no cliente ([`analysis.ts`](client/src/offline/analysis.ts)) e na API ([`stock-engine.ts`](api/src/stock-engine/stock-engine.ts)). A rota `POST /stock/analyze` e a reanálise que grava alertas e dispara o WhatsApp usam esse motor. A paridade é verificada por [`parity.spec.ts`](api/src/stock-engine/parity.spec.ts), que roda os dois motores com as mesmas fixtures e a mesma data de referência e exige resultados iguais:
+- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, parado/excesso, ABC e ordem dos alertas.
+- **Fixtures:** a base simulada, litros e quilos juntos, validade hoje, poucas amostras, limiares exatos, listas vazias, zero e preço ausente.
+- **Limite:** a paridade vale para essas fixtures, não é uma prova formal para qualquer entrada. As duas cópias precisam mudar juntas, e o teste falha se divergirem.
+- **Saldos por unidade:** os saldos são agrupados por unidade (`balancesByUnit`); não existe saldo total somando unidades diferentes.
 
 ### 5.1. Critérios de Cálculo e Fórmulas
 
@@ -188,6 +196,20 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 | **5. Por quanto tempo o estoque será suficiente?** | **Autonomia com base da amostragem:**<br>A interface mostra quantidade de retiradas e dias de calendário; base limitada (1–2), intermediária (3–4) ou ampliada (5 ou mais). Sem consumo recente, a previsão fica indisponível. | Indicador heurístico por produto, não confiança estatística nem garantia de duração. |
 | **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.”* |
 | **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias ou produto já vencido.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias ou anomalia de consumo.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Ordenação decrescente de severidade na tela principal do Gestor e acionamento do Twilio. |
+
+### 5.2. Origem dos Dados: Base Simulada
+
+**Todos os dados de demonstração são simulados, criados pela equipe.** Em 27/10/2026 a organização informou que não haverá base oficial e que as equipes devem criar seus próprios dados. O conjunto está em [`official-seed.data.ts`](api/src/stock/official-seed.data.ts) (o nome do arquivo é histórico) e se identifica no campo `origem` como `SIMULADO`.
+
+- **Cobertura:** 9 produtos nas 8 categorias do Anexo III, incluindo Materiais de Irrigação, 2 operadores e histórico de movimentações com os cenários de falta (Ureia), vencimento (Trichoderma), anomalia (Diesel S10) e capital parado (MAP).
+- **Carga não destrutiva** ([`demo-load.ts`](api/src/stock/demo-load.ts)): `npx tsx prisma/seed.ts` cria a fazenda de demonstração numa única transação. Ela **não apaga nada**, não toca em outras fazendas e não faz nada se o gestor de demonstração (`gestor@agrohack.com`) já existir. Se uma gravação falhar, nada fica no banco.
+- **Relatório de validação:** a carga imprime as linhas válidas, rejeitadas (ref ausente ou duplicada, quantidade ≤ 0, data ou tipo inválidos, produto inexistente) e os tratamentos aplicados:
+  - unidades padronizadas (`sacas` → `sc`, `litros` → `L`) ou avisadas quando não reconhecidas;
+  - preço ausente ou inválido vira desconhecido, nunca zero;
+  - validade inválida é descartada;
+  - responsável ausente vira "Não informado".
+- **Sem fusões por nome:** refs repetidas são rejeitadas e produtos com nomes parecidos ficam separados.
+- **Testes:** [`demo-load.spec.ts`](api/src/stock/demo-load.spec.ts) cobre as regras e os casos de borda. [`demo-load.postgres.integration.ts`](api/test/demo-load.postgres.integration.ts) (`npm run test:sync`) comprova a carga num PostgreSQL descartável: atomicidade, idempotência e outras fazendas intactas.
 
 ---
 
@@ -209,7 +231,7 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 201 testes unitários e de integração aprovados na auditoria de 26/10. A suíte separada de 19 testes de concorrência (`npm run test:sync`) exige PostgreSQL descartável e não foi reexecutada no fechamento exclusivo do DEV 2 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
+- **API NestJS:** 245 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
 - **Desktop/Mobile (Tauri + Vue):** 283 testes Vitest e 5 testes nativos Rust aprovados em 27/10. SQLite temporário real verifica transações, reabertura offline, recuperação e reenvio sem duplicidade; servidor simulado não comprova locks PostgreSQL nem execução Android ([`cloud-restart.spec.ts`](client/tests/cloud-restart.spec.ts), [`analysis-disclosure.spec.ts`](client/tests/analysis-disclosure.spec.ts), [`local-store.spec.ts`](client/tests/local-store.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
@@ -219,7 +241,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 2. **Proteção por Cofre Nativo do SO:** Tokens JWT e backups locais SQLite residem em arquivos do usuário; a criptografia em repouso por cofre nativo (Windows DPAPI / Android Keystore) está mapeada para a próxima versão de produção.
 3. **Sincronização por Download Completo:** Enquanto um cursor seguro de CDC (Change Data Capture) não for disponibilizado na API, o cliente baixa o catálogo consistente integral e mescla por UUID, mitigando riscos de janelas temporais cegas.
 4. **Câmera em Dispositivos Físicos:** A leitura do QR Code pela câmera foi validada em aparelho Android real (Motorola g75 5G, Android 16): ao ler o QR, o aparelho conecta sozinho. Se a permissão for negada ou não houver câmera, o app orienta usar uma imagem do QR ou o código alfanumérico manual, alternativa de alta resiliência para qualquer situação sem câmera. Outros modelos de aparelho não foram testados.
-5. **Sincronização exclusivamente pela internet:** decisão de 26/10. LAN foi cancelada, não adiada; o gestor não atua como servidor intermediário. Sem internet, os lançamentos continuam no SQLite/outbox e são enviados à API central ao reconectar. Em 27/10, a tarefa 5.7-A retirou do cliente o transporte LAN, o uso de IPs antigos e o script de firewall, preservando sessões e pendências. Endpoints/campos remanescentes na API/contrato dependem do DEV 1 (5.7-B/C). O plano está em [`ROADMAP_FINALIZACAO.md`](ROADMAP_FINALIZACAO.md). Não é necessário abrir portas no firewall para a sincronização cloud.
+5. **Sincronização exclusivamente pela internet:** decisão de 26/10. LAN foi cancelada, não adiada; o gestor não atua como servidor intermediário. Sem internet, os lançamentos continuam no SQLite/outbox e são enviados à API central ao reconectar. Em 27/10, a tarefa 5.7-A retirou do cliente o transporte LAN, o uso de IPs antigos e o script de firewall, preservando sessões e pendências. As tarefas 5.7-B/C retiraram da API as rotas `POST /devices/local-ip` e `PUT /sync/heartbeat` e o IP/porta do pareamento e da conexão, e o contrato do cliente foi regenerado; as colunas antigas da fazenda ficam inertes no banco. O plano está em [`ROADMAP_FINALIZACAO.md`](ROADMAP_FINALIZACAO.md). Não é necessário abrir portas no firewall para a sincronização cloud.
 
 ---
 
@@ -235,21 +257,25 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 
 ### 8.2. Declaração Formal de Uso Ético de Inteligência Artificial
 Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe declara:
-> *“Ferramentas de Inteligência Artificial Generativa (Claude 3.7 Sonnet e Gemini via Antigravity IDE) foram utilizadas como assistentes de codificação em pair-programming, auxiliando na geração de scaffolding, revisão de tipagens estritas TypeScript, criação de baterias de testes unitários TDD e elaboração de documentação técnica. Toda a lógica de negócio agronômica, modelagem relacional, arquitetura de sincronização idempotente e regras de decisão foram concebidas, revisadas, testadas e validadas integralmente pelos integrantes da equipe.”*
+> *“Ferramentas de Inteligência Artificial Generativa foram utilizadas como assistentes de codificação: **Claude Code** (Anthropic), **Codex/ChatGPT** (OpenAI) e **Gemini** (Google, via Antigravity IDE). Elas auxiliaram na geração de código e scaffolding, na escrita de testes automatizados no ciclo TDD, na revisão de tipagem TypeScript, na investigação de falhas de build e na elaboração de documentação técnica. Toda alteração passou por revisão humana dos integrantes, que definiram os requisitos, as regras de negócio agronômicas, a modelagem e a arquitetura de sincronização, validaram os testes e decidiram o que entrou no repositório por meio de Pull Requests.”*
 
 ---
 
 ## 9. Autoria, Licença e Segurança
 
 - **Autoria:** Gabriel de Oliveira Silva e Kauê Rian Silva Conceição Oliveira.
-- **Licença:** Distribuído sob a licença open-source MIT.
+- **Licença:** Distribuído sob a licença open-source MIT ([`LICENSE`](LICENSE)); os metadados de `package.json` e `Cargo.toml` seguem a mesma licença.
 - **Segurança de Credenciais:** Nenhuma chave privada, credencial de produção, token Twilio ou senha pessoal está exposta no repositório. Variáveis de ambiente sensíveis são gerenciadas exclusivamente através dos painéis protegidos do Coolify na VPS e em arquivos locais `.env` ignorados pelo `.gitignore`.
+- **Segredo JWT:** o valor do `.env.example` é público e só serve para desenvolvimento. Com `NODE_ENV=production`, a API **não inicia** sem um `JWT_SECRET` próprio (ausente ou igual ao valor público é recusado).
+- **Análise de estoque autorizada:** `POST /stock/analyze` exige o JWT do Gestor ou o `x-device-token` de um operador ativo, e analisa sempre a fazenda da identidade autenticada. Um `farmId` de outra fazenda no corpo da requisição recebe 403.
 
 ---
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão:** `v1.0.0-entrega`
+- **Versão avaliada:** `v1.0.1-entrega`, com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). A tag identifica o commit avaliado.
+- **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
+- **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
 - **Branch de Desenvolvimento:** `dev`
 - **Branch de Produção / Entrega:** `main`

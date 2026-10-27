@@ -6,10 +6,10 @@
 > **Premiação:** R$ 2.000,00  
 > **Formação da Equipe:** 2 integrantes  
 
-> **Fechamento vigente (26/10):** ver `ROADMAP_FINALIZACAO.md`. Sincronização
-> exclusivamente pela internet; LAN cancelada, não adiada. A remoção do código
-> legado ainda será implementada na tarefa 5.7. Os itens 10.1–10.7 complementam
-> este checklist com as lacunas identificadas na revisão do regulamento.
+> **Fechamento vigente (27/10):** roadmap detalhado ao final deste arquivo.
+> Sincronização exclusivamente pela internet; LAN cancelada, não adiada.
+> Retirada no cliente concluída (5.7-A); API/contrato pendentes (5.7-B/C).
+> Os itens 10.1–10.7 complementam este checklist com as lacunas do regulamento.
 
 ---
 
@@ -118,7 +118,7 @@
 - [x] **2.2. [DEV 1] Integração do Motor no Backend:** Rota `POST /stock/analyze` para reanálise central.
 - [x] **2.3. [DEV 2] Integração do Motor no Frontend:** Execução local no SQLite para reanálise imediata offline.
   - [x] Calcular saldo, consumo por dias de calendário, autonomia, validade, anomalias, capital armazenado, curva ABC e alertas explicáveis a partir dos registros locais.
-- [ ] **2.4. [EM CONJUNTO / DEV 1] Alinhar o caminho analítico realmente utilizado (reaberta; ver 10.3):** Existem funções e testes para consumo, autonomia, validade, anomalias, estoque parado e excesso. A auditoria identificou que `StockService.analyzeStock()` não usa integralmente o motor integrado; validar paridade de comportamento pela rota/serviço efetivos, sem afirmar alinhamento de 100% antes dessa comprovação.
+- [x] **2.4. [EM CONJUNTO / DEV 1] Alinhar o caminho analítico realmente utilizado (reaberta; fechada pela 10.3):** Existem funções e testes para consumo, autonomia, validade, anomalias, estoque parado e excesso. A auditoria identificou que `StockService.analyzeStock()` não usa integralmente o motor integrado; validar paridade de comportamento pela rota/serviço efetivos, sem afirmar alinhamento de 100% antes dessa comprovação.
 
 ---
 
@@ -278,12 +278,14 @@
 - [x] **5.4. [DEV 2] Conectar automaticamente ao ler o QR Code:** após ler o QR pela câmera ou por imagem, o aparelho conecta sozinho (como no WhatsApp). Leituras vazias ou repetidas são ignoradas e erros da API aparecem na tela (`client/tests/app.spec.ts`).
 - [x] **5.5. [DEV 2] Painel de conciliação só onde importa:** *"Estoque conhecido e registros locais"* deixa de aparecer em todas as abas; só aparece na aba Estoque e quando há pendências, saldo confirmado negativo ou registros para revisão (`client/tests/app.spec.ts`).
 - **5.6. [EM CONJUNTO] Servidor LAN — CANCELADA por decisão de 26/10:** não implementar e não manter como backlog. Substituída pela retirada dos resíduos em 5.7; não foi concluída como funcionalidade.
-- [ ] **5.7. [DEV 2 + DEV 1] Remover completamente a funcionalidade LAN e sincronizar somente pela internet:**
-  - [x] Registrar decisão, responsabilidades, ordem de publicação e critérios em `ROADMAP_FINALIZACAO.md`.
+- [x] **5.7. [DEV 2 + DEV 1] Remover completamente a funcionalidade LAN e sincronizar somente pela internet:**
+  - [x] Registrar decisão, responsabilidades, ordem de publicação e critérios no roadmap ao final deste arquivo.
   - [x] **A — DEV 2:** substituir o transporte híbrido por API direta e retirar helpers, publicação/uso de IP, script de firewall e testes exclusivos de LAN; preservar sessões/QR legados ignorando os campos locais.
     > Implementado em 27/10 na branch `feat/dev2-cloud-only-and-analysis`. `cloud-only.spec.ts` valida ausência de chamada LAN inclusive com sessão antiga, compatibilidade e falhas; `cloud-restart.spec.ts` verifica persistência em SQLite temporário no disco, reabertura e retry com resposta perdida sem duplicidade. API e contrato gerado não foram alterados.
-  - [ ] **B — DEV 1:** retirar endpoints/DTOs de IP e heartbeat, emissão dos campos LAN e código exclusivo; coordenar compatibilidade e eventual migration nova, sem reset de banco.
-  - [ ] **C — DEV 1 + DEV 2:** publicar contrato pela ferramenta existente, regenerar por `npm run openapi` e atualizar documentação/orientações dos agentes, sem editar o contrato gerado à mão.
+  - [x] **B — DEV 1:** retirar endpoints/DTOs de IP e heartbeat, emissão dos campos LAN e código exclusivo; coordenar compatibilidade e eventual migration nova, sem reset de banco.
+    > 27/10: removidos `POST /devices/local-ip`, `PUT /sync/heartbeat`, seus DTOs e serviços; pareamento e conexão não devolvem IP/porta; a base simulada não tem campos LAN. **Sem migration:** `localIp`/`localPort` ficam inertes no `schema.prisma`, porque o deploy roda `prisma db push` e removê-las derrubaria a subida da API por perda de dados. `lan-removal.http.spec.ts` comprova 404 nas rotas, QR e código manual sem IP e o OpenAPI sem as rotas.
+  - [x] **C — DEV 1 + DEV 2:** publicar contrato pela ferramenta existente, regenerar por `npm run openapi` e atualizar documentação/orientações dos agentes, sem editar o contrato gerado à mão.
+    > 27/10: `contract.d.ts` regenerado com `npm run openapi` contra a API local (Postgres descartável). O contrato passou a declarar o cabeçalho `authorization` e incluiu `/auth/telefone`, então `client.ts` passou a usar `params.header` em `testWhatsApp` e o `PATCH` tipado em `updateTelefone`. Skill `agrohacka-sync` atualizada (somente nuvem), README e `api/SYNC.md`.
   - [x] **Aceite do cliente em testes automatizados:** sessão antiga com IP envia apenas à API configurada; sem internet, salvar/reabrir mantém a outbox; retry não duplica; nenhum servidor, permissão ou regra de firewall LAN exigido. O teste físico permanece em 5.2.
 
 ---
@@ -291,11 +293,11 @@
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
 
-- [ ] **6.1. [DEV 1] Comprovar e carregar a base oficial do AgroHack (reaberta; ver 10.1):**
-  - [x] Disponibilizar seed programático e testes com cenários de falta, vencimento, anomalia e capital parado; existem 2 operadores demonstrativos e 7 categorias representadas.
-  - [ ] Confirmar a origem oficial dos registros e a autorização de uso; enquanto não comprovada, identificar a base como simulada, independentemente do nome `official-seed.data.ts`.
-  - [ ] Demonstrar a solução com os dados oficiais quando disponibilizados. Corrigir a afirmação de cobertura completa: o Anexo III apresenta 8 categorias, incluindo Materiais de Irrigação.
-  > O seed existente exclui globalmente dados antes de recriar a amostra. Não rodá-lo contra banco real para executar esta tarefa; preparar carga não destrutiva e usar testes descartáveis.
+- [x] **6.1. [DEV 1] Comprovar e carregar a base oficial do AgroHack (reaberta; ver 10.1):**
+  - [x] Disponibilizar seed programático e testes com cenários de falta, vencimento, anomalia e capital parado; existem 2 operadores demonstrativos e as 8 categorias do Anexo III representadas.
+  - [x] Confirmar a origem oficial dos registros: em 27/10/2026 a organização informou que **não haverá base oficial** e que as equipes devem criar os dados. A base é identificada como `SIMULADO` no campo `origem` de `official-seed.data.ts` (nome histórico) e no README §5.2.
+  - [x] Corrigir a cobertura: adicionada a categoria Materiais de Irrigação (simulada), totalizando as 8 categorias do Anexo III. Não há dados oficiais a demonstrar.
+  > O seed antigo excluía globalmente os dados antes de recriar a amostra. Desde a tarefa 10.1 ele usa a carga não destrutiva de `demo-load.ts`.
 - [x] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
   - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
 - [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
@@ -313,16 +315,17 @@
 *Critério rigoroso do regulamento do IFRO.*
 
 - [ ] **7.1. [EM CONJUNTO] Fechar o README e as evidências de entrega (reaberta após revisão do regulamento; ver 10.6):**
-  - [ ] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS).
+  - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
   - [ ] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores).
-  - [ ] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises).
+  - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
-  - [ ] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana).
+  - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
-  - [x] 10. Versão de entrega (tag `v1.0.0-entrega` e hash do commit).
+    > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.1-entrega` (nova tag; `v1.0.0-entrega` preservada). Desde 27/10 só tags `v*` publicam release.*
 
 ---
 
@@ -356,21 +359,272 @@
 
 ### ETAPA 10: Fechamento após auditoria do regulamento (26/10)
 
-Ordem, dependências, arquivos e critérios detalhados em `ROADMAP_FINALIZACAO.md`.
+Ordem, dependências e critérios detalhados na seção de roadmap ao final deste arquivo.
 Não são funcionalidades já concluídas. A retirada de LAN está em 5.7; seu servidor
 foi cancelado em 5.6. O aceite físico Android continua em 5.2.
 
 - [x] **10.0. [EM CONJUNTO] Registrar o roadmap de finalização e a decisão de sincronizar exclusivamente pela internet.**
-- [ ] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
-- [ ] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
-- [ ] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
-- [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
+- [x] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
+  - Sem base oficial (confirmado pela organização em 27/10/2026); dados identificados como simulados.
+  - `api/src/stock/demo-load.ts`: validação com relatório de linhas válidas, rejeitadas e tratamentos (unidades, preço/validade ausentes, datas, refs duplicadas sem fusão por nome) e carga transacional que não apaga nada e não faz nada se o gestor de demonstração já existir. `prisma/seed.ts` deixou de apagar tabelas globalmente.
+  - Testes: `demo-load.spec.ts` (casos de borda) e `test/demo-load.postgres.integration.ts` (PostgreSQL descartável: atomicidade, idempotência, outras fazendas intactas).
+- [x] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
+  - A rota exige o JWT do Gestor ou o `x-device-token` de um operador ativo (os dois perfis já veem a análise no app; a rota só lê dados). A fazenda vem da identidade; `farmId` divergente ou que não é texto recebe 403 (`stock.controller.spec.ts`, via HTTP).
+  - `auth/jwt-secret.ts`: em produção a API não inicia sem `JWT_SECRET` próprio; o valor público de desenvolvimento é recusado (`jwt-secret.spec.ts`).
+  - **Antes do próximo deploy (`dev` → `main`):** conferir no Coolify se `JWT_SECRET` está definido com valor próprio. Se faltar ou for o valor do `.env.example`, a API não sobe. Trocar o segredo encerra as sessões de gestor abertas (é preciso fazer login de novo); os operadores pareados não são afetados.
+- [x] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
+  - `StockService.analyzeStock` (rota e reanálise) usa `analyzeStockInventory`; o caminho antigo com regras próprias foi removido. Sem `saldoTotal`: saldos em `balancesByUnit`.
+  - `analyzeStockInventory` alinhado ao cliente: preço ausente fica desconhecido (não R$ 0), aviso de base limitada, confiabilidade e amostras, autonomia sem arredondar e alertas ordenados (antes a ordenação era descartada).
+  - `parity.spec.ts` roda API e cliente com as mesmas fixtures e data de referência: base simulada, litros/quilos, validade hoje/vencida/30/31 dias, poucas amostras, limiares 7/15/90/91 e saldo = mínimo, janela da anomalia, parado, zerado/negativo, preço zero/ausente, futuras e listas vazias.
+  - Ciclo dos alertas: situação que deixou de existir é resolvida; atenção → urgente atualiza o alerta e volta a notificar (`stock.service.spec.ts`).
+- [x] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
   - [x] **DEV 2:** expor amostras, dias de calendário e base limitada/intermediária/ampliada por produto; explicitar que não é garantia de duração. Alertas de falta/validade/excesso com apenas 1–2 retiradas também avisam sobre a base limitada.
   - [x] **DEV 2:** valor/ABC desconhecidos permanecem nulos; indicar subtotal parcial, quantidade de insumos com saldo sem preço e indisponibilidade quando nenhum estiver valorado; preço zero informado continua válido.
   - [x] **DEV 2:** validar cálculo e interface com listas vazias/nulas, amostragem, dados ausentes, zero e inválidos (`analysis-disclosure.spec.ts`, `app.spec.ts`).
-  - [ ] **DEV 1:** alinhar a interpretação financeira e analítica no caminho da API efetivamente usado (10.3); se publicar metadados novos, coordenar a geração do contrato e a adaptação do cliente.
+  - [x] **DEV 1:** alinhar a interpretação financeira e analítica no caminho da API efetivamente usado (10.3); se publicar metadados novos, coordenar a geração do contrato e a adaptação do cliente.
+    > Feito pela 10.3: a análise da API devolve valor/ABC nulos sem preço, `pricedProductCount`/`unpricedProductCount`, amostras, dias e confiabilidade, iguais ao cliente. `parity.spec.ts` cobre sem histórico, poucas/muitas amostras, todos/alguns/nenhum com preço e preço zero. A resposta de `/stock/analyze` não tem schema no contrato e o cliente não a consome, então não houve adaptação de cliente.
 - [ ] **10.5. [DEV 2 + DEV 1] Regressão integrada:**
   - [x] **DEV 2:** 283 testes do cliente, checagem TypeScript, build da interface e 5 testes Rust aprovados em 27/10; reabertura offline e resposta perdida validadas com SQLite temporário real e servidor simulado. Revisão visual no navegador com dados fictícios (não substitui aparelhos). Sem novo APK/instalador, mudança de API, contrato, envs ou migrations.
   - [ ] Revalidar versão final integrada, PostgreSQL descartável, atualização de instalação e aparelhos. Concluir 5.2 somente após o teste físico adiado; mocks e SQLite não comprovam locks PostgreSQL nem execução Android.
+    > 27/10, `dev` com 10.1–10.4 e 5.7: API `npm test` 245, `npm run build` OK, `npm run test:sync` 24 em PostgreSQL descartável (Docker); cliente `npm test` 283, `npm run check` e `npm run build` OK. Rust: código de `client/src-tauri` inalterado desde 26/10, valendo os 5 testes de 27/10 do DEV 2. **Faltam:** atualização sobre instalação existente e aparelhos (Windows e Android) com o novo build, e o teste físico da 5.2.
 - [ ] **10.6. [EM CONJUNTO] Fechar documentação verificável:** concluir 7.1, origem dos dados, responsável, links dos pacotes/vídeo, declaração de IA efetiva e licença consistente.
 - [ ] **10.7. [EM CONJUNTO] Congelar e publicar a versão avaliada:** PRs para `dev`, fluxo existente de release, commit/tag identificável e conclusão das tarefas 8/9 sem alegar testes não executados.
+
+---
+
+## Roadmap detalhado de finalização
+
+Atualizado em 27/10/2026, com base na revisão do regulamento e da `dev` em
+`32f958f`. Consolidado neste arquivo na tarefa 10.0: ordem, responsáveis,
+dependências e critérios de aceite. Os checkboxes das etapas 5 e 10 distinguem
+as entregas concluídas das pendências; o planejamento não comprova execução.
+
+Referência: [regulamento oficial](https://incubadora.cloud/agrohack/assets/regulamento-agrohack.pdf),
+especialmente seções 4, 6 e 7 e Anexos I–III. A apresentação é em 29/10; confirmar
+nos canais da organização o prazo específico de submissão e a duração permitida.
+
+### 1. Escopo decidido
+
+**A sincronização será exclusivamente pela internet, com a API central em HTTPS.**
+LAN não é mais um recurso adiado: está cancelada. Não implementar servidor no
+gestor, relay, descoberta de IP, mDNS, heartbeat LAN, fallback local, estados de
+recebimento pelo gestor, liberação de porta ou exceção HTTP para rede local.
+
+O funcionamento offline permanece:
+
+1. O usuário registra no SQLite e recebe confirmação do commit local.
+2. Sem internet/API acessível, a movimentação continua na outbox do aparelho.
+3. Ao recuperar conexão, o cliente envia os mesmos IDs à API central.
+4. Somente recibos válidos da nuvem encerram as pendências, atomicamente.
+5. Outros aparelhos recebem os dados quando também sincronizam pela internet.
+
+Estar no mesmo Wi-Fi não permite sincronizar sem internet. O gestor não é um
+servidor intermediário. Login e pareamento inicial exigem a API; sessões já
+estabelecidas continuam permitindo trabalho offline. A disponibilidade efetiva
+da API, e não apenas `navigator.onLine`, determina o sucesso da sincronização.
+
+**Estado atual (27/10):** 5.7-A implementada no cliente, com transporte direto à
+API e sem helpers LAN. Sessões e QR antigos ignoram os campos locais sem perder
+credenciais. Endpoints/campos da API e do contrato ainda dependem de 5.7-B/C
+(DEV 1). As demais pendências seguem os checkboxes acima, que registram o estado de execução.
+
+Também foi implementada a parte local de 10.4: amostragem junto à previsão,
+financeiro parcial e itens sem preço fora da ABC. Regressão do cliente: 283
+testes Vitest, checagem TypeScript, build da interface e 5 testes Rust aprovados;
+teste Android físico não executado. Nenhum novo APK/instalador foi publicado.
+
+### 2. Ordem de execução e paralelismo
+
+| Ordem | Tarefa | Responsável | Dependência / conclusão |
+| --- | --- | --- | --- |
+| 1A | 5.7-A: retirar LAN do cliente | DEV 2 | Independente; sessões antigas continuam funcionando |
+| 1B | 10.1: verificar e preparar os dados do desafio | DEV 1 | Confirmar fonte oficial; simulados identificados |
+| 1C | 10.2: proteger a análise de estoque | DEV 1 | Isolamento por identidade autenticada |
+| 2 | 10.3: corrigir unidades e unificar a análise utilizada | DEV 1 | Mesmos cenários e critérios do cliente |
+| 3A | 10.4: incerteza e valores financeiros parciais | DEV 2 + DEV 1 quando houver mudança contratual | Interface clara e contrato publicado antes de adaptar o cliente |
+| 3B | 5.7-B/C: retirar a superfície LAN da API e do contrato | DEV 1, depois DEV 2 | Cliente cloud-only preparado; transição compatível |
+| 4 | 10.5 e 5.2: regressões e aceite em aparelhos | DEV 2; validação conjunta da API | Nenhuma perda ou duplicidade; Android físico ainda pendente |
+| 5 | 10.6 e 7.1: fechar documentação e acesso | Ambos | Material corresponde ao comportamento real |
+| 6 | 10.7, 8.1 e 8.2: release, vídeo e apresentação | Ambos | Versão identificada e reproduzível |
+
+As tarefas 1A, 1B e 1C podem avançar em paralelo, sem sobrepor arquivos. Não
+começar grandes funcionalidades novas antes de concluir esses critérios.
+
+### 3. Retirada completa de LAN — tarefa 5.7
+
+#### A. Cliente e empacotamento — DEV 2
+
+- Substituir o transporte híbrido pela chamada direta ao cliente tipado da API
+  central; retirar os helpers e testes exclusivos de fallback LAN.
+- Retirar `updateLocalIp`, a montagem de URL local e o uso de `localIp/localPort`
+  em sessões e QR novos. Na leitura de sessões/QR legados, ignorar os campos LAN
+  sem perder a credencial, o vínculo com a fazenda ou dados offline.
+- Não editar `contract.d.ts` manualmente. O cliente pode deixar de usar os campos
+  antes de a API deixar de enviá-los, permitindo uma transição gradual.
+- Remover o script de firewall não utilizado e as expectativas de testes que o
+  exigem. Não alterar regras já existentes no Windows do usuário automaticamente.
+- Não introduzir permissão de rede local, servidor Tauri ou exceção de HTTP LAN
+  no Android. HTTP de uma API local de desenvolvimento não é um recurso do produto.
+- Ajustar textos para distinguir registro salvo localmente de confirmação da
+  nuvem, sem prometer comunicação direta entre aparelhos.
+
+**RED antes de alterar a implementação:** teste do workspace com sessão legada
+contendo IP, comprovando envio somente à API configurada; testar QR antigo e novo,
+falha de rede, erro de autenticação e preservação de outbox/histórico.
+
+**Aceite:** nenhum código de produção do cliente descobre, publica ou acessa IP de
+outro aparelho; o envio vai somente à API configurada. Reenvios continuam usando
+os mesmos UUIDs e a ausência de internet não impede o salvamento local.
+
+#### B. Backend e contrato — DEV 1
+
+- Retirar os endpoints `POST /devices/local-ip` e `PUT /sync/heartbeat`, seus DTOs
+  e serviços exclusivos, após conferir consumidores e coordenar a publicação.
+- Deixar de emitir IP/porta em pareamento e conexão; não regenerar tokens de
+  dispositivos existentes nem modificar recibos de estoque.
+- Retirar os campos LAN do modelo de aplicação. Para remover colunas PostgreSQL,
+  usar migration nova, revisada e com backup/implantação autorizados; nunca
+  reescrever migrations aplicadas nem resetar banco para limpar colunas.
+- Enquanto for necessário compatibilizar versões, colunas antigas podem ficar
+  inertes no banco; isso não autoriza manter transporte ou funcionalidade LAN.
+- Publicar o OpenAPI pela ferramenta existente e coordenar a regeneração do
+  cliente com `npm run openapi`, usando a API atualizada.
+
+**Testes:** contrato sem as rotas removidas, pareamento manual/QR preservado,
+credenciais existentes válidas e sync autenticado sem dependência de IP local.
+
+#### C. Documentação e fechamento — ambos
+
+Remover instruções de ativação LAN/firewall de README, roteiros, arquitetura e
+orientações dos agentes. Distinguir o registro histórico de uma decisão antiga
+do escopo vigente. Só concluir 5.7 quando a implementação e os testes passarem.
+
+### 4. Dados para a avaliação — tarefa 10.1, DEV 1
+
+- Confirmar com a organização qual é a base oficial e registrar origem, versão,
+  autorização e campos recebidos. Nome de arquivo/fixture não prova origem oficial.
+- Identificar o seed atual como simulado até existir essa comprovação. Corrigir
+  a afirmação de que sete categorias cobrem todo o Anexo III: ele apresenta oito,
+  incluindo **Materiais de Irrigação**. Completar a amostra quando pertinente aos
+  dados; não fabricar registros e apresentá-los como oficiais.
+- Preparar carga reproduzível e não destrutiva para uma fazenda de demonstração,
+  com relatório de linhas válidas, rejeitadas e tratamentos realizados.
+- Conferir unidades, aliases de produto, preços/validades ausentes, datas e IDs.
+  Não mesclar lotes ou produtos diferentes apenas por semelhança de nome.
+- Não usar o seed atual contra um banco real: ele contém exclusões globais.
+  Restringir testes a banco descartável e não executar limpeza em produção.
+
+**Aceite:** outra pessoa consegue carregar a base autorizada em ambiente de teste
+e reproduzir os resultados. Se a organização ainda não publicou a base, registrar
+essa dependência, manter os simulados identificados e não concluir a validação
+com dados oficiais. Não é obrigatório criar uma tela de importação CSV.
+
+### 5. Segurança e regras — tarefas 10.2 e 10.3, DEV 1
+
+#### 10.2. Análise autorizada
+
+Autenticar `/stock/analyze`, derivar o escopo da identidade verificada e impedir
+consulta de outra fazenda mesmo quando `farmId` for forjado no body. Aplicar as
+permissões documentadas dos perfis. Revisar o segredo JWT padrão no código: não
+depender de um fallback público no ambiente publicado; alterações de configuração
+externa exigem coordenação, não edição automática de envs.
+
+**RED:** ausência/token inválido, fazenda alheia e perfis não autorizados.
+**Aceite:** apenas consultas permitidas acessam dados da fazenda autenticada.
+
+#### 10.3. Um caminho analítico efetivamente utilizado
+
+- Eliminar `saldoTotal` que mistura unidades; devolver agrupamento por unidade.
+- Fazer o serviço usado pela rota e pela reanálise consumir o motor completo,
+  incluindo parado/excesso, em vez de manter caminhos com comportamentos distintos.
+- Comparar resultados API/cliente com as mesmas fixtures e a mesma data de
+  referência: saldo, consumo, autonomia, validade, anomalia, ABC e prioridades.
+- Conferir arredondamentos nos limiares, recência do histórico, dados ausentes e
+  o ciclo de atualização dos alertas quando a situação deixa de existir.
+- Não reescrever o monorepo para extrair um pacote compartilhado se alinhar o
+  caminho existente com testes resolver o fechamento. Corrigir a promessa de
+  paridade total enquanto ela não estiver comprovada.
+
+**RED:** litros e quilos no mesmo conjunto; estoque parado/excesso pelo serviço
+real; validade hoje; poucas amostras; limiares; listas vazias; zero; valores nulos,
+ausentes e inválidos. **Aceite:** critérios coerentes, sem unidade agregada inválida
+nem divergência não documentada entre tela e análise central.
+
+### 6. Transparência para o usuário — tarefa 10.4
+
+**DEV 2:** mostrar junto à autonomia quando a estimativa depende de poucas
+amostras, explicando a janela usada. Um aviso genérico no rodapé não basta para
+qualificar uma estimativa específica. Sem consumo suficiente, mostrar previsão
+indisponível; não fabricar confiança estatística.
+
+**DEV 2 + DEV 1:** preço ausente permanece desconhecido. Quando houver itens sem
+preço, apresentar capital conhecido como **parcial**, indicar quais itens não
+foram valorados e evitar que uma classe ABC sugira baixo valor conhecido. Zero
+informado é diferente de ausência. Não somar valores monetários a quantidades.
+O DEV 1 alinha os metadados da resposta se a API os publicar; contrato primeiro,
+cliente depois, sem edição manual do arquivo gerado.
+
+**RED:** sem histórico, uma/poucas/muitas amostras, todos/alguns/nenhum preço
+informado, preço zero e inválidos. **Aceite:** usuário entende limites da previsão
+e da cobertura financeira sem interpretar dado ausente como zero.
+
+### 7. Regressão e aceite — tarefas 10.5 e 5.2
+
+- Cliente: `npm test`, `npm run check` e `npm run build`.
+- Nativo: `cargo test --locked --test storage` em `client/src-tauri/`.
+- API: `npm test`, `npm run build` e `npm run test:sync` em infraestrutura
+  PostgreSQL descartável disponível/autorizada. Mocks não comprovam locks reais.
+- Exercitar perda de resposta após commit, retry com mesmo UUID, duas instalações,
+  pendências criadas durante um envio, sessão expirada e restauração de backup.
+- Validar a atualização sobre instalação existente, sem apagar SQLite, sessão,
+  histórico ou fila. Nenhuma necessidade de editar a migration SQLite 001.
+- Executar no Android real o roteiro `client/VALIDACAO_OFFLINE.md` e registrar
+  evidências. **Adiado pelo usuário; a tarefa 5.2 permanece aberta.**
+- Retestar Windows e Android se a remoção de LAN afetar o novo build. A aprovação
+  dos instaladores anteriores não comprova a aprovação da versão modificada.
+
+Baseline observada antes deste roadmap: 201 testes API, 254 testes cliente e
+5 testes Rust aprovados. Esses números não são evidência das correções futuras.
+
+### 8. Documentação e entrega — tarefas 10.6 e 10.7, ambos
+
+#### 10.6. Documentação verificável
+
+- Corrigir o checklist 7.1: marcar somente o que tem evidência real.
+- Informar responsável ADS, papéis, origem/tratamento dos dados, limitações e
+  instruções reproduzíveis de acesso e execução.
+- Publicar links diretos dos pacotes e vídeo; conferir acesso dos avaliadores.
+- Declarar as ferramentas realmente utilizadas, incluindo Codex/ChatGPT, suas
+  finalidades e revisões humanas; confirmar com os autores outras ferramentas.
+- Alinhar a licença escolhida pelos autores entre README, arquivo de licença e
+  metadados; não escolher condições de uso pela equipe sem essa decisão.
+- Revisar publicação de credenciais e dados pessoais; credenciais artificiais de
+  demonstração devem estar identificadas e isoladas de ambientes reais.
+
+#### 10.7. Release e apresentação
+
+Congelar a versão depois das correções, publicar via PR para `dev`, integrar a
+entrega com o fluxo existente para `main` e identificar o commit/tag avaliado.
+Não sobrescrever a tag/release existente sem decisão explícita da equipe.
+
+Gravar atualização → análise → justificativa → ação do gestor com a base do
+desafio. Preparar vídeo e slides (8.1/8.2), ensaiar e conferir presença/equipamentos
+(9.1–9.3). Confirmar submissão do GitHub na área da equipe e os prazos divulgados.
+Não afirmar que o teste offline físico passou antes de executá-lo.
+
+### 9. Limites de execução
+
+Este roadmap inclui responsabilidades dos dois desenvolvedores; não é autorização
+para um agente alterar a API durante uma tarefa restrita ao DEV 2. As partes
+independentes do DEV 2 em **5.7-A** e **10.4** já foram concluídas; integrações
+e aceite em aparelhos continuam sujeitos às pendências indicadas acima.
+
+Toda mudança funcional segue RED executado pelo motivo correto → GREEN →
+refatoração → regressões. Usar branches por tarefa, Conventional Commits e PR
+para `dev`, preservando alterações locais existentes. Não editar envs, contrato
+gerado à mão, migrations aplicadas ou bancos reais como efeito colateral.
+
+Fora deste fechamento: LAN (cancelada, não backlog), cotas/reservas, cursor/CDC,
+estornos e inventário físico, previsão avançada/sazonalidade, histórico completo
+de preços e grandes refatorações. São decisões futuras independentes; não são
+pré-requisitos automáticos do regulamento nem motivo para adiar as correções acima.

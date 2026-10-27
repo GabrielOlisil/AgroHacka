@@ -15,7 +15,6 @@ import { DevicesService } from './devices.service';
 import {
   CreatePairingDto,
   ConnectDeviceDto,
-  UpdateLocalIpDto,
   OperatorsResponseDto,
 } from './dto/devices.dto';
 
@@ -51,18 +50,6 @@ export class DevicesController {
     if (identity.role !== 'GESTOR' || dto.farmId !== identity.farmId)
       throw new ForbiddenException();
     return this.devicesService.createPairingToken(dto);
-  }
-
-  @Post('local-ip')
-  @HttpCode(HttpStatus.OK)
-  async updateLocalIp(
-    @Body() dto: UpdateLocalIpDto,
-    @Headers('authorization') authorization?: string,
-  ) {
-    const identity = await this.auth.authenticateSync(authorization);
-    if (identity.role !== 'GESTOR' || dto.farmId !== identity.farmId)
-      throw new ForbiddenException();
-    return this.devicesService.updateLocalIp(dto);
   }
 
   @Post('connect')

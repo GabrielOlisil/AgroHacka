@@ -11,7 +11,6 @@ import { StockService } from '../stock/stock.service';
 import type { SyncIdentity } from '../auth/auth.service';
 
 import {
-  HeartbeatDto,
   SyncMovementDto,
   SyncPayloadDto,
   SyncReceiptDto,
@@ -79,22 +78,6 @@ export class SyncService {
   ) {}
 
 
-
-  async updateHeartbeat(dto: HeartbeatDto, identity: SyncIdentity) {
-    if (dto.farmId !== identity.farmId || identity.role !== 'GESTOR')
-      throw new ForbiddenException();
-    const farm = await this.prisma.farm.update({
-      where: { id: identity.farmId },
-      data: { localIp: dto.localIp, localPort: dto.localPort || 3333 },
-    });
-    return {
-      sucesso: true,
-      farmId: farm.id,
-      localIp: farm.localIp,
-      localPort: farm.localPort,
-      updatedAt: farm.updatedAt,
-    };
-  }
 
   async syncData(
     dto: SyncPayloadDto,

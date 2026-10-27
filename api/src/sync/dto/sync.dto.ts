@@ -55,9 +55,3 @@ export class SyncResponseDto {
   newProducts!: SyncProductDto[];
   divergences!: SyncDivergenceDto[];
 }
-
-export class HeartbeatDto {
-  farmId!: string;
-  localIp!: string;
-  localPort?: number;
-}

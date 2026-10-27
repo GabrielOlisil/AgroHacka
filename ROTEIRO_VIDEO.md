@@ -88,7 +88,7 @@
 
 > **[Narrador: KAUÊ — rolando a tela e apontando para os alertas]**
 
-*"Aqui estamos usando a base oficial disponibilizada pela organização do AgroHack, com os quatro cenários agronômicos obrigatórios."*
+*"Como a organização não divulgou uma base oficial, criamos uma base simulada, identificada como tal, com produtos das oito categorias do desafio e os quatro cenários: falta, vencimento, consumo anômalo e capital parado."*
 
 *"Veja: alerta em vermelho — 'Ureia 45%'. Baseado no consumo recente, o estoque vai acabar em menos de três dias. A mensagem é clara: mantenha o consumo atual e o saldo será suficiente por apenas dois vírgula oito dias."*
 
@@ -247,7 +247,7 @@ Se possível, adicionar **legendas automáticas** no YouTube após o upload — 
 ## 📌 Checklist Antes de Gravar
 
 - [ ] API rodando na VPS (ou localmente para a demo)
-- [ ] App desktop aberto e logado com a base oficial (`npm run seed` já executado)
+- [ ] App desktop aberto e logado com a base simulada (`npm run seed` já executado)
 - [ ] Celular com o APK instalado e pareado
 - [ ] Twilio configurado e WhatsApp sandbox ativo
 - [ ] Modo avião pronto para ser ativado/desativado no celular

@@ -2,7 +2,8 @@
 
 Use esta rota junto com o `SKILL.md`. Na proposta `regra_de_sync.md` da raiz da
 aplicação, leia também as seções 8–13 para concorrência, correções, segurança,
-retomada, LAN e snapshots.
+retomada e snapshots. A parte de LAN da proposta é histórica: a API não tem mais
+rotas de IP local nem heartbeat (tarefa 5.7).
 
 ## Inspeção orientada à tarefa
 

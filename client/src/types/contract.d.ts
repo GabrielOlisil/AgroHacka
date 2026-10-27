@@ -47,6 +47,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/telefone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AuthController_updateTelefone"];
+        trace?: never;
+    };
     "/stock/analyze": {
         parameters: {
             query?: never;
@@ -127,22 +143,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/devices/local-ip": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["DevicesController_updateLocalIp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/devices/connect": {
         parameters: {
             query?: never;
@@ -175,22 +175,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/sync/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["SyncController_heartbeat"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -206,6 +190,9 @@ export interface components {
             email: string;
             senha?: string;
             password?: string;
+        };
+        UpdateTelefoneDto: {
+            telefone?: string | null;
         };
         AnalyzeStockDto: Record<string, never>;
         SendTestWhatsAppDto: {
@@ -230,11 +217,6 @@ export interface components {
         CreatePairingDto: {
             farmId: string;
             nomeOperador: string;
-        };
-        UpdateLocalIpDto: {
-            farmId: string;
-            localIp: string;
-            localPort?: number;
         };
         ConnectDeviceDto: {
             tokenOrCode: string;
@@ -294,11 +276,6 @@ export interface components {
             newMovements: components["schemas"]["SyncMovementDto"][];
             newProducts: components["schemas"]["SyncProductDto"][];
             divergences: components["schemas"]["SyncDivergenceDto"][];
-        };
-        HeartbeatDto: {
-            farmId: string;
-            localIp: string;
-            localPort?: number;
         };
     };
     responses: never;
@@ -374,10 +351,39 @@ export interface operations {
             };
         };
     };
+    AuthController_updateTelefone: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description JWT do gestor da fazenda. */
+                authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTelefoneDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     StockController_analyze: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description JWT do gestor; alternativamente envie x-device-token. */
+                authorization?: string;
+                /** @description Credencial de operador ativo; não combine com Authorization. */
+                "x-device-token"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -391,14 +397,19 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": Record<string, never>;
+                };
             };
         };
     };
     NotificationsController_sendTest: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description JWT do gestor da fazenda. */
+                authorization: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -421,7 +432,10 @@ export interface operations {
     NotificationsController_dispatch: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description JWT do gestor da fazenda. */
+                authorization: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -486,29 +500,6 @@ export interface operations {
             };
         };
     };
-    DevicesController_updateLocalIp: {
-        parameters: {
-            query?: never;
-            header: {
-                authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateLocalIpDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     DevicesController_connect: {
         parameters: {
             query?: never;
@@ -555,29 +546,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SyncResponseDto"];
                 };
-            };
-        };
-    };
-    SyncController_heartbeat: {
-        parameters: {
-            query?: never;
-            header: {
-                authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HeartbeatDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
