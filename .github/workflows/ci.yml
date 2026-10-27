@@ -26,10 +26,17 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
+          cache-dependency-path: |
+            api/package-lock.json
+            client/package-lock.json
 
       - name: Instalar Dependências da API
         working-directory: api
+        run: npm install
+
+      # parity.spec.ts importa a análise do cliente; o Vite precisa do tsconfig dele (@vue/tsconfig).
+      - name: Instalar Dependências do Cliente
+        working-directory: client
         run: npm install
 
       - name: Gerar Prisma Client
