@@ -5,6 +5,12 @@ o que já foi implementado nesta branch das propostas futuras. Foi aprovada a po
 de preservar fatos com déficit consolidado e sinalizá-lo ao gestor; as alternativas
 de cotas/reservas e permissões de correção não estão automaticamente aprovadas.
 
+Decisão de escopo em 26/10/2026: sincronização exclusivamente pela internet, com
+a API central em HTTPS. LAN foi cancelada, não adiada. Em 27/10 a tarefa 5.7-A
+retirou o transporte LAN do cliente; endpoints/campos da API/contrato ainda dependem
+de 5.7-B/C. Ver `ROADMAP_FINALIZACAO.md`. Referências históricas a LAN
+neste documento não autorizam sua implementação nem alteram esta decisão.
+
 ## 1. Decisão principal
 
 Sincronizar **movimentações identificáveis e imutáveis**, não substituir o saldo de
@@ -432,28 +438,25 @@ por item. Grupos dependentes, como estorno + substituição, são indivisíveis.
 falha de infraestrutura aborta tudo que ainda não teve commit; validações de negócio
 previstas produzem recibos explícitos sem descartar silenciosamente outros itens.
 
-## 12. Sincronização LAN: uma evolução separada
+## 12. Transporte exclusivamente pela internet — LAN cancelada
 
-> **Status (26/10): não implementada no MVP e não será entregue a tempo.** O app
-> sincroniza somente pela nuvem. Este capítulo descreve o desenho para uma versão
-> futura (tarefa 5.6 do `tarefas.md`).
+Decisão de 26/10: retirar completamente a funcionalidade LAN. A proposta anterior
+de relay no gestor foi cancelada, sem compromisso de implementação futura.
 
-O gestor pode futuramente receber registros dos operadores e encaminhá-los à nuvem.
-As identidades originais, conteúdo e referências operacionais devem ser preservados:
-encaminhar não cria outra movimentação.
+- Cada aparelho envia suas próprias pendências diretamente à API central.
+- Sem internet/API acessível, gravação e análise locais continuam; a outbox aguarda
+  reconexão, com os mesmos IDs e conteúdo.
+- Os estados relevantes são **salvo neste aparelho**, **confirmado na nuvem** e
+  **recusado/conflito para revisão**. Não haverá recibo de recebimento pelo gestor.
+- Dois aparelhos no mesmo Wi-Fi sem internet não sincronizam entre si.
+- Não implementar servidor, mDNS, heartbeat LAN, publicação de IP, liberação de
+  porta no firewall ou exceção HTTP para rede local no Android.
 
-Separar os estados **salvo no aparelho**, **recebido de forma durável pelo gestor**
-e **confirmado na nuvem**. Um recibo LAN não equivale a `ACCEPTED` do PostgreSQL.
-O operador deve conservar uma cópia recuperável até a confirmação da nuvem, mesmo
-se o gestor já tiver sua própria fila de encaminhamento.
-
-Se o gestor recebeu o lote e a resposta LAN se perdeu, o operador pode enviar à
-nuvem sem gerar duplicidade: o mesmo ID será usado nas duas rotas. Autenticação e
-idempotência precisam funcionar independentemente da rota escolhida.
-
-LAN reduz a janela de divergência entre aparelhos conectados à fazenda, mas não
-elimina concorrência com outros aparelhos isolados ou conectados direto à nuvem.
-Não transformá-la em uma segunda autoridade de reserva sem delegação explícita.
+Em 27/10 os helpers, campos de sessão/QR e a publicação de IP foram retirados do
+cliente (5.7-A), com testes de compatibilidade, falhas e reabertura de SQLite.
+Credenciais, UUIDs, histórico e pendências são preservados. Os endpoints/campos
+legados da API/contrato ainda dependem de 5.7-B/C; não houve migration nem mudança
+no contrato gerado nesta etapa.
 
 ## 13. Backups, restauração e sincronização inicial
 
@@ -511,9 +514,10 @@ usaram bancos descartáveis. Não houve mudança em envs nem na migration SQLite
 
 Continuam propostas, não implementações: referência física e suspeita automática
 de duplicidade humana, cursor seguro/paginação, tombstones, precisão fixa no schema
-(ainda `Float`), LAN, cotas/reservas, estorno, inventário físico, resolução auditada
+(ainda `Float`), cotas/reservas, estorno, inventário físico, resolução auditada
 e outbox de notificações. Revisão hoje é uma listagem preservada no aparelho, não
-um fluxo de decisão concluído do gestor. Os testes não validam WebView/mobile real.
+um fluxo de decisão concluído do gestor. LAN está cancelada conforme seção 12.
+Os testes não validam WebView/mobile real.
 
 O detalhamento de compatibilidade e implantação está em `api/SYNC.md`. A versão 2
 substitui a resposta legada de análise por recibos/divergências; publicar as duas
@@ -574,7 +578,7 @@ Referências locais: `client/src/offline/sync.ts`,
 3. Exibir estado provisório, revisão conhecida, pendências e motivos de conflito.
 4. Adaptar `openapi-fetch` ao contrato publicado e processar recibos por ID.
 5. Aplicar páginas/cursor e transições da outbox de forma atômica e idempotente.
-6. Validar restauração, retomada, duas instalações e, posteriormente, o relay LAN.
+6. Validar restauração, retomada e duas instalações sincronizando pela internet.
 
 ### Em conjunto — escolhas de negócio
 
@@ -585,7 +589,7 @@ Referências locais: `client/src/offline/sync.ts`,
 - Alinhar fórmulas de saldo e alertas entre cliente e backend.
 
 Ordem sugerida: segurança e idempotência → consolidação concorrente → recibos por
-ID → download incremental → revisão operacional → LAN. Não é necessário introduzir
+ID → download incremental → revisão operacional. LAN está cancelada. Não é necessário introduzir
 Kafka, replicação binária de bancos ou um CRDT genérico para o MVP. Somar eventos
 independentes ajuda na convergência, mas não resolve identidade física ou cotas.
 
@@ -609,7 +613,7 @@ significa que todos esses testes já existem ou foram executados.
 | Produto, fazenda, origem ou credencial não autorizados                     | Nenhuma leitura/gravação indevida ou confirmação falsa.                        |
 | Lote com produto inexistente ou dependência ausente                        | Resultado explícito; grupo dependente não é aplicado parcialmente.             |
 | Falha local entre gravar movimento e outbox                                | Rollback completo; nunca sucesso visual sem persistência.                      |
-| Commit na nuvem e resposta perdida; envio por LAN e nuvem                  | Retry não duplica movimento nem efeito.                                        |
+| Commit na nuvem e resposta perdida; reenvio pela internet                 | Retry não duplica movimento nem efeito.                                        |
 | Falha depois de parte de um lote e antes do commit                         | Nenhuma confirmação indevida; replay seguro.                                   |
 | Resposta com ID ausente, repetido, desconhecido ou de outra fazenda        | Não encerrar indevidamente pendências locais.                                  |
 | Operação nova durante a sincronização                                      | Nova pendência fica para a próxima rodada.                                     |
