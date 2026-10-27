@@ -18,7 +18,6 @@ function setup(operators = [paired]) {
     error: "",
     refresh: vi.fn(),
     connect: vi.fn(),
-    deactivate: vi.fn(),
   };
   return { props, wrapper: mount(OperatorsPanel, { props }) };
 }

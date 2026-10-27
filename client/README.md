@@ -18,6 +18,13 @@ npm run tauri:dev
 `npm run dev` abre somente a interface no navegador. O armazenamento SQLite e os
 backups exigem o processo Tauri; o cliente avisa quando não está nesse ambiente.
 
+`client/` é a pasta única do aplicativo Desktop/Android; scripts da raiz e CI
+apontam para ela. A pasta antiga foi removida após conferir que continha apenas
+dependências e artefatos gerados. A configuração antiga exclusiva foi preservada
+localmente em `.legacy-desktop-backup/.env` (ignorada pelo Git), sem substituir
+o `.env` usado pelo cliente. Os bancos e backups do aplicativo instalado ficam
+no diretório de dados do Tauri e não foram apagados.
+
 A URL HTTP vem de `VITE_API_URL`, lida pelo Vite: `.env.development` no
 desenvolvimento, `.env.production` no build e `.env.test` nos testes. Esses arquivos
 locais não são versionados; consulte `.env.example` para configurar seu ambiente.
@@ -216,7 +223,22 @@ Depois de gerar um pareamento com essa aba aberta, a listagem é atualizada.
 Os registros vêm de `GET /devices`, autenticado com o JWT do gestor e limitado
 à sua fazenda. A resposta não contém `deviceToken`; dispositivos inativos têm
 código nulo. Códigos permitem conectar aparelhos e devem ser compartilhados
-somente com os responsáveis. Não há edição, revogação ou rotação nesta tela.
+somente com os responsáveis. O gestor também pode **Editar nome**, **Ativar**,
+**Desativar** e **Excluir**. A exclusão exige confirmação; a desativação permite
+reativar o mesmo pareamento posteriormente. Não há rotação de credenciais.
+
+Edição e exclusão usam `PATCH /devices/{id}` e `DELETE /devices/{id}`, com internet
+e JWT de gestor. A API limita a operação à fazenda autenticada e recusa operadores.
+Excluir remove o cadastro/token/código; desativar bloqueia conexão e sync enquanto
+o cadastro estiver inativo. A lista só é recarregada após confirmação da API;
+falhas não apagam movimentos nem encerram a sessão.
+
+As movimentações mantêm somente o nome histórico em `responsavel`, sem FK para
+o operador. Renomear/excluir não reescreve nomes antigos, quantidades, saldos ou
+recibos. Antes de excluir, sincronizar as pendências do aparelho: offline ele
+ainda pode registrar localmente, mas a API recusará o token excluído/inativo e
+preservará a fila para recuperação. Não há transferência automática dessa fila
+para outro pareamento.
 
 A consulta exige API acessível. Falhas mostram um aviso sem apagar a sessão,
 movimentações ou pendências offline. A lista não é salva no SQLite e usa
@@ -230,5 +252,8 @@ Na API: `npm test -- src/devices/devices.service.spec.ts
 src/devices/devices.controller.spec.ts src/devices/devices.http.spec.ts`.
 Cobrem validação do contrato, autorização, isolamento, ausência de credenciais
 na resposta, consulta sem criação e a recuperação do mesmo código na interface.
-Os testes HTTP da rota usam um repositório simulado, sem alterar PostgreSQL real;
-isso não substitui a validação no aplicativo Tauri instalado.
+Os testes HTTP verificam autorização; `test/products.postgres.integration.ts`
+na API também cobre nomes históricos, recibos, exclusão, reativação, isolamento
+e uma sincronização autenticada antes da exclusão que aguarda o lock da fazenda.
+Usa PostgreSQL descartável, sem alterar bancos reais. Isso não substitui a
+validação no aplicativo Tauri instalado.

@@ -101,7 +101,8 @@ dispositivo revogado. Não comprova WebView, Android/iOS, LAN ou ambiente de pro
 - Quantidades continuam `Float` no schema existente. A soma central usa Decimal,
   mas isso não torna o armazenamento original exato; precisão fixa é evolução
   contratual separada, não garantia desta versão.
-- O lock coordena `/sync` e `POST /products`; não existe log de mudanças comum a todos os escritores.
+- O lock coordena `/sync`, `POST /products` e edição/exclusão de operadores;
+  não existe log de mudanças comum a todos os escritores.
   Outros endpoints e a segurança global da API precisam de revisão própria.
 - Credenciais de pareamento continuam reutilizáveis pelo fluxo existente; expiração,
   uso único e rate limiting são trabalho adicional. Tokens locais não têm cofre.
@@ -129,3 +130,28 @@ Publicar a nova API antes do cliente que usa a rota. O contrato foi gerado pelo
 `npm run test:sync` também executa `test/products.postgres.integration.ts`: dois
 clientes PostgreSQL independentes, mesmo ID, conflito de conteúdo/fazenda,
 rollback e recebimento pelo sync, sempre em container descartável sem volumes.
+
+## Administração dos operadores
+
+`PATCH /devices/{id}` altera somente `nomeOperador` e/ou `ativo`;
+`DELETE /devices/{id}` exclui somente o dispositivo da fazenda autenticada.
+Ambas exigem JWT de gestor, recusam operador e credenciais misturadas e usam o
+lock de fazenda do sync. DELETE é idempotente: repetir a exclusão ou indicar um
+ID inexistente na própria fazenda não altera outros registros nem revela dados
+de outra fazenda. PATCH de ID ausente/alheio retorna 404.
+
+Movimentações continuam guardando apenas o nome histórico (`responsavel`), sem
+adicionar FK ao operador. Recibos (`actorId`) e logs mantêm suas referências
+históricas em texto. Não há migration nem alteração no schema para esta entrega.
+Renomear/excluir não modifica os movimentos ou seus recibos.
+
+O sync revalida o operador ativo sob o lock, além da autenticação inicial. Se uma
+exclusão/desativação confirmar enquanto um pedido aguarda a trava, esse pedido
+recebe 401 antes de gravar efeitos. Um pedido que concluiu antes da exclusão
+permanece no histórico. Ações offline posteriores não podem ser impedidas
+remotamente; o cliente mantém sua fila ao receber 401. Sincronizar pendências
+antes da exclusão; não criar outra autoria ou reaplicar a fila automaticamente.
+
+Publicar a API atualizada junto ao novo cliente. O contrato foi regenerado pelo
+comando oficial a partir do Swagger compilado, sem edição manual. Os testes
+descartáveis de produtos também cobrem administração e corrida de exclusão/sync.

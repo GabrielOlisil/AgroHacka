@@ -111,6 +111,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DevicesController_deleteOperator"];
+        options?: never;
+        head?: never;
+        patch: operations["DevicesController_updateOperator"];
+        trace?: never;
+    };
     "/devices": {
         parameters: {
             query?: never;
@@ -137,22 +153,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["DevicesController_createPairing"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/devices/{id}/deactivate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["DevicesController_deactivate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -233,6 +233,15 @@ export interface components {
         };
         DispatchAlertsDto: {
             farmId: string;
+        };
+        UpdateOperatorDto: {
+            nomeOperador?: string;
+            ativo?: boolean;
+        };
+        OperatorMutationResponseDto: {
+            farmId: string;
+            id: string;
+            sucesso: boolean;
         };
         PairedOperatorDto: {
             id: string;
@@ -519,6 +528,52 @@ export interface operations {
             };
         };
     };
+    DevicesController_deleteOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorMutationResponseDto"];
+                };
+            };
+        };
+    };
+    DevicesController_updateOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOperatorDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorMutationResponseDto"];
+                };
+            };
+        };
+    };
     DevicesController_listOperators: {
         parameters: {
             query?: never;
@@ -561,30 +616,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    DevicesController_deactivate: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description JWT do gestor da fazenda. */
-                authorization: string;
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OperatorsResponseDto"];
-                };
             };
         };
     };

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { PairedOperator } from "../offline/types";
+import {
+  text,
+  type PairedOperator,
+  type UpdateOperatorInput,
+} from "../offline/types";
 import UiIcon from "./UiIcon.vue";
 
 const props = defineProps<{
@@ -9,26 +13,41 @@ const props = defineProps<{
   error: string;
   refresh: () => Promise<void>;
   connect: () => void;
-  deactivate: (id: string) => Promise<void>;
+  update?: (id: string, patch: UpdateOperatorInput) => Promise<void>;
+  remove?: (id: string) => Promise<void>;
 }>();
-const deactivatingId = ref<string | null>(null);
-async function confirmDeactivate(operator: PairedOperator) {
-  if (
-    !window.confirm(
-      `Desativar ${operator.nomeOperador}? O aparelho deixa de sincronizar com a fazenda e o código para de funcionar. Os registros já enviados continuam no histórico.`,
-    )
-  )
-    return;
-  deactivatingId.value = operator.id;
-  try {
-    await props.deactivate(operator.id);
-  } finally {
-    deactivatingId.value = null;
-  }
-}
 const search = ref("");
 const status = ref("all");
 const revealedId = ref<string | null>(null);
+const editingId = ref<string | null>(null);
+const nameDraft = ref("");
+const deleting = ref<PairedOperator | null>(null);
+const busy = ref(false);
+const actionError = ref("");
+const feedback = ref("");
+async function act(action: () => Promise<unknown>, success: string) {
+  if (busy.value) return;
+  busy.value = true;
+  actionError.value = "";
+  feedback.value = "";
+  try {
+    await action();
+    editingId.value = null;
+    deleting.value = null;
+    feedback.value = success;
+  } catch (cause) {
+    actionError.value = cause instanceof Error ? cause.message : String(cause);
+  } finally {
+    busy.value = false;
+  }
+}
+async function saveName(id: string) {
+  await act(async () => {
+    await props.update?.(id, {
+      nomeOperador: text(nameDraft.value, "nome do operador"),
+    });
+  }, "Nome atualizado.");
+}
 watch([() => props.operators, () => props.loading, () => props.error], () => {
   revealedId.value = null;
 });
@@ -54,7 +73,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
       <button
         class="secondary"
         data-testid="refresh-operators"
-        :disabled="loading"
+        :disabled="loading || busy"
         @click="refresh()"
       >
         <UiIcon name="refresh" />Atualizar lista
@@ -63,6 +82,10 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
     <p v-if="error" class="notice error" role="alert">
       <UiIcon name="circle-alert" /><span>{{ error }}</span>
     </p>
+    <p v-if="actionError && !deleting" class="notice error" role="alert">
+      {{ actionError }}
+    </p>
+    <p v-if="feedback" class="notice success" role="status">{{ feedback }}</p>
     <p v-if="loading" class="empty" role="status">Consultando operadores…</p>
     <template v-else-if="!error">
       <div class="operator-filters">
@@ -111,9 +134,81 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
               operator.ativo ? "Ativo" : "Inativo"
             }}</span>
           </div>
+          <form
+            v-if="editingId === operator.id"
+            class="operator-edit"
+            @submit.prevent="saveName(operator.id)"
+          >
+            <label
+              >Nome do operador<input
+                v-model="nameDraft"
+                aria-label="Nome do operador"
+                required
+                maxlength="100"
+                :disabled="busy"
+            /></label>
+            <div class="operator-actions">
+              <button class="primary" :disabled="busy">Salvar nome</button
+              ><button
+                class="secondary"
+                type="button"
+                :disabled="busy"
+                @click="
+                  editingId = null;
+                  actionError = '';
+                "
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+          <div v-if="update || remove" class="operator-actions">
+            <button
+              v-if="update"
+              class="secondary"
+              :data-testid="`edit-${operator.id}`"
+              :disabled="busy || loading"
+              @click="
+                editingId = operator.id;
+                nameDraft = operator.nomeOperador;
+                actionError = '';
+                feedback = '';
+              "
+            >
+              Editar nome
+            </button>
+            <button
+              v-if="update"
+              class="secondary"
+              :data-testid="`toggle-${operator.id}`"
+              :disabled="busy || loading"
+              @click="
+                act(
+                  () => update!(operator.id, { ativo: !operator.ativo }),
+                  operator.ativo ? 'Operador desativado.' : 'Operador ativado.',
+                )
+              "
+            >
+              {{ operator.ativo ? "Desativar" : "Ativar" }}
+            </button>
+            <button
+              v-if="remove"
+              class="secondary"
+              :data-testid="`delete-${operator.id}`"
+              :disabled="busy || loading"
+              @click="
+                deleting = operator;
+                actionError = '';
+                feedback = '';
+              "
+            >
+              Excluir
+            </button>
+          </div>
           <button
             v-if="operator.ativo && operator.pairingCode"
             class="secondary"
+            :disabled="busy || loading"
             :data-testid="`reveal-${operator.id}`"
             :aria-expanded="revealedId === operator.id"
             :aria-controls="`code-${operator.id}`"
@@ -123,17 +218,6 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
           >
             <UiIcon :name="revealedId === operator.id ? 'eye-off' : 'eye'" />{{
               revealedId === operator.id ? "Ocultar código" : "Ver código"
-            }}
-          </button>
-          <button
-            v-if="operator.ativo"
-            class="secondary"
-            :data-testid="`deactivate-${operator.id}`"
-            :disabled="loading || deactivatingId !== null"
-            @click="confirmDeactivate(operator)"
-          >
-            <UiIcon name="circle-alert" />{{
-              deactivatingId === operator.id ? "Desativando…" : "Desativar"
             }}
           </button>
           <p v-else class="helper">Pareamento inativo.</p>
@@ -151,10 +235,62 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
         </li>
       </ul>
     </template>
+    <div
+      v-if="deleting"
+      class="modal-backdrop"
+      @click.self="!busy && (deleting = null)"
+      @keydown.esc="!busy && (deleting = null)"
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-operator-title"
+        class="modal"
+      >
+        <h2 id="delete-operator-title">Excluir {{ deleting.nomeOperador }}?</h2>
+        <p>
+          O acesso será removido. Movimentações já sincronizadas serão mantidas.
+        </p>
+        <p>Sincronize pendências do aparelho antes de excluir.</p>
+        <p v-if="actionError" class="notice error" role="alert">
+          {{ actionError }}
+        </p>
+        <div class="operator-actions">
+          <button
+            class="secondary"
+            data-testid="cancel-delete-operator"
+            :disabled="busy"
+            @click="
+              deleting = null;
+              actionError = '';
+            "
+          >
+            Cancelar
+          </button>
+          <button
+            class="primary"
+            data-testid="confirm-delete-operator"
+            :disabled="busy"
+            @click="act(() => remove!(deleting!.id), 'Operador excluído.')"
+          >
+            {{ busy ? "Excluindo…" : "Excluir operador" }}
+          </button>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
 
 <style scoped>
+.operator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: var(--space-3);
+}
+.operator-edit {
+  margin-bottom: var(--space-4);
+}
 .operator-filters {
   display: flex;
   flex-wrap: wrap;

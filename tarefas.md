@@ -190,6 +190,13 @@
   - [x] Validar cadastro, permissões, reenvios e interface com testes RED → GREEN e contrato gerado pelo comando do projeto.
   > 27/10: `POST /products` autenticado, lock PostgreSQL por fazenda, UUID/conteúdo estáveis e 409 sem expor fazenda alheia. Cadastro online, saldo zero até registrar entrada, download pelo sync existente. Frontend com `openapi-fetch`, contrato gerado por `npm run openapi`, SQLite preservando outbox/histórico e rascunho mantido ao fechar/reabrir o modal na sessão. 471 testes cliente, 371 testes API, 29 testes PostgreSQL descartável, TypeScript e builds aprovados. Revisão visual com dados fictícios. Novo cadastro ainda não testado no aparelho real; edição/exclusão e cadastro offline fora deste escopo.
 
+- [x] **3.11. [DEV 2 + API autorizada] Administração de operadores e limpeza do cliente legado:**
+  - [x] Conferir que `client/` é o cliente ativo; preservar configuração local exclusiva e excluir a pasta antiga sem apagar bancos do aplicativo.
+  - [x] Permitir ao gestor editar nome, ativar/desativar e excluir operadores da própria fazenda.
+  - [x] Preservar nomes históricos e recibos; manter somente `responsavel` nas movimentações, sem adicionar FK, conforme decisão do usuário.
+  - [x] Validar permissões, exclusão concorrente com sync, contrato gerado e interface via RED → GREEN, SQLite e PostgreSQL descartável.
+  > 27/10: pasta antiga removida após conferir dependências/builds/schema gerado; `.env` exclusivo copiado com hash conferido para `client/.legacy-desktop-backup/.env`, ignorado pelo Git, sem alterar configuração ativa. Teste de layout agora exige ausência da pasta inteira. Novas rotas PATCH/DELETE de dispositivos autenticadas por gestor, nome/estado editáveis e DELETE idempotente por fazenda. Nenhuma FK, schema, migration ou banco real alterado. Nomes/recibos/saldos preservados; sync bloqueia dispositivo removido/inativo inclusive na disputa pelo lock. Contrato gerado com `npm run openapi`. 463 testes cliente, 400 testes API, 32 PostgreSQL descartável, TypeScript e builds aprovados; revisão visual com dados fictícios. Validar a nova versão em Tauri/Android após publicar a API atualizada.
+
 ### ETAPA 4: Sincronização Híbrida, Backup e WhatsApp *(Dias 9 a 10 — EM PARALELO)*
 *Diferenciais de peso para a banca avaliadora.*
 
@@ -334,14 +341,14 @@
   - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.2-entrega` (27/10) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
+  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.3-entrega` (27/10) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
     > Licença MIT alinhada em 27/10: `LICENSE`, README e `license` em `package.json` (raiz, api, client) e `Cargo.toml`. **Pendente:** um telefone pessoal ficou no histórico do git (commit `8d5c1b4`, já removido da ponta); apagá-lo exige reescrever o histórico, decisão da equipe.
-  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.2-entrega`, com o app na versão 1.0.2 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
+  - [x] 10. Versão de entrega (tag e hash do commit). *A versão avaliada passa a ser `v1.0.3-entrega`, com o app na versão 1.0.3 (as tags anteriores ficam preservadas). Desde 27/10 só tags `v*` publicam release.*
 
 ---
 

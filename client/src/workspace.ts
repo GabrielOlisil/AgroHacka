@@ -23,6 +23,7 @@ import {
   type PairedOperator,
   type Product,
   type ProductInput,
+  type UpdateOperatorInput,
 } from "./offline/types";
 
 interface WorkspaceDependencies {
@@ -70,8 +71,12 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const operatorsLoading = ref(false);
   const operatorsError = ref("");
   let operatorsVersion = 0;
+  let operatorMutationVersion = 0;
+  let changingOperator = false;
   function clearOperators() {
     operatorsVersion++;
+    operatorMutationVersion++;
+    changingOperator = false;
     operators.value = [];
     operatorsLoading.value = false;
     operatorsError.value = "";
@@ -105,20 +110,34 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       if (version === operatorsVersion) operatorsLoading.value = false;
     }
   }
-  async function deactivateOperator(deviceId: string) {
+  async function manageOperator(id: string, patch?: UpdateOperatorInput) {
     const current = session.value;
     if (current?.role !== "GESTOR")
-      throw new Error("Somente o gestor pode desativar operadores.");
-    // Supersedes any listing in flight, so a late response cannot restore the old state.
-    const version = ++operatorsVersion;
-    operatorsError.value = "";
+      throw new Error("Somente o gestor pode gerenciar operadores.");
+    if (disposed || restoring)
+      throw new Error("Aguarde a restauração ou abra novamente a sessão.");
+    if (changingOperator)
+      throw new Error("Aguarde a alteração atual do operador.");
+    const version = ++operatorMutationVersion;
+    changingOperator = true;
+    operatorsVersion++;
+    operatorsLoading.value = false;
+    const active = () =>
+      !disposed &&
+      !restoring &&
+      session.value === current &&
+      operatorMutationVersion === version;
     try {
-      const result = await api.deactivateOperator(current, deviceId);
-      if (!disposed && version === operatorsVersion && session.value === current)
-        operators.value = result;
-    } catch (cause) {
-      if (!disposed && version === operatorsVersion && session.value === current)
-        operatorsError.value = `Não foi possível desativar o operador: ${message(cause)}`;
+      if (patch) await api.updateOperator(current, id, patch);
+      else await api.deleteOperator(current, id);
+      if (!active())
+        throw new Error(
+          "Sessão alterada durante a operação; atualize a lista ao retornar.",
+        );
+      await loadOperators(true);
+      if (!active()) throw new Error("Sessão alterada durante a operação.");
+    } finally {
+      if (operatorMutationVersion === version) changingOperator = false;
     }
   }
   const requireStore = () => {
@@ -255,7 +274,9 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     operatorsLoading,
     operatorsError,
     loadOperators,
-    deactivateOperator,
+    updateOperator: (id: string, patch: UpdateOperatorInput) =>
+      manageOperator(id, patch),
+    deleteOperator: (id: string) => manageOperator(id),
     initialize,
     refresh,
     sync,
@@ -432,6 +453,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         throw new Error("Aguarde a sincronização antes de restaurar.");
       if (restoring) throw new Error("Uma restauração já está em andamento.");
       restoring = true;
+      clearOperators();
       try {
         await invalidateCatalog();
         await backupService.restore(name);

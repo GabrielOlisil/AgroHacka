@@ -21,6 +21,9 @@ dist-ssr
 .env.test
 .env.*.local
 
+# Cópia privada da configuração exclusiva encontrada na antiga pasta do cliente
+.legacy-desktop-backup/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

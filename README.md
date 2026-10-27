@@ -84,6 +84,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 - **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico de 6 caracteres gerado pelo Gestor).
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
 - **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações.
+- **Gestão de Operadores:** O gestor edita nomes, ativa/desativa acesso e exclui operadores da própria fazenda, com confirmação. Movimentações preservam somente o nome histórico do responsável, sem FK ao operador. O aplicativo Desktop/Android fica exclusivamente em `client/`.
 - **Protocolo de Sincronização Confiável (v2):** Outbox transacional com UUIDs imutáveis, recibos individuais auditáveis, idempotência e tratamento explícito de divergências de saldo sem descartar fatos físicos.
 - **Backup Automático Estilo Anki:** Snapshots atômicos locais via `VACUUM INTO`, retenção automática de 7 dias e restauração garantida em 1 clique.
 - **Alertas WhatsApp (Twilio API):** Notificações automáticas para o WhatsApp do Gestor quando uma sincronização gera um alerta de nível urgente. O Gestor cadastra, troca ou desativa o número e testa o envio no painel *Alertas de emergência via WhatsApp* (pré-requisitos e limites na seção 4.4).
@@ -92,7 +93,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
-**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.2-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 A compilação Android permanece em **debug**, com assinatura automática de
 desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
@@ -237,8 +238,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 384 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 29 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração e cadastro concorrente/idempotente de produtos, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 442 testes Vitest de cadastro, desativação de operador, SQLite, interface e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK/cadastro ainda exigem validação no aparelho.
+- **API NestJS:** 400 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, também aprovados.
+- **Desktop/Mobile (Tauri + Vue):** 464 testes Vitest de cadastro, SQLite, interface, gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
@@ -248,7 +249,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 3. **Sincronização por Download Completo:** Enquanto um cursor seguro de CDC (Change Data Capture) não for disponibilizado na API, o cliente baixa o catálogo consistente integral e mescla por UUID, mitigando riscos de janelas temporais cegas.
 4. **Câmera em Dispositivos Físicos:** A leitura do QR Code pela câmera foi validada em aparelho Android real (Motorola g75 5G, Android 16): ao ler o QR, o aparelho conecta sozinho. Se a permissão for negada ou não houver câmera, o app orienta usar uma imagem do QR ou o código alfanumérico manual, alternativa de alta resiliência para qualquer situação sem câmera. Outros modelos de aparelho não foram testados.
 5. **Sincronização exclusivamente pela internet:** decisão de 26/10. LAN foi cancelada, não adiada; o gestor não atua como servidor intermediário. Sem internet, os lançamentos continuam no SQLite/outbox e são enviados à API central ao reconectar. Em 27/10, a tarefa 5.7-A retirou do cliente o transporte LAN, o uso de IPs antigos e o script de firewall, preservando sessões e pendências. As tarefas 5.7-B/C retiraram da API as rotas `POST /devices/local-ip` e `PUT /sync/heartbeat` e o IP/porta do pareamento e da conexão, e o contrato do cliente foi regenerado; as colunas antigas da fazenda ficam inertes no banco. O plano está em [`ROADMAP_FINALIZACAO.md`](ROADMAP_FINALIZACAO.md). Não é necessário abrir portas no firewall para a sincronização cloud.
-6. **Desativação de aparelhos sem reativação:** o Gestor desativa um operador em *Operadores → Desativar* (`POST /devices/:id/deactivate`). O aparelho passa a ser recusado (401) e mantém sua fila local; o que já foi enviado continua no histórico. Não há reativação: para voltar, o Gestor gera um novo pareamento.
+6. **Administração de operadores:** o Gestor edita o nome, desativa/reativa (`PATCH /devices/:id`) e exclui (`DELETE /devices/:id`) operadores da própria fazenda. Um aparelho inativo ou excluído é recusado na sincronização (401), inclusive se a exclusão concorrer com um envio, e mantém sua fila local; nomes e movimentações já enviados continuam no histórico. Antes de excluir, convém sincronizar as pendências do aparelho.
 7. **WhatsApp na conta de testes da Twilio:** a mensagem chega com o texto do modelo pré-aprovado da Twilio; o alerta completo (insumo, nível, diagnóstico) fica no app. Detalhes na seção 4.4.
 
 ---
@@ -281,8 +282,8 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada:** `v1.0.2-entrega` (app versão 1.0.2), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.2-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega). A tag identifica o commit avaliado.
-- **Versões anteriores:** `v1.0.1-entrega` (27/10, antes do cadastro de produtos e da desativação de operadores), preservada sem alteração.
+- **Versão avaliada:** `v1.0.3-entrega` (app versão 1.0.3), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.3-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.3-entrega). A tag identifica o commit avaliado.
+- **Versões anteriores:** `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a 1.0.3.
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
 - **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)

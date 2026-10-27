@@ -2,10 +2,16 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import crypto from 'crypto';
-import type { OperatorsResponseDto } from './dto/devices.dto';
+import type {
+  OperatorsResponseDto,
+  UpdateOperatorDto,
+  OperatorMutationResponseDto,
+} from './dto/devices.dto';
 
 export interface CreatePairingDto {
   farmId: string;
@@ -19,6 +25,84 @@ export interface ConnectDeviceDto {
 @Injectable()
 export class DevicesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async manageOperator(
+    farmId: string,
+    id: string,
+    patch?: UpdateOperatorDto,
+  ): Promise<OperatorMutationResponseDto> {
+    for (const value of [farmId, id]) {
+      if (
+        typeof value !== 'string' ||
+        !value.trim() ||
+        value !== value.trim() ||
+        value.length > 128
+      )
+        throw new BadRequestException(
+          'Identificador de fazenda/operador inválido.',
+        );
+    }
+    return this.prisma.$transaction(
+      async (tx) => {
+        const farms = await tx.$queryRawUnsafe<{ id: string }[]>(
+          'SELECT id FROM farms WHERE id = $1 FOR UPDATE',
+          farmId,
+        );
+        if (!farms.length) throw new ForbiddenException();
+        const where = { farmId, id };
+        if (patch) {
+          const updated = await tx.device.updateMany({ where, data: patch });
+          if (!updated.count)
+            throw new NotFoundException(
+              'Operador não encontrado nesta fazenda.',
+            );
+        } else {
+          // No relation to movements: the historical name and immutable receipts stay intact.
+          await tx.device.deleteMany({ where });
+        }
+        return { farmId, id, sucesso: true };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  }
+
+  async updateOperator(
+    farmId: string,
+    id: string,
+    dto: UpdateOperatorDto,
+  ): Promise<OperatorMutationResponseDto> {
+    if (
+      !dto ||
+      typeof dto !== 'object' ||
+      Array.isArray(dto) ||
+      !Object.keys(dto).length ||
+      Object.keys(dto).some((key) => key !== 'nomeOperador' && key !== 'ativo')
+    )
+      throw new BadRequestException('Campos de operador inválidos.');
+    const data: UpdateOperatorDto = {};
+    if ('nomeOperador' in dto) {
+      if (
+        typeof dto.nomeOperador !== 'string' ||
+        !dto.nomeOperador.trim() ||
+        dto.nomeOperador.trim().length > 100
+      )
+        throw new BadRequestException('Nome do operador inválido.');
+      data.nomeOperador = dto.nomeOperador.trim().normalize('NFC');
+    }
+    if ('ativo' in dto) {
+      if (typeof dto.ativo !== 'boolean')
+        throw new BadRequestException('Situação do operador inválida.');
+      data.ativo = dto.ativo;
+    }
+    return this.manageOperator(farmId, id, data);
+  }
+
+  async deleteOperator(
+    farmId: string,
+    id: string,
+  ): Promise<OperatorMutationResponseDto> {
+    return this.manageOperator(farmId, id);
+  }
 
   async listOperators(farmId: string): Promise<OperatorsResponseDto> {
     if (typeof farmId !== 'string' || !farmId.trim())
@@ -48,22 +132,6 @@ export class DevicesService {
         createdAt: device.createdAt.toISOString(),
       })),
     };
-  }
-
-  async deactivateDevice(
-    farmId: string,
-    deviceId: string,
-  ): Promise<OperatorsResponseDto> {
-    if (typeof deviceId !== 'string' || !deviceId.trim())
-      throw new BadRequestException('Operador obrigatório para desativar.');
-    // Scoped by farm in the same statement: a foreign device looks exactly like a missing one.
-    const { count } = await this.prisma.device.updateMany({
-      where: { id: deviceId, farmId },
-      data: { ativo: false },
-    });
-    if (count === 0)
-      throw new NotFoundException('Operador não encontrado nesta fazenda.');
-    return this.listOperators(farmId);
   }
 
   async createPairingToken(dto: CreatePairingDto) {

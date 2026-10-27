@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   Optional,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma, StockMovement } from '@prisma/client';
@@ -119,6 +120,13 @@ export class SyncService {
           identity.farmId,
         );
         if (!farms.length) throw new ForbiddenException();
+        if (identity.role === 'OPERADOR') {
+          // Authentication can precede a concurrent removal. Recheck under the
+          // same farm lock used by operator administration before any effect.
+          if (!identity.deviceId || !(await tx.device.findFirst({
+            where: { id: identity.deviceId, farmId: identity.farmId, ativo: true },
+          }))) throw new UnauthorizedException('Operador excluído ou desativado.');
+        }
         const receipts: SyncReceiptDto[] = [];
         for (const raw of movements) {
           let movement: SyncMovementDto | undefined;

@@ -20,7 +20,7 @@ describe("Layout do repositório: pasta client/", () => {
     expect(existsSync(resolve(repoRoot, "client/src-tauri/tauri.conf.json"))).toBe(
       true,
     );
-    expect(existsSync(resolve(repoRoot, "desktop/package.json"))).toBe(false);
+    expect(existsSync(resolve(repoRoot, "desktop"))).toBe(false);
   });
 
   it("workflow usa client/ em todos os caminhos e preserva o ID do pacote Android", () => {
