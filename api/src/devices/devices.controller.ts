@@ -5,6 +5,7 @@ import {
   Header,
   Body,
   Headers,
+  Param,
   ForbiddenException,
   HttpCode,
   HttpStatus,
@@ -50,6 +51,22 @@ export class DevicesController {
     if (identity.role !== 'GESTOR' || dto.farmId !== identity.farmId)
       throw new ForbiddenException();
     return this.devicesService.createPairingToken(dto);
+  }
+
+  @Post(':id/deactivate')
+  @HttpCode(HttpStatus.OK)
+  @ApiHeader({
+    name: 'authorization',
+    required: true,
+    description: 'JWT do gestor da fazenda.',
+  })
+  async deactivate(
+    @Param('id') id: string,
+    @Headers('authorization') authorization?: string,
+  ): Promise<OperatorsResponseDto> {
+    const identity = await this.auth.authenticateSync(authorization);
+    if (identity.role !== 'GESTOR') throw new ForbiddenException();
+    return this.devicesService.deactivateDevice(identity.farmId, id);
   }
 
   @Post('connect')

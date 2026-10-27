@@ -9,7 +9,23 @@ const props = defineProps<{
   error: string;
   refresh: () => Promise<void>;
   connect: () => void;
+  deactivate: (id: string) => Promise<void>;
 }>();
+const deactivatingId = ref<string | null>(null);
+async function confirmDeactivate(operator: PairedOperator) {
+  if (
+    !window.confirm(
+      `Desativar ${operator.nomeOperador}? O aparelho deixa de sincronizar com a fazenda e o código para de funcionar. Os registros já enviados continuam no histórico.`,
+    )
+  )
+    return;
+  deactivatingId.value = operator.id;
+  try {
+    await props.deactivate(operator.id);
+  } finally {
+    deactivatingId.value = null;
+  }
+}
 const search = ref("");
 const status = ref("all");
 const revealedId = ref<string | null>(null);
@@ -34,10 +50,6 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
     <div class="section-heading">
       <div>
         <h2 id="operators-title">Operadores pareados</h2>
-        <p>
-          São os mesmos registros criados em “Conectar operador”. Consulte
-          novamente o código sem criar outro pareamento.
-        </p>
       </div>
       <button
         class="secondary"
@@ -48,13 +60,6 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
         <UiIcon name="refresh" />Atualizar lista
       </button>
     </div>
-    <p class="notice" role="note">
-      <UiIcon name="info" /><span
-        >A consulta exige conexão com a API e acesso de gestor. O código permite
-        conectar um aparelho: compartilhe somente com o operador
-        responsável.</span
-      >
-    </p>
     <p v-if="error" class="notice error" role="alert">
       <UiIcon name="circle-alert" /><span>{{ error }}</span>
     </p>
@@ -120,10 +125,18 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
               revealedId === operator.id ? "Ocultar código" : "Ver código"
             }}
           </button>
-          <p v-else class="helper">
-            Pareamento inativo. Não é possível usar este código para conectar um
-            aparelho.
-          </p>
+          <button
+            v-if="operator.ativo"
+            class="secondary"
+            :data-testid="`deactivate-${operator.id}`"
+            :disabled="loading || deactivatingId !== null"
+            @click="confirmDeactivate(operator)"
+          >
+            <UiIcon name="circle-alert" />{{
+              deactivatingId === operator.id ? "Desativando…" : "Desativar"
+            }}
+          </button>
+          <p v-else class="helper">Pareamento inativo.</p>
           <div
             v-if="operator.ativo && revealedId === operator.id"
             :id="`code-${operator.id}`"
@@ -132,8 +145,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
             <small>CÓDIGO DE PAREAMENTO</small>
             <strong>{{ operator.pairingCode }}</strong>
             <p class="helper">
-              Este é o mesmo código já gerado. Consultá-lo não cria um novo
-              operador nem altera o acesso existente.
+              Mesmo código · compartilhe apenas com {{ operator.nomeOperador }}.
             </p>
           </div>
         </li>

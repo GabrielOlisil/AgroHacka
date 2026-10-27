@@ -1,264 +1,236 @@
 # 🎬 Roteiro — Vídeo Demonstrativo AgroHack 2026
-**Equipe:** Oliveira & Oliveira | Gabriel de Oliveira Silva & Kauê Rian Silva Conceição Oliveira  
-**Protocolo:** AGRO26-F009CD2F9F | Curso: ADS 6º Período — IFRO Campus Ariquemes  
-**Gravação:** Captura de tela do Desktop + celular Android  
-**Edição sugerida:** DaVinci Resolve (grátis) ou OBS Studio  
+
+**Equipe:** Oliveira & Oliveira | Gabriel de Oliveira Silva & Kauê Rian Silva Conceição Oliveira
+**Protocolo:** AGRO26-F009CD2F9F | ADS 6º Período — IFRO Campus Ariquemes
+**Versão demonstrada:** `v1.0.2-entrega` ([Releases](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.2-entrega))
+**Meta de duração:** 5 a 7 minutos (o regulamento não fixa limite; a tarefa 8.1 previa 3 a 5)
+**Entrega:** YouTube como **Não listado** → link para a coordenação **até 27/10, 22h (horário de Ariquemes)** → link no README
 
 ---
 
-## 🗓️ Estrutura Geral das Cenas
+## 1. O que o vídeo precisa provar
 
-| Cena | Conteúdo | Narrador | Tela/Câmera |
-|------|----------|----------|-------------|
-| 1 | Abertura e apresentação | Kauê | Slide de título |
-| 2 | O problema rural | Gabriel | Slide / câmera |
-| 3 | A solução AgroHack | Kauê | Diagrama da arquitetura |
-| 4 | Demo: Painel do Gestor | Kauê | Captura de tela |
-| 5 | Demo: Alertas e Curva ABC | Kauê | Captura de tela |
-| 6 | Demo: Pareamento do Operador | Gabriel | Captura desktop + celular |
-| 7 | Demo: Operador offline no celular | Gabriel | Câmera apontada pro celular |
-| 8 | Demo: Sincronização e reanálise | Kauê | Captura desktop |
-| 9 | Demo: Alerta no WhatsApp | Gabriel | Câmera no celular com WhatsApp |
-| 10 | Demo: Backup e restauração | Kauê | Captura de tela |
-| 11 | Encerramento | Ambos | Câmera frontal |
+O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração da atualização dos registros e da reanálise**. Cada item abaixo precisa aparecer na tela:
 
----
-
-## 🎙️ ROTEIRO COMPLETO — PALAVRA POR PALAVRA
+| Item | Cena |
+|---|---|
+| Problema e público (gestor e operador) | 2 |
+| Solução e arquitetura (API na nuvem + app Windows/Android, offline) | 3 |
+| Alertas com justificativa: falta, vencimento, consumo anômalo, capital parado (ABC) | 4 e 5 |
+| Dados simulados identificados como tal | 5 |
+| Cadastro de insumo pelo gestor | 5b |
+| Pareamento do operador (QR e código) | 6 |
+| Registro offline | 7 |
+| **Atualização dos registros e reanálise** depois de sincronizar | 8 |
+| Alerta urgente no WhatsApp | 9 |
+| Gestor desativa um operador | 9b |
+| Backup e restauração | 10 |
 
 ---
 
-### 🎬 CENA 1 — Abertura (Slide de título na tela)
+## 2. Pré-requisitos (faça antes de começar a gravar)
 
-> **[Narrador: KAUÊ — câmera frontal ou voz off enquanto o slide aparece]**
+### 2.1 Software e aparelhos
+- [ ] **Notebook com Windows** e o instalador da `v1.0.2-entrega` instalado (`agrohacka_1.0.2_x64-setup.exe` da página de Releases).
+- [ ] **Celular Android** com o `app-universal-debug.apk` da mesma release instalado. Se já houver uma versão antiga, instale por cima.
+  - O celular precisa começar **sem estar pareado**, para gravar a Cena 6. Se já estiver conectado, toque em **Sair** no app antes de gravar.
+- [ ] **OBS Studio** (gratuito) configurado com captura da tela inteira (1920×1080) e microfone.
+- [ ] Um jeito de filmar o celular: outro celular num suporte, a webcam apontada para a mesa, ou o espelhamento do Android com o scrcpy.
+- [ ] Notebook carregado, notificações do Windows silenciadas e abas pessoais fechadas.
 
-*"Olá, professores. Eu sou o Kauê, e junto com o Gabriel, somos os desenvolvedores do AgroHack — sistema de gestão inteligente de insumos para propriedades rurais."*
+### 2.2 API e dados
+- [ ] **API no ar:** abra o Coolify e confirme que o deploy da `main` (release de 27/10) terminou e o log mostra a API iniciada.
+- [ ] **Conta do gestor:** use a conta da fazenda que já tem a **base simulada** (Ureia, Trichoderma, Diesel S10, MAP, etc.). Faça login no app desktop e confira:
+  - **Visão geral → Alertas prioritários** mostra alertas;
+  - **Estoque** mostra a tabela **Insumos** com saldo, duração estimada, valor armazenado e a classe ABC.
+- [ ] **Saldo da Ureia:** anote o saldo atual na aba **Estoque**. Na Cena 7, a saída de Ureia tem de ser **menor que esse saldo** (o roteiro usa 2 sacas; ajuste se precisar).
 
-*"Neste vídeo, vamos mostrar o software funcionando de ponta a ponta: desde o cadastro, passando pelo monitoramento de alertas, pareamento de dispositivos, trabalho totalmente offline, sincronização automática, notificação por WhatsApp e backup com restauração em um clique."*
+### 2.3 WhatsApp (Twilio)
+- [ ] **Número do gestor:** em **Visão geral → Alertas de emergência via WhatsApp**, o número salvo é o seu celular **sem o 9 depois do DDD** (o mesmo formato verificado na Twilio).
+- [ ] **Twilio ativo:** do WhatsApp do gestor, mande `join twilio-trial` para **+1 737 250 8034** (se as mensagens pararam de chegar ou se faz tempo desde o último envio).
+- [ ] **Teste rápido, uma vez só:** toque em **Testar envio de alerta** e confirme que a mensagem chega. Cada envio gasta uma das mensagens grátis da conta trial.
 
-*"Sem mais delongas, vamos direto à demonstração."*
+### 2.4 Logo antes da Cena 7: resolver os alertas abertos
+Se o alerta da Ureia já estiver aberto no banco, a sincronização **não** gera WhatsApp novo, porque o alerta já existe. Rode no terminal do PostgreSQL do Coolify (troque o e-mail pelo da conta do gestor usada no vídeo):
 
----
+```sql
+UPDATE alerts SET resolvido = true
+WHERE "farmId" = (SELECT "farmId" FROM users WHERE email = 'EMAIL_DO_GESTOR');
+```
 
-### 🎬 CENA 2 — O Problema (câmera frontal ou slide simples)
+Depois disso, **a próxima movimentação sincronizada** recria os alertas e dispara o WhatsApp de cada alerta **urgente**. Pode chegar mais de uma mensagem (uma por insumo urgente).
 
-> **[Narrador: GABRIEL]**
-
-*"Imagina a seguinte situação: você gerencia uma fazenda com dezenas de insumos — herbicidas, fertilizantes, defensivos, combustível. Você sabe o que tem no galpão? Sabe quando vai acabar? Sabe se alguma coisa vai vencer antes de ser usada?"*
-
-*"A realidade de muitos produtores rurais é essa: planilhas manuais, anotações em papel, ou pior — nenhum controle. E o resultado disso são dois problemas clássicos:"*
-
-*"Primeiro: a falta inesperada. O trator para no meio da colheita porque o diesel acabou sem avisar ninguém."*
-
-*"Segundo: dinheiro parado. Toneladas de adubo estocado além do necessário enquanto o caixa sangra."*
-
-*"O AgroHack resolve exatamente isso — transformando registros simples de entrada e saída em inteligência agronômica real."*
-
----
-
-### 🎬 CENA 3 — A Solução (diagrama de arquitetura na tela)
-
-> **[Narrador: KAUÊ]**
-
-*"A arquitetura do nosso sistema tem três pilares."*
-
-*"Primeiro: uma API central hospedada em nuvem própria, com banco de dados PostgreSQL, que armazena tudo com segurança."*
-
-*"Segundo: um aplicativo desktop para Windows e um aplicativo mobile para Android — ambos gerados do mesmo código, usando Tauri e Vue 3. Isso garante que o Gestor, que normalmente usa o computador, e o Operador de campo, que usa o celular, vejam a mesma informação com a mesma qualidade."*
-
-*"Terceiro, e esse é nosso diferencial técnico: o sistema funciona cem por cento offline. Cada dispositivo tem um banco SQLite local, e tudo que é lançado sem internet fica guardado no aparelho e é enviado para a nuvem assim que a conexão volta, sem duplicar nada."*
-
-*"Vamos ver tudo isso funcionando agora."*
+> Por isso o SQL vai logo antes da Cena 7: se alguém registrar e sincronizar uma movimentação antes, o WhatsApp sai fora da gravação.
 
 ---
 
-### 🎬 CENA 4 — Painel do Gestor (captura de tela do desktop)
+## 3. Ordem de gravação recomendada
 
-> **[Narrador: KAUÊ — mostrando a tela]**
+| Bloco | Cenas | Como gravar |
+|---|---|---|
+| A | 1, 2, 3, 11 | Câmera frontal ou slides com voz. Pode ser gravado a qualquer momento. |
+| B | 4, 5, 5b, 10 | Captura de tela do desktop, com internet (o cadastro de insumo da 5b envia o produto para a API). |
+| C | **6, 7, 8, 9, 9b** | **Uma tomada contínua**, com captura do desktop e filmagem do celular ao mesmo tempo. Essas cenas dependem umas das outras: pareamento → registro offline → sincronização → WhatsApp → desativar o operador (por último, porque depois dela o celular não sincroniza mais). |
 
-*"Aqui estamos com o sistema aberto no computador do Gestor. O login é feito com e-mail e senha, e a sessão fica salva localmente — o sistema nunca te desloga mesmo sem internet."*
-
-*"Após o login, você cai direto no painel principal. Olha o que aparece logo de cara: os alertas prioritários do estoque da fazenda."*
-
-*"O sistema usa um motor de inteligência agronômica próprio — desenvolvido em TypeScript — que responde a sete perguntas fundamentais do regulamento do desafio: quando vai acabar, o que vai vencer antes de ser consumido, o que está sendo usado de forma anômala, o que está parado imobilizando capital, e qual é a curva de prioridade dos insumos."*
-
----
-
-### 🎬 CENA 5 — Alertas Críticos e Curva ABC (captura de tela)
-
-> **[Narrador: KAUÊ — rolando a tela e apontando para os alertas]**
-
-*"Como a organização não divulgou uma base oficial, criamos uma base simulada, identificada como tal, com produtos das oito categorias do desafio e os quatro cenários: falta, vencimento, consumo anômalo e capital parado."*
-
-*"Veja: alerta em vermelho — 'Ureia 45%'. Baseado no consumo recente, o estoque vai acabar em menos de três dias. A mensagem é clara: mantenha o consumo atual e o saldo será suficiente por apenas dois vírgula oito dias."*
-
-*"Segundo alerta — 'Trichoderma asperellum'. Esse produto vai vencer antes de ser consumido. O sistema calcula a validade e projeta o consumo, e quando a validade chega antes do fim do estoque, emite o alerta."*
-
-*"Terceiro: anomalia no 'Diesel S10'. Uma saída de novecentos e cinquenta litros — quando a média histórica era bem abaixo disso. O sistema detecta isso automaticamente usando estatística simples: qualquer saída acima de três vezes a média anterior acende o alerta."*
-
-*"E na Curva ABC, você vê o que representa mais capital imobilizado. Aqui, o 'Adubo MAP' está com cento e quarenta e sete mil reais parados. O sistema classifica automaticamente os produtos em A, B e C por valor de estoque."*
-
-*"Todos esses alertas são persistidos no banco central e enviados como notificação — daqui a pouco você vai ver isso no WhatsApp."*
+Grave o bloco B antes e rode o SQL da seção 2.4 logo antes de começar o bloco C.
 
 ---
 
-### 🎬 CENA 6 — Pareamento do Operador (desktop + celular lado a lado)
+## 4. Roteiro cena a cena
 
-> **[Narrador: GABRIEL — desktop mostrando o painel do Gestor]**
+Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são sugestões e podem ser ditas com as próprias palavras, desde que as informações continuem corretas.
 
-*"Agora vou mostrar como o Operador de campo se conecta à fazenda. É um processo pensado para ser rápido e funcionar mesmo sem conhecimento técnico."*
+### 🎬 CENA 1 — Abertura (≈ 20 s) · Kauê · slide de título
 
-*"No painel do Gestor, clico em 'Conectar Operador'. Digito o nome do operador — aqui vou usar 'João da Silva'. O sistema gera automaticamente um QR Code e um código alfanumérico de seis caracteres — por exemplo, AGRO-88."*
+*"Olá, professores. Eu sou o Kauê e, junto com o Gabriel, desenvolvemos o AgroHack: um sistema de gestão inteligente de insumos para propriedades rurais. Neste vídeo vamos mostrar o sistema funcionando de ponta a ponta: alertas, pareamento do operador, trabalho offline, sincronização com reanálise, aviso no WhatsApp e backup."*
 
-*"Agora pego o celular."*
+### 🎬 CENA 2 — O problema (≈ 40 s) · Gabriel · câmera ou slide
 
-> **[Câmera aponta para o celular]**
+*"Uma fazenda tem dezenas de insumos: fertilizantes, defensivos, sementes, combustível, peças. Na prática, o controle costuma ser em papel ou planilha, e duas perguntas ficam sem resposta: o que vai acabar, e quando? E onde está o dinheiro parado?"*
 
-*"No celular, o aplicativo foi aberto pela primeira vez. Aparecem duas opções: 'Criar Nova Fazenda' — para o Gestor — e 'Conectar a uma Fazenda Existente' — para o Operador."*
+*"O resultado é a falta inesperada, como o trator parado sem diesel, ou o capital imobilizado em adubo que não vai ser usado tão cedo. O AgroHack transforma os registros de entrada e saída em alertas com justificativa, para o gestor decidir a tempo."*
 
-*"Toco em conectar. O app abre o leitor de QR Code. Aponto para a tela..."*
+### 🎬 CENA 3 — A solução (≈ 40 s) · Kauê · diagrama da arquitetura (README §3.1)
 
-> **[Pausa para o QR ser lido]**
+*"São três partes. Uma API central na nuvem, com PostgreSQL, que guarda os registros e reanalisa o estoque. Um app para Windows e um app para Android, feitos com o mesmo código em Tauri e Vue: o gestor normalmente usa o computador, e o operador de campo, o celular."*
 
-*"Pronto. Pareado. O nome do operador ficou registrado, a fazenda foi vinculada, e o Operador já tem acesso ao banco local sincronizado."*
+*"E o diferencial: o app funciona offline. Cada aparelho tem um banco SQLite local. O que é lançado sem internet fica guardado e sobe para a nuvem quando a conexão volta, sem duplicar registros."*
 
-*"Mas, e se o celular do operador não tiver câmera? Simples: na mesma tela, tem o botão 'Digitar Código Manualmente'. Ele digita AGRO-88 e o pareamento acontece da mesma forma."*
+### 🎬 CENA 4 — Painel do gestor (≈ 40 s) · Kauê · desktop
 
----
+🖱️ App desktop já logado, na aba **Visão geral**.
 
-### 🎬 CENA 7 — Operador Offline no Celular (câmera no celular)
+*"Este é o painel do gestor. O login fica salvo no aparelho, então o app abre mesmo sem internet. Logo de cara aparecem os alertas prioritários, ordenados por urgência: urgentes primeiro, depois atenção e informativos."*
 
-> **[Narrador: GABRIEL — câmera apontada para o celular]**
+*"O motor de análise responde às perguntas do desafio: o que está acabando, o que pode vencer antes de ser usado, quanto se consome, se há retiradas fora do padrão, por quanto tempo o estoque dura e onde está o maior valor parado."*
 
-*"Agora vem um dos pontos mais importantes do sistema: ele funciona cem por cento offline."*
+### 🎬 CENA 5 — Alertas, justificativas e curva ABC (≈ 1 min 10 s) · Kauê · desktop
 
-*"Vou ativar o modo avião aqui no celular. Sem Wi-Fi, sem dados móveis. Sem internet nenhuma."*
+*"A organização não divulgou uma base oficial, então criamos uma base simulada, identificada como tal, com produtos das oito categorias do desafio e situações de falta, vencimento, consumo anômalo e capital parado."*
 
-> **[Ativa modo avião]**
+🖱️ Em **Alertas prioritários**, aponte o alerta da **Ureia**.
 
-*"O app continua aberto. Estou no painel do Operador. Aqui o design é pensado para campo: botões grandes, textos claros, toque fácil mesmo com luva."*
+*"A Ureia está com alerta urgente: o saldo está no mínimo ou abaixo dele. E o sistema mostra a conta: consumo médio por dia, quantos dias de histórico usou e a autonomia estimada. Quando há poucas retiradas, ele avisa que a base é limitada; a previsão não é uma garantia."*
 
-*"Vou registrar uma baixa de insumo. Toco em 'Baixa Rápida'. Escolho o produto — Diesel S10. Coloco a quantidade: duzentos litros. Confirmo."*
+🖱️ Aponte o **Trichoderma**.
 
-*"A movimentação foi salva localmente no SQLite do celular — ela entrou na fila de sincronização, chamada de outbox. O sistema nunca perde essa informação. Quando a internet voltar, ela sobe automaticamente."*
+*"O Trichoderma tem risco de vencimento: no ritmo atual de uso, parte do estoque vence antes de ser consumida, e o sistema estima quanto sobra."*
 
-*"Vou registrar mais uma saída de Ureia — trezentos quilos. Confirmo."*
+🖱️ Aponte o **Diesel S10**.
 
-*"Duas movimentações salvas, modo avião ligado, zero conexão. Isso é funcionamento offline de verdade."*
+*"No Diesel, uma retirada de 950 litros foi marcada como fora do padrão: é mais de três vezes a média das retiradas anteriores."*
 
----
+🖱️ Ainda na **Visão geral**, role até **Consumo ao longo do tempo**.
 
-### 🎬 CENA 8 — Sincronização Automática e Reanálise (captura desktop)
+*"O gráfico mostra o consumo dos últimos 30 dias, incluindo os dias sem retirada."*
 
-> **[Narrador: KAUÊ — olhando para o desktop e desligando o modo avião no celular]**
+🖱️ Abra a aba **Estoque**: mostre a tabela **Insumos** e as colunas **Duração estimada**, **Valor armazenado** e **ABC**; aponte o **Adubo MAP** com classe **A**.
 
-*"Agora vou reconectar o celular à rede."*
+*"Na aba Estoque, cada insumo mostra saldo, mínimo, duração estimada com a quantidade de retiradas usadas, valor armazenado e a classe da curva ABC. O adubo MAP é classe A: concentra o maior valor parado. Se um insumo não tem preço, o valor aparece como não informado, nunca como zero, e a classificação fica marcada como parcial."*
 
-> **[Desativa modo avião]**
+### 🎬 CENA 5b — Cadastro de insumo (≈ 40 s) · Kauê · desktop (com internet)
 
-*"Em segundos, o motor de sincronização entra em ação e envia para a nuvem tudo que ficou guardado no celular, sem duplicar nenhum registro."*
+🖱️ Na aba **Estoque**: **Novo insumo** → Nome "Luvas nitrílicas" · Categoria "EPI e materiais diversos" · Unidade "un" · Estoque mínimo **20** · Preço **3,50** → **Cadastrar insumo**.
 
-*"Olha o que acontece no desktop do Gestor..."*
+*"O gestor cadastra os insumos da fazenda. Preencho nome, categoria, unidade, estoque mínimo e preço; validade, lote e fornecedor são opcionais. O cadastro vai para a nuvem e chega aos celulares dos operadores na próxima sincronização."*
 
-> **[Aponta para os alertas na tela]**
+🖱️ Na linha de **Luvas nitrílicas**: **Entrada** → Quantidade **50** → **Salvar neste aparelho**.
 
-*"As movimentações do Operador chegaram. E o sistema fez algo automático: rodou a reanálise completa do estoque. Aquele alerta da Ureia que estava em três dias? Agora mostra menos de um dia — porque a saída do Operador foi considerada."*
+*"E já registro a entrada da compra: cinquenta unidades. O insumo passa a ter saldo, acima do mínimo, então não gera alerta."*
 
-*"E mais: cada movimentação tem um UUID único. Isso garante que, mesmo que a sincronização seja repetida, os dados não são duplicados no banco. Idempotência, como chamamos na engenharia de software."*
+> A entrada é importante: sem ela, o insumo novo fica com saldo zero, abaixo do mínimo, e vira mais um alerta urgente no WhatsApp da Cena 9.
 
----
+### 🎬 CENA 6 — Pareamento do operador (≈ 50 s) · Gabriel · desktop + celular
 
-### 🎬 CENA 9 — Alerta no WhatsApp (câmera no celular com WhatsApp aberto)
+🖱️ No desktop: botão **Conectar operador** → digite o nome (ex.: "João da Silva") → **Gerar código e QR Code**.
 
-> **[Narrador: GABRIEL — câmera mostrando o celular com o WhatsApp]**
+*"Agora o operador de campo. No painel do gestor, clico em Conectar operador, digito o nome e gero o código. Aparecem um QR Code e um código curto no formato AGRO seguido de quatro caracteres."*
 
-*"Quando um alerta atinge nível crítico — como a Ureia que está com menos de um dia de estoque — o sistema dispara automaticamente uma mensagem de WhatsApp para o número do Gestor cadastrado."*
+🖱️ No celular: app aberto → **Conectar a uma fazenda** → **Ler com a câmera** → aponte para o QR do monitor.
 
-*"Aqui está a mensagem chegando."*
+*"No celular, escolho conectar a uma fazenda e leio o QR. Ao ler, o app já conecta sozinho, com a fazenda vinculada e o operador identificado."*
 
-> **[Câmera mostra a notificação do WhatsApp]**
+*"Se o celular não tiver câmera, dá para escolher uma imagem do QR ou digitar o código manual. O pareamento é o mesmo."*
 
-*"A mensagem vem via Twilio, que é o serviço de comunicação que integramos. Ela diz o nome do produto, o nível de alerta e o motivo: quantos dias restam baseado no consumo recente."*
+### 🎬 CENA 7 — Registro offline (≈ 50 s) · Gabriel · celular
 
-*"O Gestor não precisa estar com o app aberto. Não precisa lembrar de checar. O sistema avisa sozinho."*
+🖱️ Ative o **modo avião** no celular, mostrando o ícone.
 
----
+*"Agora, sem internet nenhuma: modo avião, sem Wi-Fi e sem dados móveis."*
 
-### 🎬 CENA 10 — Backup Automático e Restauração (captura desktop)
+🖱️ No app do celular: **Baixa rápida** → Insumo **Diesel S10** → Quantidade **200** → Destino "Trator" → **Salvar neste aparelho**.
 
-> **[Narrador: KAUÊ — mostrando a tela de configurações]**
+*"Registro uma retirada de 200 litros de diesel. O app confirma: salva neste aparelho, na fila de sincronização. Nada se perde, mesmo que o celular seja desligado."*
 
-*"Mais um diferencial: o sistema faz backup automático diário do banco de dados local, no estilo do Anki — o famoso app de flashcards que muita gente usa para estudar."*
+🖱️ **Baixa rápida** → Insumo **Ureia** → Quantidade **2** (sacas; precisa ser menor que o saldo anotado) → **Salvar neste aparelho**.
 
-*"Vou em Configurações, depois em Backups."*
+🖱️ Aponte o indicador no topo do app: **"2 registro(s) pendente(s)"**.
 
-> **[Navega para a tela de backups]**
+*"E mais uma retirada de duas sacas de Ureia. O topo do app mostra dois registros pendentes, feitos totalmente offline."*
 
-*"Aqui estão listados os snapshots dos últimos sete dias, com data, hora e tamanho. Cada backup é um arquivo SQLite completo, gerado com o comando VACUUM INTO — isso garante que o backup é atômico, sem risco de dados corrompidos."*
+### 🎬 CENA 8 — Sincronização e reanálise (≈ 1 min) · Kauê · desktop + celular
 
-*"Se acontecer qualquer problema — falha no hardware, acidente, reinstalação — o Gestor clica em 'Restaurar' em qualquer um desses arquivos."*
+🖱️ Desative o **modo avião**. Se a sincronização não acontecer sozinha em alguns segundos, toque em **Sincronizar agora** no celular.
 
-*"O sistema verifica a integridade do backup antes de restaurar, cria um snapshot do estado atual — por segurança — e aplica o backup. Um clique. Sem técnico, sem suporte remoto."*
+*"Agora reconecto o celular. O app envia os registros que estavam na fila para a nuvem. Cada registro tem um identificador único: se o envio se repetir, nada é duplicado."*
 
----
+🖱️ No desktop: toque em **Sincronizar agora** (ou aguarde a sincronização automática) e mostre a aba **Histórico** com as duas movimentações do operador; depois volte a **Estoque**.
 
-### 🎬 CENA 11 — Encerramento (câmera frontal — ambos)
+*"No computador do gestor, as movimentações do operador já aparecem no histórico, com autor, data e destino. E o estoque foi reanalisado: o saldo e a autonomia da Ureia caíram, porque a saída do campo entrou na conta. A reanálise acontece no app e no servidor, com as mesmas regras. É isso que o regulamento chama de atualização dos registros e reanálise."*
 
-> **[GABRIEL fala primeiro]**
+### 🎬 CENA 9 — Alerta no WhatsApp (≈ 40 s) · Gabriel · celular do gestor
 
-*"É isso, professores. Em resumo: o AgroHack é um sistema que funciona offline, sincroniza de forma inteligente, alerta via WhatsApp e é empacotado tanto como aplicativo Windows quanto como APK Android — gerados automaticamente pelo nosso pipeline de CI/CD no GitHub Actions."*
+🖱️ Mostre o WhatsApp do gestor recebendo a mensagem (pode levar alguns segundos depois da sincronização).
 
-> **[KAUÊ continua]**
+*"Quando a reanálise encontra um alerta urgente, o servidor manda um WhatsApp para o número do gestor, sem ninguém precisar abrir o app."*
 
-*"Todo o código está disponível publicamente no repositório GitHub da equipe: github.com/GabrielOlisil/AgroHacka. O README tem instruções de instalação, download direto do executável e APK, e documentação completa das funcionalidades e limitações conhecidas."*
+*"O envio é feito pela Twilio. Como usamos a conta de testes, a Meta só permite modelos de mensagem pré-aprovados, então o texto que chega é o do modelo de teste. O detalhe do alerta, com produto, nível e motivo, está no app. Em produção, registraríamos um modelo próprio com o nome do insumo e o diagnóstico."*
 
-*"O protocolo de inscrição da nossa equipe é AGRO26-F009CD2F9F. Somos Gabriel e Kauê, do curso de Análise e Desenvolvimento de Sistemas do IFRO Campus Ariquemes."*
+### 🎬 CENA 9b — Desativar o operador (≈ 30 s) · Kauê · desktop (por último no bloco C)
 
-*"Muito obrigado pela atenção e pelo tempo de avaliação."*
+🖱️ Aba **Operadores** → na linha de "João da Silva", **Desativar** → confirme a mensagem → o status muda para **Inativo**.
 
-> **[AMBOS acenam para a câmera]**
+*"Se um celular for perdido ou o funcionário sair, o gestor desativa o operador. A partir daí, o aparelho é recusado na sincronização e o código de pareamento deixa de funcionar. O que ele já enviou continua no histórico."*
 
----
+> Grave esta cena por último: depois dela, o celular pareado não sincroniza mais. Para voltar a usar o mesmo celular, gere um novo pareamento.
 
-## 🎥 Orientações Técnicas de Gravação
+### 🎬 CENA 10 — Backup e restauração (≈ 40 s) · Kauê · desktop
 
-### Software Recomendado
-- **OBS Studio** (gratuito) para captura de tela + microfone simultaneamente
-- **DaVinci Resolve** (gratuito) para edição e cortes
+🖱️ Aba **Backups** → **Criar backup do dia** → mostre a lista → **Restaurar** no backup de hoje.
 
-### Setup Ideal
-1. **Resolução:** 1920×1080 (Full HD)
-2. **Microfone:** Qualquer fone com microfone embutido funciona — evitar ruído de fundo
-3. **Celular na tela:** Usar um suporte de celular, ou gravar o celular com a câmera do notebook enquanto a captura de tela roda em paralelo — editar as duas fontes depois
-4. **Velocidade:** Narrar em ritmo confortável — não precisa ser rápido, o vídeo não tem limite de tempo
+*"O app faz backup automático diário do banco local e guarda os últimos sete dias. O backup é gerado de forma atômica pelo próprio SQLite."*
 
-### Sequência de Gravação Sugerida
-Para facilitar a edição, grave as cenas na seguinte ordem:
-1. Grave primeiro **as cenas de captura de tela** (Cenas 4, 5, 8, 10) com o app rodando
-2. Grave as **cenas com celular** (Cenas 6, 7, 9) separadamente
-3. Grave por último as **cenas de câmera frontal** (Cenas 1, 2, 3, 11)
-4. Na edição, monte na ordem do roteiro e corte os silêncios
+*"Para restaurar, um clique. Antes de aplicar, o app guarda uma cópia do estado atual, por segurança. A restauração vale para o aparelho e não desfaz o que já está na nuvem."*
 
-### Legenda / Subtítulo
-Se possível, adicionar **legendas automáticas** no YouTube após o upload — melhora a acessibilidade e a avaliação dos professores que assistirem sem som.
+### 🎬 CENA 11 — Encerramento (≈ 30 s) · ambos · câmera frontal
+
+**Gabriel:** *"Em resumo: o AgroHack funciona offline, sincroniza sem duplicar, reanalisa o estoque, avisa o gestor no WhatsApp e roda no Windows e no Android, com instaladores gerados automaticamente no GitHub."*
+
+**Kauê:** *"O código, a documentação, os dados simulados e as limitações estão no README do repositório. Obrigado, professores."*
 
 ---
 
-## 📌 Checklist Antes de Gravar
+## 5. Plano B durante a gravação
 
-- [ ] API rodando na VPS (ou localmente para a demo)
-- [ ] App desktop aberto e logado com a base simulada (`npm run seed` já executado)
-- [ ] Celular com o APK instalado e pareado
-- [ ] Twilio configurado e WhatsApp sandbox ativo
-- [ ] Modo avião pronto para ser ativado/desativado no celular
-- [ ] OBS configurado com captura de tela + microfone
-- [ ] Roteiro impresso ou em segundo monitor
+| Problema | O que fazer |
+|---|---|
+| O WhatsApp não chegou em 1 a 2 minutos | Siga a gravação e mostre o alerta urgente no app. Depois confira: o SQL da seção 2.4 foi rodado? O `join twilio-trial` está ativo? As mensagens grátis acabaram? Dá para regravar só a Cena 9 depois de resolver os alertas de novo e registrar outra saída. |
+| O celular não sincroniza ao sair do modo avião | Toque em **Sincronizar agora**. Confira se o celular voltou mesmo para a internet (Wi-Fi ou dados). |
+| O QR não é lido | Use **Código manual** com o código mostrado no painel. |
+| Saldo da Ureia insuficiente para a saída | Use uma quantidade menor, ou registre antes uma **Entrada de compra** de Ureia (fora da gravação). |
+| A API não responde | Confira o deploy no Coolify. O app continua salvando offline; grave as cenas de desktop e repita o bloco C quando a API voltar. |
+| "Cadastrar insumo" dá erro | O cadastro precisa de internet. Confira a conexão e toque em **Tentar novamente**: o mesmo cadastro é confirmado, sem duplicar. |
+| Precisa refazer o bloco C depois da Cena 9b | O operador desativado não volta. No celular, toque em **Sair** e pareie de novo com um novo código (Cena 6). |
 
 ---
 
-## 🔗 Após a Gravação
+## 6. Depois da gravação
 
-1. Fazer upload no **YouTube** como **"Não listado"** (o link funciona, mas não aparece nas buscas)
-2. Copiar o link do vídeo
-3. Atualizar o `README.md` na seção de Demonstração com o link
-4. Fazer commit: `docs(readme): adicionar link do vídeo demonstrativo`
+1. **Editar:** juntar as cenas na ordem, cortar silêncios e erros. O DaVinci Resolve é gratuito.
+2. **Subir no YouTube** como **Não listado**.
+   - Título sugerido: `AgroHack 2026 — Oliveira & Oliveira (AGRO26-F009CD2F9F) — Vídeo demonstrativo`
+   - Descrição sugerida: `Demonstração do AgroHack: gestão inteligente de insumos rurais com alertas, funcionamento offline, sincronização com reanálise e aviso por WhatsApp. Repositório: https://github.com/GabrielOlisil/AgroHacka — Versão demonstrada: v1.0.2-entrega. Dados simulados criados pela equipe.`
+   - Ative as legendas automáticas, se possível.
+3. **Testar o link** numa janela anônima, para garantir que abre sem login.
+4. **Enviar o link para a coordenação** até **22h (horário de Ariquemes)**.
+5. **Colocar o link no README** (seção 6, Demonstração) e marcar o item 6 do checklist 7.1 e a tarefa 8.1 no `tarefas.md`.

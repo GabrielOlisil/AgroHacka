@@ -4,6 +4,7 @@ import { createWorkspace, type Workspace } from "./workspace";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
+import ProductForm from "./components/ProductForm.vue";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -34,6 +35,19 @@ const farmName = ref("");
 const telefone = ref("");
 const code = ref("");
 const search = ref("");
+const category = ref("");
+const stockStatus = ref("");
+const showProduct = ref(false);
+const productFormKey = ref(0);
+const productStarted = ref(false);
+watch(showProduct, (value) => {
+  if (value) productStarted.value = true;
+});
+const showMovement = ref(false);
+const movementError = ref("");
+const categories = computed(() =>
+  [...new Set(analysis.value.products.map((p) => p.categoria))].sort(),
+);
 const productId = ref("");
 const kind = ref<"ENTRADA" | "SAIDA">("SAIDA");
 const quantity = ref<number | "">("");
@@ -69,6 +83,12 @@ watch(session, () => {
   quantity.value = "";
   destination.value = "";
   search.value = "";
+  category.value = "";
+  stockStatus.value = "";
+  showProduct.value = false;
+  productFormKey.value++;
+  productStarted.value = false;
+  showMovement.value = false;
   tab.value = "overview";
   code.value = "";
   password.value = "";
@@ -79,10 +99,16 @@ watch(session, () => {
   camera.value = false;
 });
 const filteredProducts = computed(() =>
-  analysis.value.products.filter((p) =>
-    `${p.nome} ${p.categoria} ${p.lote ?? ""}`
-      .toLocaleLowerCase("pt-BR")
-      .includes(search.value.toLocaleLowerCase("pt-BR")),
+  analysis.value.products.filter(
+    (p) =>
+      `${p.nome} ${p.categoria} ${p.lote ?? ""}`
+        .toLocaleLowerCase("pt-BR")
+        .includes(search.value.trim().toLocaleLowerCase("pt-BR")) &&
+      (!category.value || p.categoria === category.value) &&
+      (!stockStatus.value ||
+        (stockStatus.value === "low" && p.saldo <= p.estoqueMinimo) ||
+        (stockStatus.value === "empty" && p.saldo <= 0) ||
+        (stockStatus.value === "unpriced" && p.precoAquisicao === null)),
   ),
 );
 const selectedProduct = computed(
@@ -171,7 +197,32 @@ async function record() {
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
-  }, "Movimentação salva neste aparelho. Ela está na fila de sincronização.");
+  }, "Salvo no aparelho · sincronização pendente.");
+}
+function openMovement(id: string, type: "ENTRADA" | "SAIDA") {
+  productId.value = id;
+  kind.value = type;
+  quantity.value = "";
+  destination.value = "";
+  movementDate.value = localDateTime();
+  movementError.value = "";
+  showMovement.value = true;
+}
+async function recordFromStock() {
+  if (busy.value) return;
+  movementError.value = "";
+  await record();
+  if (feedback.value) showMovement.value = false;
+  else movementError.value = error.value;
+}
+function productSaved() {
+  showProduct.value = false;
+  productFormKey.value++;
+  search.value = "";
+  category.value = "";
+  stockStatus.value = "";
+  feedback.value =
+    "Insumo cadastrado. Registre uma entrada para adicionar saldo.";
 }
 async function generatePairing() {
   await act(async () => {
@@ -340,14 +391,11 @@ onUnmounted(() => {
       <div>
         <span class="eyebrow">GESTÃO RURAL · DO CAMPO À DECISÃO</span>
         <h1>Gestão de insumos da propriedade rural.</h1>
-        <p>
-          Saiba o que precisa de atenção, acompanhe seus insumos e registre o
-          trabalho, mesmo sem internet.
-        </p>
+        <p>Seu estoque, no campo e no escritório.</p>
       </div>
       <div class="welcome-note">
-        <UiIcon name="wifi-off" :size="20" /> Os registros ficam neste aparelho
-        e sincronizam quando houver conexão.
+        <UiIcon name="wifi-off" :size="20" /> Registre offline. Sincronize com
+        internet.
       </div>
     </section>
     <section class="welcome-form">
@@ -366,7 +414,7 @@ onUnmounted(() => {
           {{
             mode === "connect"
               ? "Peça ao gestor o QR Code ou código de pareamento."
-              : "O primeiro acesso precisa de conexão. Depois, continue trabalhando offline."
+              : "Primeiro acesso com internet."
           }}
         </p>
         <div class="auth-options">
@@ -434,8 +482,7 @@ onUnmounted(() => {
                 autocomplete="tel"
                 placeholder="+55 69 …"
               /><small class="muted"
-                >Receba avisos automáticos caso falte insumo ou lote vença.
-                Deixe em branco se preferir não receber.</small
+                >Receba avisos automáticos de estoque e validade.</small
               ></label
             >
           </template>
@@ -612,11 +659,9 @@ onUnmounted(() => {
                       : "Backups e recuperação"
             }}
           </h1>
-          <p class="muted">
+          <p v-if="lastSync" class="muted">
             {{
-              lastSync
-                ? `Última sincronização: ${formatDate(lastSync)}`
-                : "Os dados deste aparelho estão disponíveis offline."
+              lastSync ? `Última sincronização: ${formatDate(lastSync)}` : ""
             }}
           </p>
         </div>
@@ -643,8 +688,8 @@ onUnmounted(() => {
       >
         <h2>Registros para revisão</h2>
         <p class="muted">
-          As tentativas foram preservadas, mas não compõem o saldo confirmado.
-          Confira com o gestor antes de registrar uma correção.
+          Registros preservados, fora do saldo confirmado. Solicite revisão ao
+          gestor.
         </p>
         <p v-for="review in reviews" :key="review.id" class="notice error">
           <UiIcon name="circle-alert" /><span
@@ -652,13 +697,21 @@ onUnmounted(() => {
           >
         </p>
       </section>
-      <section
+      <details
         v-if="showReconciliation"
-        class="panel"
+        class="panel reconciliation"
+        :open="hasDeficit || reviews.length > 0"
         data-testid="sync-balances"
         aria-label="Conciliação do estoque"
       >
-        <h2>Estoque conhecido e registros locais</h2>
+        <summary>
+          Conciliação
+          <span class="badge">{{
+            hasDeficit
+              ? "Saldo negativo"
+              : `${pendingCount} registro(s) pendente(s)`
+          }}</span>
+        </summary>
         <p class="muted">
           Última atualização da nuvem:
           {{ lastSync ? formatDate(lastSync) : "ainda não confirmada" }}. Outros
@@ -682,7 +735,7 @@ onUnmounted(() => {
             antes de corrigir o estoque.</span
           >
         </p>
-      </section>
+      </details>
       <template v-if="tab === 'overview'">
         <section class="metrics" aria-label="Resumo da propriedade">
           <article data-testid="stock-value">
@@ -698,22 +751,16 @@ onUnmounted(() => {
             }}</strong>
             <small v-if="financialPartial"
               >{{ analysis.unpricedProductCount }} insumo(s) com saldo sem
-              preço. Total e ABC consideram apenas os preços informados.</small
+              preço.</small
             >
-            <small v-else>Quantidade disponível × preço de aquisição</small>
           </article>
           <article>
             <span>INSUMOS ACOMPANHADOS</span
-            ><strong>{{ analysis.products.length }}</strong
-            ><small
-              >{{ Object.keys(analysis.balancesByUnit).length }} unidade(s) de
-              medida, saldos separados</small
-            >
+            ><strong>{{ analysis.products.length }}</strong>
           </article>
           <article :class="{ urgent: urgent > 0 }">
             <span>ATENÇÃO IMEDIATA</span
-            ><strong>{{ urgent.toString().padStart(2, "0") }}</strong
-            ><small>Alertas classificados como urgentes</small>
+            ><strong>{{ urgent.toString().padStart(2, "0") }}</strong>
           </article>
         </section>
         <div class="dashboard-grid">
@@ -728,14 +775,16 @@ onUnmounted(() => {
                 {{
                   analysis.products.length
                     ? "Nenhum alerta nesta análise"
-                    : "Tudo começa pelos seus dados"
+                    : "Nenhum insumo cadastrado"
                 }}
               </h3>
               <p>
                 {{
                   analysis.products.length
-                    ? "Continue acompanhando as movimentações da propriedade."
-                    : "Sincronize para receber o catálogo cadastrado na API. Depois, registre entradas e saídas neste aparelho."
+                    ? ""
+                    : session.role === "GESTOR"
+                      ? "Cadastre seu primeiro insumo na aba Estoque."
+                      : "Sincronize para receber os insumos."
                 }}
               </p>
             </div>
@@ -768,7 +817,6 @@ onUnmounted(() => {
             </article>
           </section>
           <section class="panel movement-panel">
-            <span class="eyebrow">REGISTRO OFFLINE</span>
             <h2>Movimente seu estoque</h2>
             <div class="movement-kind">
               <button
@@ -835,10 +883,6 @@ onUnmounted(() => {
                 }}
               </button>
             </form>
-            <p class="helper">
-              O responsável é vinculado à sessão. Não é necessário ter conexão
-              para salvar.
-            </p>
           </section>
           <section
             v-if="session.role === 'GESTOR'"
@@ -855,8 +899,8 @@ onUnmounted(() => {
             <p class="muted">
               {{
                 session.telefone
-                  ? `Notificações automáticas ativadas para o número ${session.telefone}. Em caso de risco crítico de estoque ou validade, um aviso é enviado ao gestor.`
-                  : "Nenhum número cadastrado. Os alertas de emergência não serão enviados ao celular."
+                  ? `Alertas para ${session.telefone}.`
+                  : "Nenhum número cadastrado."
               }}
             </p>
             <div class="whatsapp-number">
@@ -871,8 +915,7 @@ onUnmounted(() => {
                   @keydown.enter.prevent="saveWhatsAppNumber"
               /></label>
               <small class="muted"
-                >Informe com o código do país. Deixe em branco para desativar os
-                alertas.</small
+                >Código do país; em branco desativa os alertas.</small
               >
               <button
                 type="button"
@@ -914,9 +957,7 @@ onUnmounted(() => {
           <div class="section-heading">
             <div>
               <h2>Consumo ao longo do tempo</h2>
-              <p class="muted">
-                Até 30 dias; dias sem retirada também entram na média.
-              </p>
+              <p class="muted">Últimos 30 dias</p>
             </div>
             <select v-model="productId" aria-label="Insumo para analisar">
               <option value="" disabled>Selecione</option>
@@ -945,24 +986,33 @@ onUnmounted(() => {
               ><small>{{ day.dia.slice(8) }}</small>
             </div>
           </div>
-          <p v-else class="empty">
-            O histórico aparecerá após receber ou registrar movimentações.
-          </p>
+          <p v-else class="empty">Sem movimentações.</p>
         </section>
       </template>
-      <section v-if="tab === 'stock'" class="panel">
+      <section v-if="tab === 'stock'" class="panel stock-panel">
         <div class="section-heading">
           <div>
-            <h2>Estoque e curva ABC</h2>
-            <p class="muted">
-              Classificação pelo valor financeiro armazenado: faixas acumuladas
-              de 80%, 95% e 100%.
-            </p>
+            <h2>
+              Insumos
+              <span class="badge"
+                >{{ filteredProducts.length }} de
+                {{ analysis.products.length }}</span
+              >
+            </h2>
             <p v-if="financialPartial" class="helper">
-              Classificação parcial: itens sem preço não são classificados; as
-              faixas consideram somente o capital conhecido.
+              Classificação parcial · itens sem preço fora da ABC.
             </p>
           </div>
+          <button
+            v-if="session.role === 'GESTOR'"
+            class="primary"
+            data-testid="new-product"
+            @click="showProduct = true"
+          >
+            <UiIcon name="plus" />Novo insumo
+          </button>
+        </div>
+        <div class="stock-filters">
           <div class="search-field">
             <UiIcon name="search" /><input
               v-model="search"
@@ -971,6 +1021,21 @@ onUnmounted(() => {
               placeholder="Buscar insumo, categoria ou lote"
             />
           </div>
+          <select v-model="category" aria-label="Filtrar categoria">
+            <option value="">Todas as categorias</option>
+            <option v-for="item in categories" :key="item" :value="item">
+              {{ item }}
+            </option>
+          </select>
+          <select
+            v-model="stockStatus"
+            aria-label="Filtrar situação do estoque"
+          >
+            <option value="">Todas as situações</option>
+            <option value="low">No mínimo ou abaixo</option>
+            <option value="empty">Sem estoque</option>
+            <option value="unpriced">Sem preço</option>
+          </select>
         </div>
         <div class="table-wrap">
           <table>
@@ -983,6 +1048,7 @@ onUnmounted(() => {
                 <th>Valor armazenado</th>
                 <th>ABC</th>
                 <th>Validade</th>
+                <th v-if="session.role === 'GESTOR'">Movimentar</th>
               </tr>
             </thead>
             <tbody>
@@ -994,9 +1060,16 @@ onUnmounted(() => {
                     }}{{ p.lote ? ` · Lote ${p.lote}` : "" }}</small
                   >
                 </td>
-                <td>{{ unitValue(p.saldo) }} {{ p.unidadeMedida }}</td>
-                <td>{{ unitValue(p.estoqueMinimo) }} {{ p.unidadeMedida }}</td>
-                <td :data-testid="`estimate-${p.id}`">
+                <td data-label="Saldo">
+                  {{ unitValue(p.saldo) }} {{ p.unidadeMedida }}
+                </td>
+                <td data-label="Mínimo">
+                  {{ unitValue(p.estoqueMinimo) }} {{ p.unidadeMedida }}
+                </td>
+                <td
+                  data-label="Duração estimada"
+                  :data-testid="`estimate-${p.id}`"
+                >
                   {{
                     p.diasRestantes === null
                       ? "Sem histórico"
@@ -1005,43 +1078,72 @@ onUnmounted(() => {
                   <small
                     v-if="p.diasRestantes === null"
                     class="estimate-context"
-                    >Estimativa indisponível: sem retiradas recentes suficientes
-                    para projetar consumo.</small
+                    >Estimativa indisponível</small
                   >
                   <small v-else class="estimate-context"
                     >{{ evidenceLabels[p.confiabilidade] }} ·
-                    {{ p.amostrasConsumo }} retirada(s) em
-                    {{ p.diasAmostra }} dia(s) de calendário. Indicador por
-                    amostragem; não é garantia de duração.</small
+                    {{ p.amostrasConsumo }} retirada(s)</small
                   >
+                  <details
+                    v-if="p.diasRestantes !== null"
+                    class="estimate-details"
+                  >
+                    <summary>Detalhes</summary>
+                    <p>
+                      {{ p.diasAmostra }} dia(s) de calendário. Indicador por
+                      amostragem; não é garantia de duração.
+                    </p>
+                  </details>
                 </td>
-                <td>
+                <td data-label="Valor armazenado">
                   {{
                     p.valorEstoque === null
                       ? "Preço não informado"
                       : money(p.valorEstoque)
                   }}
                 </td>
-                <td>
+                <td data-label="ABC">
                   <span :data-testid="`abc-${p.id}`" class="badge">{{
                     p.classeAbc === null
                       ? "Não classificado"
                       : `${p.classeAbc}${financialPartial ? " (parcial)" : ""}`
                   }}</span>
                 </td>
-                <td>
+                <td data-label="Validade">
                   {{
                     p.validade
                       ? p.validade.slice(0, 10).split("-").reverse().join("/")
                       : "Não informada"
                   }}
                 </td>
+                <td v-if="session.role === 'GESTOR'" class="movement-cell">
+                  <div class="stock-actions">
+                    <button
+                      class="secondary"
+                      :data-testid="`entrada-${p.id}`"
+                      :aria-label="`Entrada de ${p.nome}`"
+                      :disabled="busy"
+                      @click="openMovement(p.id, 'ENTRADA')"
+                    >
+                      <UiIcon name="arrow-down-left" />Entrada
+                    </button>
+                    <button
+                      class="secondary"
+                      :data-testid="`saida-${p.id}`"
+                      :aria-label="`Saída de ${p.nome}`"
+                      :disabled="busy"
+                      @click="openMovement(p.id, 'SAIDA')"
+                    >
+                      <UiIcon name="arrow-up-right" />Saída
+                    </button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
         <p v-if="!filteredProducts.length" class="empty">
-          Nenhum insumo encontrado. O cadastro de produtos é recebido da API.
+          Nenhum insumo encontrado.
         </p>
       </section>
       <section v-if="tab === 'history'" class="panel">
@@ -1090,18 +1192,13 @@ onUnmounted(() => {
             </tbody>
           </table>
         </div>
-        <p v-if="!movements.length" class="empty">
-          As entradas e saídas da propriedade aparecerão aqui.
-        </p>
+        <p v-if="!movements.length" class="empty">Nenhuma movimentação.</p>
       </section>
       <section v-if="tab === 'backups'" class="panel">
         <div class="section-heading">
           <div>
             <h2>Backups locais</h2>
-            <p class="muted">
-              Uma cópia automática por dia, com retenção dos últimos 7 dias
-              neste aparelho.
-            </p>
+            <p class="muted">Cópias diárias · últimos 7 dias</p>
           </div>
           <button
             class="primary"
@@ -1112,8 +1209,7 @@ onUnmounted(() => {
           </button>
         </div>
         <p class="notice">
-          A restauração cria primeiro uma cópia de recuperação do estado atual.
-          Os backups ficam neste aparelho.
+          Backups neste aparelho. Restauração com cópia de recuperação.
         </p>
         <ul class="backup-list">
           <li v-for="backup in backups" :key="backup.name">
@@ -1141,18 +1237,110 @@ onUnmounted(() => {
         :loading="operatorsLoading"
         :error="operatorsError"
         :refresh="workspace.loadOperators"
+        :deactivate="workspace.deactivateOperator"
         :connect="
           () => {
             showPairing = true;
           }
         "
       />
-      <footer class="page-footer">
-        AgroHacka · Decisões fundamentadas nos registros da propriedade.<span
-          >Estimativas dependem da qualidade e da quantidade do histórico.</span
-        >
-      </footer>
+      <footer class="page-footer">AgroHacka</footer>
     </main>
+    <div
+      v-if="productStarted && session.role === 'GESTOR'"
+      v-show="showProduct"
+      class="modal-backdrop"
+      @click.self="showProduct = false"
+      @keydown.esc="showProduct = false"
+    >
+      <section
+        :role="showProduct ? 'dialog' : undefined"
+        :aria-hidden="!showProduct"
+        aria-modal="true"
+        aria-labelledby="product-title"
+        class="modal product-modal"
+      >
+        <button
+          class="modal-close"
+          aria-label="Fechar cadastro"
+          @click="showProduct = false"
+        >
+          <UiIcon name="x" />
+        </button>
+        <h2 id="product-title">Novo insumo</h2>
+        <p class="muted">Requer internet · saldo adicionado por entrada.</p>
+        <ProductForm
+          :key="productFormKey"
+          :categories="categories"
+          :save="workspace.createProduct"
+          @saved="productSaved"
+        />
+      </section>
+    </div>
+    <div
+      v-if="showMovement && session.role === 'GESTOR'"
+      class="modal-backdrop"
+      @click.self="!busy && (showMovement = false)"
+      @keydown.esc="!busy && (showMovement = false)"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="movement-title"
+        class="modal"
+      >
+        <button
+          class="modal-close"
+          aria-label="Fechar movimentação"
+          :disabled="busy"
+          @click="showMovement = false"
+        >
+          <UiIcon name="x" />
+        </button>
+        <h2 id="movement-title">
+          {{ kind === "ENTRADA" ? "Entrada" : "Saída" }} ·
+          {{ selectedProduct?.nome }}
+        </h2>
+        <p class="muted">
+          Saldo: {{ unitValue(selectedProduct?.saldo ?? 0) }}
+          {{ selectedProduct?.unidadeMedida }}
+        </p>
+        <p v-if="movementError" class="notice error" role="alert">
+          {{ movementError }}
+        </p>
+        <form @submit.prevent="recordFromStock">
+          <label
+            >Quantidade ({{ selectedProduct?.unidadeMedida }})<input
+              v-model="quantity"
+              type="number"
+              min="0.000001"
+              step="any"
+              required
+              autofocus
+              :disabled="busy"
+          /></label>
+          <label
+            >Data e hora<input
+              v-model="movementDate"
+              type="datetime-local"
+              required
+              :disabled="busy"
+          /></label>
+          <label
+            >Destino / observação<input
+              v-model="destination"
+              maxlength="300"
+              placeholder="Opcional"
+              :disabled="busy"
+          /></label>
+          <button class="primary full" :disabled="busy">
+            <UiIcon name="save" />{{
+              busy ? "Salvando…" : "Salvar neste aparelho"
+            }}
+          </button>
+        </form>
+      </section>
+    </div>
     <div
       v-if="showPairing"
       class="modal-backdrop"
@@ -1173,10 +1361,6 @@ onUnmounted(() => {
           <UiIcon name="x" /></button
         ><span class="eyebrow">EQUIPE CONECTADA</span>
         <h2 id="pair-title">Conectar operador</h2>
-        <p class="muted">
-          O código vincula o aparelho e identifica quem registra cada
-          movimentação.
-        </p>
         <form @submit.prevent="generatePairing">
           <label
             >Nome do operador<input

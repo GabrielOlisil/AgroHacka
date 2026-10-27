@@ -126,14 +126,14 @@ jobs:
 
       - name: Compilar Pacote Android (.apk)
         working-directory: client
-        run: npx @tauri-apps/cli android build --apk --debug --target aarch64
+        run: npx @tauri-apps/cli android build --apk --debug --target aarch64 --ci
 
       - name: Upload Artefatos Android (.apk)
         uses: actions/upload-artifact@v4
         with:
           name: agrohacka-mobile-android
-          path: client/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
+          path: client/src-tauri/gen/android/app/build/outputs/apk/**/debug/*.apk
+          if-no-files-found: error
 
   create-release:
     name: Publicar Release Oficial no GitHub

@@ -7,6 +7,7 @@ import { StockModule } from './stock/stock.module';
 import { DevicesModule } from './devices/devices.module';
 import { SyncModule } from './sync/sync.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     DevicesModule,
     SyncModule,
     NotificationsModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

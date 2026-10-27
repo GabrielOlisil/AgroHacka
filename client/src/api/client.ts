@@ -2,6 +2,8 @@ import createClient from "openapi-fetch";
 import type { paths } from "../types/contract";
 import {
   object,
+  parseProduct,
+  parseProductInput,
   parseSession,
   parsePairedOperators,
   parseSyncResponse,
@@ -10,6 +12,8 @@ import {
   type LoginInput,
   type PairingInput,
   type PairingResponse,
+  type Product,
+  type ProductInput,
   type RegisterInput,
   type Session,
   type SyncPayload,
@@ -79,6 +83,26 @@ export function createApi(
     });
   }
   return {
+    async createProduct(
+      input: ProductInput,
+      session: Session,
+    ): Promise<Product> {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode cadastrar produtos.");
+      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
+      const body = parseProductInput(input);
+      const result = await unpack(
+        await client.POST("/products", {
+          headers: { authorization },
+          body,
+          signal: signal(),
+        }),
+      );
+      const product = parseProduct(result, session.farmId);
+      if (product.id !== body.id)
+        throw new Error("Resposta de outro identificador de produto.");
+      return product;
+    },
     async testWhatsApp(
       session: Session,
       paraTelefone: string,
@@ -143,6 +167,21 @@ export function createApi(
         await client.GET("/devices", {
           params: { header: { authorization } },
           cache: "no-store",
+          signal: signal(),
+        }),
+      );
+      return parsePairedOperators(result, session.farmId);
+    },
+    async deactivateOperator(session: Session, deviceId: string) {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode desativar operadores.");
+      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
+      const result = await unpack(
+        await client.POST("/devices/{id}/deactivate", {
+          params: {
+            header: { authorization },
+            path: { id: text(deviceId, "operador") },
+          },
           signal: signal(),
         }),
       );
