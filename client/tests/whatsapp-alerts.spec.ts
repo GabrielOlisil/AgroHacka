@@ -247,12 +247,20 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
   });
 
   describe("posição e organização na Visão geral", () => {
-    const sideStack = ".dashboard-grid > .side-stack";
+    const actionRow = ".dashboard-grid > .action-row";
 
-    it("fica na coluna lateral, logo abaixo de Movimente seu estoque", () => {
+    it("alertas prioritários ocupam a largura toda e, embaixo, movimentação e WhatsApp ficam lado a lado", () => {
+      expect(rule(".dashboard-grid")).toMatch(/display\s*:\s*grid/);
+      expect(rule(".dashboard-grid")).not.toMatch(/grid-template-columns/);
+      expect(rule(".action-row")).toMatch(/display\s*:\s*grid/);
+      expect(rule(".action-row")).toMatch(/grid-template-columns\s*:\s*repeat\(auto-fit/);
+      expect(rule(".action-row")).toMatch(/gap\s*:/);
       const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
-      expect(wrapper.findAll(".dashboard-grid > *")).toHaveLength(2);
-      const children = wrapper.get(sideStack).findAll(":scope > section");
+      const top = wrapper.findAll(".dashboard-grid > *");
+      expect(top).toHaveLength(2);
+      expect(top[0]!.text()).toContain("Alertas prioritários");
+      expect(top[1]!.classes()).toContain("action-row");
+      const children = wrapper.get(actionRow).findAll(":scope > section");
       expect(children.map((c) => c.classes())).toEqual([
         expect.arrayContaining(["movement-panel"]),
         expect.arrayContaining(["whatsapp-panel"]),
@@ -260,17 +268,15 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
       wrapper.unmount();
     });
 
-    it("para o operador a coluna lateral tem só a movimentação", () => {
+    it("para o operador a linha de baixo tem só a movimentação", () => {
       const wrapper = mountApp(controller({ role: "OPERADOR" }));
-      const children = wrapper.get(sideStack).findAll(":scope > section");
+      const children = wrapper.get(actionRow).findAll(":scope > section");
       expect(children).toHaveLength(1);
       expect(children[0]!.classes()).toContain("movement-panel");
       wrapper.unmount();
     });
 
     it("campo do número e botão Salvar ficam na mesma linha, com a dica embaixo", () => {
-      expect(rule(".side-stack")).toMatch(/display\s*:\s*grid/);
-      expect(rule(".side-stack")).toMatch(/gap\s*:/);
       expect(rule(".whatsapp-row")).toMatch(/display\s*:\s*flex/);
       const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
       const row = wrapper.get(`${panel} .whatsapp-row`);
