@@ -239,7 +239,7 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 400 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 510 testes Vitest de cadastro, SQLite, interface (incluindo usabilidade no celular), gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
+- **Desktop/Mobile (Tauri + Vue):** 538 testes Vitest de cadastro, SQLite, interface (incluindo usabilidade no celular), gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações

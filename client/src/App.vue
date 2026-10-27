@@ -6,6 +6,7 @@ import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
 import { APP_VERSION } from "./app-version";
+import { formatPhone, maskPhone, toWhatsApp } from "./phone";
 import { openPicker } from "./open-picker";
 
 const props = defineProps<{ controller?: Workspace }>();
@@ -64,13 +65,15 @@ const video = ref<HTMLVideoElement | null>(null);
 const camera = ref(false);
 const testingWhatsApp = ref(false);
 const savingPhone = ref(false);
-const phoneDraft = ref(session.value?.telefone ?? "");
+const phoneDraft = ref(formatPhone(session.value?.telefone));
 watch(
   () => session.value?.telefone,
   (telefone) => {
-    phoneDraft.value = telefone ?? "";
+    phoneDraft.value = formatPhone(telefone);
   },
 );
+const typedPhone = (event: Event) =>
+  maskPhone((event.target as HTMLInputElement).value);
 const whatsappFeedback = ref("");
 const whatsappSimulated = ref(false);
 const whatsappError = ref("");
@@ -178,14 +181,16 @@ async function act(action: () => Promise<unknown>, success = "") {
 async function authenticate() {
   await act(async () => {
     if (mode.value === "connect") await workspace.connect(code.value);
-    else if (mode.value === "register")
+    else if (mode.value === "register") {
+      const whatsapp = toWhatsApp(telefone.value);
       await workspace.register({
         nome: nome.value,
         email: email.value,
         senha: password.value,
         nomeFazenda: farmName.value,
-        ...(telefone.value ? { telefone: telefone.value } : {}),
+        ...(whatsapp ? { telefone: whatsapp } : {}),
       });
+    }
     else await workspace.login({ email: email.value, senha: password.value });
     password.value = "";
     code.value = "";
@@ -326,7 +331,7 @@ async function sendWhatsAppTest() {
     whatsappSimulated.value = simulado;
     whatsappFeedback.value = simulado
       ? "O envio por WhatsApp ainda não está ativado no sistema, então nenhuma mensagem foi enviada."
-      : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
+      : `Mensagem de teste enviada para ${formatPhone(phone)}. Confira o WhatsApp do gestor.`;
   } catch (cause) {
     whatsappError.value = `Não foi possível enviar o teste: ${describeWhatsAppFailure(cause)}`;
   } finally {
@@ -340,9 +345,9 @@ async function saveWhatsAppNumber() {
   whatsappSimulated.value = false;
   whatsappError.value = "";
   try {
-    const telefone = await workspace.updateTelefone(phoneDraft.value);
+    const telefone = await workspace.updateTelefone(toWhatsApp(phoneDraft.value));
     whatsappFeedback.value = telefone
-      ? `WhatsApp atualizado. Os alertas serão enviados para ${telefone}.`
+      ? `WhatsApp atualizado. Os alertas serão enviados para ${formatPhone(telefone)}.`
       : "Alertas de WhatsApp desativados.";
   } catch (cause) {
     whatsappError.value = `Não foi possível salvar o número: ${describeWhatsAppFailure(cause)}`;
@@ -618,10 +623,11 @@ onUnmounted(() => {
               >WhatsApp para alertas de emergência
               <span class="muted">(opcional)</span
               ><input
-                v-model="telefone"
+                :value="telefone"
                 type="tel"
                 autocomplete="tel"
-                placeholder="+55 69 …"
+                placeholder="(69) 91234-1234"
+                @input="telefone = typedPhone($event)"
               /><small class="muted"
                 >Receba avisos automáticos de estoque e validade.</small
               ></label
@@ -1140,7 +1146,7 @@ onUnmounted(() => {
               <p class="muted">
                 {{
                   session.telefone
-                    ? `Alertas para ${session.telefone}.`
+                    ? `Alertas para ${formatPhone(session.telefone)}.`
                     : "Nenhum número cadastrado."
                 }}
               </p>
@@ -1149,11 +1155,12 @@ onUnmounted(() => {
                 <div class="whatsapp-row">
                   <input
                     id="whatsapp-phone"
-                    v-model="phoneDraft"
+                    :value="phoneDraft"
                     type="tel"
                     autocomplete="tel"
-                    placeholder="+55 69 99999-9999"
+                    placeholder="(69) 91234-1234"
                     :disabled="savingPhone"
+                    @input="phoneDraft = typedPhone($event)"
                     @keydown.enter.prevent="saveWhatsAppNumber"
                   />
                   <button
@@ -1166,7 +1173,7 @@ onUnmounted(() => {
                   </button>
                 </div>
                 <small class="muted"
-                  >Código do país; em branco desativa os alertas.</small
+                  >Celular com DDD; em branco desativa os alertas.</small
                 >
               </div>
               <button
