@@ -16,13 +16,22 @@ describe("alvos de toque no celular (tarefa 11.6)", () => {
     expect(px("--control-lg")).toBeGreaterThanOrEqual(48);
   });
 
-  it("o menu do celular tem abas de 48 px, rótulos inteiros e rola para o lado quando não cabe", () => {
+  it("o menu do celular fica embaixo, na zona do polegar, com até 4 abas de 48 px (tarefa 11.9)", () => {
     const nav = /\.sidebar nav \{([^}]*)\}/.exec(mobile)?.[1] ?? "";
     const button = /\.sidebar nav button \{([^}]*)\}/.exec(mobile)?.[1] ?? "";
-    expect(nav).toMatch(/overflow-x:\s*auto/);
-    expect(button).toMatch(/min-height:\s*48px/);
-    expect(button).toMatch(/white-space:\s*nowrap/);
-    expect(button).toMatch(/flex:\s*0 0 auto|flex:\s*none/);
+    expect(nav).toMatch(/position:\s*fixed/);
+    expect(nav).toMatch(/bottom:\s*0/);
+    expect(button).toMatch(/min-height:\s*(4[89]|[5-9]\d)px/);
+    expect(button).toMatch(/flex:\s*1 1 0/);
+    // As abas que não cabem vão para "Mais"; o conteúdo não fica escondido atrás do menu.
+    expect(mobile).toMatch(/\.sidebar nav \.nav-secondary \{[^}]*display:\s*none/);
+    expect(mobile).toMatch(/\.sidebar nav \.nav-more \{[^}]*display:\s*flex/);
+    expect(/\.main-content \{([^}]*)\}/.exec(mobile)?.[1]).toMatch(/padding-bottom/);
+  });
+
+  it("fora do celular, o botão Mais e o menu dele não aparecem", () => {
+    const desktop = css.slice(0, start);
+    expect(desktop).toMatch(/\.nav-more,\s*\.more-menu \{[^}]*display:\s*none/);
   });
 
   it("o histórico vira cartões, como o estoque (tarefa 11.8)", () => {
