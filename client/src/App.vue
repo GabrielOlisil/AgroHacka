@@ -242,6 +242,19 @@ const recentDestinations = computed(() => {
 });
 // 11.13: quase sempre é "agora"; a data só é usada se a pessoa tocar em alterar.
 const customDate = ref(false);
+// Data e hora em campos separados: o seletor combinado do navegador não cabe no celular.
+const movementDay = computed({
+  get: () => movementDate.value.slice(0, 10),
+  set: (day: string) => {
+    movementDate.value = `${day}T${movementDate.value.slice(11, 16)}`;
+  },
+});
+const movementTime = computed({
+  get: () => movementDate.value.slice(11, 16),
+  set: (time: string) => {
+    movementDate.value = `${movementDate.value.slice(0, 10)}T${time}`;
+  },
+});
 // Offline-first records the fact even past the balance; warn, never block.
 const exceedsBalance = computed(
   () =>
@@ -1048,13 +1061,22 @@ onUnmounted(() => {
                     e o gestor vai conferir a diferença.</span
                   >
                 </p>
-                <label v-if="customDate"
-                  >Data e hora<input
-                    v-model="movementDate"
-                    type="datetime-local"
-                    required
-                    @click="openPicker" /></label
-                ><p v-else class="date-line" data-testid="movement-date">
+                <div v-if="customDate" class="split">
+                  <label
+                    >Data<input
+                      v-model="movementDay"
+                      type="date"
+                      required
+                      @click="openPicker" /></label
+                  ><label
+                    >Hora<input
+                      v-model="movementTime"
+                      type="time"
+                      required
+                      @click="openPicker"
+                  /></label>
+                </div>
+                <p v-else class="date-line" data-testid="movement-date">
                   Data: agora
                   <button
                     type="button"
@@ -1572,14 +1594,23 @@ onUnmounted(() => {
               gestor vai conferir a diferença.</span
             >
           </p>
-          <label v-if="customDate"
-            >Data e hora<input
-              v-model="movementDate"
-              type="datetime-local"
-              required
-              :disabled="busy"
-              @click="openPicker"
-          /></label>
+          <div v-if="customDate" class="split">
+            <label
+              >Data<input
+                v-model="movementDay"
+                type="date"
+                required
+                :disabled="busy"
+                @click="openPicker" /></label
+            ><label
+              >Hora<input
+                v-model="movementTime"
+                type="time"
+                required
+                :disabled="busy"
+                @click="openPicker"
+            /></label>
+          </div>
           <p v-else class="date-line" data-testid="movement-date">
             Data: agora
             <button

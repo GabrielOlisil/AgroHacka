@@ -4,6 +4,7 @@
   --color-accent: #e3b71a;
   --color-secondary: #4a5b2e;
   --color-support: #6b4a2b;
+  --color-danger: #b42318;
   --color-text: #14181a;
   --color-background: #f2efe6;
   --color-surface: #ffffff;
@@ -746,10 +747,10 @@ nav button.active {
   color: var(--text-secondary);
 }
 .metrics article.urgent {
-  border-top-color: var(--color-support);
+  border-top-color: var(--color-danger);
 }
 .metrics article.urgent strong {
-  color: var(--color-support);
+  color: var(--color-danger);
 }
 .dashboard-grid {
   /* Alerts span the full width; panels keep their own bottom margin as spacing. */
@@ -830,7 +831,7 @@ nav button.active {
   background: var(--color-surface);
 }
 .alert-card.urgente {
-  border-left-color: var(--color-support);
+  border-left-color: var(--color-danger);
 }
 .alert-card.atencao {
   border-left-color: var(--color-accent);
@@ -841,7 +842,7 @@ nav button.active {
   background: var(--color-primary);
 }
 .alert-card.urgente .severity {
-  background: var(--color-support);
+  background: var(--color-danger);
 }
 .alert-card.atencao .severity {
   background: var(--color-accent);
