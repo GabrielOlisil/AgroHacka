@@ -53,7 +53,101 @@ export interface Product {
   validade: string | null;
   lote?: string | null;
   fornecedor?: string | null;
+  createdAt?: string;
   updatedAt?: string;
+}
+/** UUID pertence ao modal e permanece estável em todas as tentativas. */
+type CreateProductDto = components["schemas"]["CreateProductDto"];
+export type ProductInput = Omit<
+  CreateProductDto,
+  "precoAquisicao" | "validade"
+> &
+  Required<Pick<CreateProductDto, "precoAquisicao" | "validade">>;
+
+export function parseProductInput(value: unknown): ProductInput {
+  const p = object(value);
+  const fields = [
+    "id",
+    "nome",
+    "categoria",
+    "unidadeMedida",
+    "estoqueMinimo",
+    "precoAquisicao",
+    "validade",
+    "lote",
+    "fornecedor",
+  ];
+  if (Object.keys(p).some((key) => !fields.includes(key)))
+    throw new Error("Campo desconhecido no cadastro de produto.");
+  if (
+    typeof p.id !== "string" ||
+    !/^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(
+      p.id,
+    )
+  )
+    throw new Error("Identificador do produto deve ser UUID.");
+  const id = p.id.toLowerCase();
+  const normalizedText = (value: unknown, field: string) =>
+    text(value, field).normalize("NFC");
+  const unit = normalizedText(p.unidadeMedida, "unidade");
+  const units: Record<string, string> = {
+    l: "L",
+    lt: "L",
+    litro: "L",
+    litros: "L",
+    kg: "kg",
+    quilo: "kg",
+    quilos: "kg",
+    quilograma: "kg",
+    quilogramas: "kg",
+    t: "t",
+    ton: "t",
+    tonelada: "t",
+    toneladas: "t",
+    un: "un",
+    und: "un",
+    unidade: "un",
+    unidades: "un",
+    sc: "sc",
+    saco: "sc",
+    sacos: "sc",
+    saca: "sc",
+    sacas: "sc",
+    m: "m",
+    metro: "m",
+    metros: "m",
+  };
+  let validade: string | null = null;
+  if (p.validade != null) {
+    if (
+      typeof p.validade !== "string" ||
+      !/^(?!0000)\d{4}-\d{2}-\d{2}$/.test(p.validade)
+    )
+      throw new Error("Validade deve ser uma data YYYY-MM-DD.");
+    const calendarDate = new Date(`${p.validade}T00:00:00.000Z`);
+    if (
+      !Number.isFinite(calendarDate.getTime()) ||
+      calendarDate.toISOString().slice(0, 10) !== p.validade
+    )
+      throw new Error("Data de calendário inválida.");
+    validade = p.validade;
+  }
+  const result: ProductInput = {
+    id,
+    nome: normalizedText(p.nome, "nome"),
+    categoria: normalizedText(p.categoria, "categoria"),
+    unidadeMedida: Object.hasOwn(units, unit.toLowerCase())
+      ? units[unit.toLowerCase()]!
+      : unit,
+    estoqueMinimo: number(p.estoqueMinimo, "estoque mínimo"),
+    precoAquisicao:
+      p.precoAquisicao == null ? null : number(p.precoAquisicao, "preço"),
+    validade,
+  };
+  for (const key of ["lote", "fornecedor"] as const)
+    if (p[key] !== undefined)
+      result[key] = p[key] === null ? null : normalizedText(p[key], key);
+  return result;
 }
 export interface Session {
   role: "GESTOR" | "OPERADOR";
@@ -227,9 +321,7 @@ export function date(value: unknown): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})(?:T|$)/.exec(result);
   if (!match || !Number.isFinite(Date.parse(result)))
     throw new Error("Data inválida.");
-  const calendarDate = new Date(
-    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
-  );
+  const calendarDate = new Date(`${result.slice(0, 10)}T00:00:00.000Z`);
   if (calendarDate.toISOString().slice(0, 10) !== result.slice(0, 10))
     throw new Error("Data de calendário inválida.");
   return new Date(result).toISOString();
@@ -274,6 +366,7 @@ export function parseProduct(value: unknown, farmId?: string): Product {
     if (p[key] !== undefined)
       result[key] = p[key] === null ? null : String(p[key]);
   if (p.updatedAt !== undefined) result.updatedAt = date(p.updatedAt);
+  if (p.createdAt !== undefined) result.createdAt = date(p.createdAt);
   return result;
 }
 export function parseMovement(value: unknown, farmId?: string): Movement {

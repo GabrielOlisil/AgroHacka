@@ -83,6 +83,7 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 ### 3.2. Destaques da Implementação
 - **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico de 6 caracteres gerado pelo Gestor).
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
+- **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações.
 - **Protocolo de Sincronização Confiável (v2):** Outbox transacional com UUIDs imutáveis, recibos individuais auditáveis, idempotência e tratamento explícito de divergências de saldo sem descartar fatos físicos.
 - **Backup Automático Estilo Anki:** Snapshots atômicos locais via `VACUUM INTO`, retenção automática de 7 dias e restauração garantida em 1 clique.
 - **Alertas WhatsApp (Twilio API):** Notificações automáticas para o WhatsApp do Gestor quando uma sincronização gera um alerta de nível urgente. O Gestor cadastra, troca ou desativa o número e testa o envio no painel *Alertas de emergência via WhatsApp* (pré-requisitos e limites na seção 4.4).
@@ -92,6 +93,11 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 ## 4. Como Testar e Executar
 
 **Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.1-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.1-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+
+A compilação Android permanece em **debug**, com assinatura automática de
+desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
+as melhorias de estoque ainda precisa ser gerado; o cadastro exige publicar
+também a API atualizada.
 
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
@@ -231,8 +237,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 245 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
-- **Desktop/Mobile (Tauri + Vue):** 283 testes Vitest e 5 testes nativos Rust aprovados em 27/10. SQLite temporário real verifica transações, reabertura offline, recuperação e reenvio sem duplicidade; servidor simulado não comprova locks PostgreSQL nem execução Android ([`cloud-restart.spec.ts`](client/tests/cloud-restart.spec.ts), [`analysis-disclosure.spec.ts`](client/tests/analysis-disclosure.spec.ts), [`local-store.spec.ts`](client/tests/local-store.spec.ts), etc.).
+- **API NestJS:** 371 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 29 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração e cadastro concorrente/idempotente de produtos, também aprovados.
+- **Desktop/Mobile (Tauri + Vue):** 434 testes Vitest de cadastro, SQLite, interface e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK/cadastro ainda exigem validação no aparelho.
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
 ### 7.2. Registro Transparente de Limitações
