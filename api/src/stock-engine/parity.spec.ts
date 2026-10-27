@@ -226,6 +226,18 @@ describe('paridade API × cliente na análise de estoque (tarefa 10.3)', () => {
     });
   });
 
+  it('cobertura financeira: todos com preço e nenhum com preço (tarefa 10.4)', () => {
+    const entries = (ids: string[]): M[] =>
+      ids.map((id) => ({ productId: id, tipo: 'ENTRADA', quantidade: 10, dataMovimento: at(-2) }));
+
+    const todos = compare([{ id: 'a', precoAquisicao: 5 }, { id: 'b', precoAquisicao: 0 }], entries(['a', 'b']));
+    expect(todos).toMatchObject({ totalValue: 50, pricedProductCount: 2, unpricedProductCount: 0 });
+
+    const nenhum = compare([{ id: 'a', precoAquisicao: null }, { id: 'b', precoAquisicao: null }], entries(['a', 'b']));
+    expect(nenhum).toMatchObject({ totalValue: 0, pricedProductCount: 0, unpricedProductCount: 2 });
+    expect(nenhum.products.every((p) => p.valorEstoque === null && p.classeAbc === null)).toBe(true);
+  });
+
   it('movimentações futuras ou de outra fazenda não entram na conta', () => {
     const api = compare(
       [{ id: 'p' }],
