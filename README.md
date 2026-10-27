@@ -217,9 +217,9 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ### 6.1. Roteiro Demonstrativo do Sistema
 1. **Abertura:** O Gestor visualiza no Dashboard os cartões com contagem de alertas críticos e capital imobilizado.
-2. **Identificação de Problema Crítico:** O insumo *Ureia* acusa autonomia crítica para menos de 3 dias no ritmo atual.
-3. **Pareamento em 10 Segundos:** O Gestor cadastra o operador *Carlos Silva (Tratorista)* e gera um QR Code com código alfanumérico alternativo `AGRO-01`.
-4. **Operação no Campo 100% Offline:** Em modo avião, o operador dá baixa de 60 litros de Diesel S10. O saldo local é decrementado imediatamente e o histórico é gravado.
+2. **Identificação de Problema Crítico:** O insumo *Ureia* está abaixo do estoque mínimo, com a justificativa do consumo médio, dos dias de histórico e da autonomia estimada.
+3. **Pareamento em 10 Segundos:** O Gestor cadastra o operador e gera um QR Code com código alternativo no formato `AGRO-XXXX`; ao ler o QR, o celular conecta sozinho.
+4. **Operação no Campo 100% Offline:** Em modo avião, o operador registra saídas de Diesel S10 e de Ureia. Os registros ficam salvos no aparelho, na fila de sincronização.
 5. **Detecção de Anomalia:** Um lançamento atípico de 950 litros de Diesel gera imediatamente um alerta de desvio estatístico.
 6. **Convergência e Sincronização:** Ao restabelecer conexão (ou via botão *Sincronizar*), as transações locais sobem para a VPS sem duplicidade e recebem recibos individuais confirmados.
 7. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor (pré-requisitos e como reiniciar os alertas na seção 4.4).
@@ -242,6 +242,8 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 3. **Sincronização por Download Completo:** Enquanto um cursor seguro de CDC (Change Data Capture) não for disponibilizado na API, o cliente baixa o catálogo consistente integral e mescla por UUID, mitigando riscos de janelas temporais cegas.
 4. **Câmera em Dispositivos Físicos:** A leitura do QR Code pela câmera foi validada em aparelho Android real (Motorola g75 5G, Android 16): ao ler o QR, o aparelho conecta sozinho. Se a permissão for negada ou não houver câmera, o app orienta usar uma imagem do QR ou o código alfanumérico manual, alternativa de alta resiliência para qualquer situação sem câmera. Outros modelos de aparelho não foram testados.
 5. **Sincronização exclusivamente pela internet:** decisão de 26/10. LAN foi cancelada, não adiada; o gestor não atua como servidor intermediário. Sem internet, os lançamentos continuam no SQLite/outbox e são enviados à API central ao reconectar. Em 27/10, a tarefa 5.7-A retirou do cliente o transporte LAN, o uso de IPs antigos e o script de firewall, preservando sessões e pendências. As tarefas 5.7-B/C retiraram da API as rotas `POST /devices/local-ip` e `PUT /sync/heartbeat` e o IP/porta do pareamento e da conexão, e o contrato do cliente foi regenerado; as colunas antigas da fazenda ficam inertes no banco. O plano está em [`ROADMAP_FINALIZACAO.md`](ROADMAP_FINALIZACAO.md). Não é necessário abrir portas no firewall para a sincronização cloud.
+6. **Desativação de aparelhos:** um aparelho pareado marcado como inativo no banco é recusado pela API (401) e mantém sua fila local, mas ainda não há botão no app para o Gestor desativar um operador; hoje isso exige alterar o campo `ativo` direto no banco.
+7. **WhatsApp na conta de testes da Twilio:** a mensagem chega com o texto do modelo pré-aprovado da Twilio; o alerta completo (insumo, nível, diagnóstico) fica no app. Detalhes na seção 4.4.
 
 ---
 

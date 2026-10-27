@@ -318,7 +318,7 @@
   - [x] 1. Equipe (nomes, cursos, papéis e identificação explícita do responsável ADS). *Responsável ADS: Gabriel de Oliveira Silva (definido pela equipe em 27/10).*
   - [x] 2. Problema e público (contexto rural, Gestores e Operadores).
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
-  - [ ] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores).
+  - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.1-entrega` publicada em 27/10 com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
   - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
@@ -333,7 +333,7 @@
 *Entregáveis para a banca antes do dia 29/10.*
 
 - [ ] **8.1. [EM CONJUNTO] Gravação do Vídeo Demonstrativo (3 a 5 min):**
-  - [ ] Roteiro:
+  - [x] Roteiro: *`roteiro_video_demonstrativo.md`, com pré-requisitos, ações na tela e plano B (27/10).*
     1. Abertura: Dores do produtor rural (falta inesperada e dinheiro parado).
     2. Demonstração do Painel do Gestor com alertas críticos e Curva ABC.
     3. Pareamento rápido do Operador via QR Code e via Código Alfanumérico.
@@ -343,7 +343,7 @@
     7. Demonstração do backup automático e restauração em 1 clique (estilo Anki).
   - [ ] Upload no YouTube (não listado) e inclusão do link no `README.md`.
 - [ ] **8.2. [EM CONJUNTO] Produção dos Slides do Pitch:**
-  - [ ] Apresentação visual focada em: Problema -> Solução Híbrida -> Demonstração Prática -> Impacto no Bolso do Produtor -> Limitações.
+  - [x] Apresentação visual focada em: Problema -> Solução Híbrida -> Demonstração Prática -> Impacto no Bolso do Produtor -> Limitações. *Deck de 12 slides com notas do apresentador (27/10); números da base simulada e dos testes. Duração do pitch ainda não divulgada pela organização.*
   - [ ] Salvar versão final em PDF no repositório.
 
 ---
@@ -353,6 +353,8 @@
 
 - [ ] **9.1. [EM CONJUNTO] Ensaio do Pitch:** Cronometrar o tempo de fala e divisão entre os 2 integrantes.
 - [ ] **9.2. [EM CONJUNTO] Alinhamento para a Sabatina:** Preparar respostas sobre regras do negócio rural, consistência offline e uso ético de IA.
+  - [x] Respostas preparadas e conferidas no código (27/10): negócio, regras e alertas, offline, segurança, IA, técnico e limitações, com divisão sugerida entre os integrantes (material da equipe, fora do repositório).
+  - [ ] Alinhar as respostas entre os dois integrantes.
 - [ ] **9.3. [EM CONJUNTO] Checklist Presencial:** Notebooks carregados, `.exe` rodando offline, celular com a `.apk` instalada e presença confirmada.
 
 ---
