@@ -246,6 +246,45 @@ describe("Alertas de emergência via WhatsApp na interface do gestor", () => {
     wrapper.unmount();
   });
 
+  describe("posição e organização na Visão geral", () => {
+    const sideStack = ".dashboard-grid > .side-stack";
+
+    it("fica na coluna lateral, logo abaixo de Movimente seu estoque", () => {
+      const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
+      expect(wrapper.findAll(".dashboard-grid > *")).toHaveLength(2);
+      const children = wrapper.get(sideStack).findAll(":scope > section");
+      expect(children.map((c) => c.classes())).toEqual([
+        expect.arrayContaining(["movement-panel"]),
+        expect.arrayContaining(["whatsapp-panel"]),
+      ]);
+      wrapper.unmount();
+    });
+
+    it("para o operador a coluna lateral tem só a movimentação", () => {
+      const wrapper = mountApp(controller({ role: "OPERADOR" }));
+      const children = wrapper.get(sideStack).findAll(":scope > section");
+      expect(children).toHaveLength(1);
+      expect(children[0]!.classes()).toContain("movement-panel");
+      wrapper.unmount();
+    });
+
+    it("campo do número e botão Salvar ficam na mesma linha, com a dica embaixo", () => {
+      expect(rule(".side-stack")).toMatch(/display\s*:\s*grid/);
+      expect(rule(".side-stack")).toMatch(/gap\s*:/);
+      expect(rule(".whatsapp-row")).toMatch(/display\s*:\s*flex/);
+      const wrapper = mountApp(controller({ telefone: "+5569999999999" }));
+      const row = wrapper.get(`${panel} .whatsapp-row`);
+      expect(row.find('input[type="tel"]').exists()).toBe(true);
+      expect(row.get("button").text()).toContain("Salvar número");
+      const input = row.get('input[type="tel"]');
+      expect(wrapper.get(`${panel} label[for="${input.attributes("id")}"]`).text()).toContain(
+        "Número do WhatsApp",
+      );
+      expect(testButton(wrapper)!.classes()).toContain("full");
+      wrapper.unmount();
+    });
+  });
+
   it("separa o botão e o resultado do texto com espaçamento", () => {
     expect(rule(".whatsapp-panel > button")).toMatch(/margin-top\s*:/);
     expect(rule(".whatsapp-panel .notice")).toMatch(/margin\s*:/);

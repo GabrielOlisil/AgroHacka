@@ -820,142 +820,146 @@ onUnmounted(() => {
               <p>{{ alert.justificativa }}</p>
             </article>
           </section>
-          <section class="panel movement-panel">
-            <h2>Movimente seu estoque</h2>
-            <div class="movement-kind">
-              <button
-                :class="{ active: kind === 'SAIDA' }"
-                :aria-pressed="kind === 'SAIDA'"
-                @click="kind = 'SAIDA'"
-              >
-                <UiIcon name="arrow-up-right" /> Baixa rápida</button
-              ><button
-                :class="{ active: kind === 'ENTRADA' }"
-                :aria-pressed="kind === 'ENTRADA'"
-                @click="kind = 'ENTRADA'"
-              >
-                <UiIcon name="arrow-down-left" /> Entrada de compra
-              </button>
-            </div>
-            <form @submit.prevent="record">
-              <label
-                >Insumo<select v-model="productId" required>
-                  <option value="" disabled>Selecione um insumo</option>
-                  <option
-                    v-for="p in analysis.products"
-                    :key="p.id"
-                    :value="p.id"
-                  >
-                    {{ p.nome }} · {{ unitValue(p.saldo) }}
-                    {{ p.unidadeMedida }}
-                  </option>
-                </select></label
-              >
-              <div class="split">
+          <div class="side-stack">
+            <section class="panel movement-panel">
+              <h2>Movimente seu estoque</h2>
+              <div class="movement-kind">
+                <button
+                  :class="{ active: kind === 'SAIDA' }"
+                  :aria-pressed="kind === 'SAIDA'"
+                  @click="kind = 'SAIDA'"
+                >
+                  <UiIcon name="arrow-up-right" /> Baixa rápida</button
+                ><button
+                  :class="{ active: kind === 'ENTRADA' }"
+                  :aria-pressed="kind === 'ENTRADA'"
+                  @click="kind = 'ENTRADA'"
+                >
+                  <UiIcon name="arrow-down-left" /> Entrada de compra
+                </button>
+              </div>
+              <form @submit.prevent="record">
                 <label
-                  >Quantidade<input
-                    v-model="quantity"
-                    type="number"
-                    min="0.000001"
-                    step="any"
+                  >Insumo<select v-model="productId" required>
+                    <option value="" disabled>Selecione um insumo</option>
+                    <option
+                      v-for="p in analysis.products"
+                      :key="p.id"
+                      :value="p.id"
+                    >
+                      {{ p.nome }} · {{ unitValue(p.saldo) }}
+                      {{ p.unidadeMedida }}
+                    </option>
+                  </select></label
+                >
+                <div class="split">
+                  <label
+                    >Quantidade<input
+                      v-model="quantity"
+                      type="number"
+                      min="0.000001"
+                      step="any"
+                      required /></label
+                  ><label
+                    >Responsável<input
+                      data-testid="responsavel"
+                      :value="session.nome"
+                      readonly
+                      aria-readonly="true"
+                  /></label>
+                </div>
+                <label
+                  >Data e hora<input
+                    v-model="movementDate"
+                    type="datetime-local"
                     required /></label
                 ><label
-                  >Responsável<input
-                    data-testid="responsavel"
-                    :value="session.nome"
-                    readonly
-                    aria-readonly="true"
-                /></label>
+                  >Destino / observação <span class="muted">(opcional)</span
+                  ><input
+                    v-model="destination"
+                    maxlength="300"
+                    placeholder="Talhão, equipamento…" /></label
+                ><button
+                  class="primary full"
+                  :disabled="busy || !analysis.products.length"
+                >
+                  <UiIcon name="save" />{{
+                    busy ? "Salvando…" : "Salvar neste aparelho"
+                  }}
+                </button>
+              </form>
+            </section>
+            <section
+              v-if="session.role === 'GESTOR'"
+              class="panel whatsapp-panel"
+              data-testid="whatsapp-alerts"
+              aria-label="Alertas de emergência via WhatsApp"
+            >
+              <div class="section-heading">
+                <h2>Alertas de emergência via WhatsApp</h2>
+                <span class="badge" :class="{ success: session.telefone }">{{
+                  session.telefone ? "Ativo" : "Não configurado"
+                }}</span>
               </div>
-              <label
-                >Data e hora<input
-                  v-model="movementDate"
-                  type="datetime-local"
-                  required /></label
-              ><label
-                >Destino / observação <span class="muted">(opcional)</span
-                ><input
-                  v-model="destination"
-                  maxlength="300"
-                  placeholder="Talhão, equipamento…" /></label
-              ><button
-                class="primary full"
-                :disabled="busy || !analysis.products.length"
+              <p class="muted">
+                {{
+                  session.telefone
+                    ? `Alertas para ${session.telefone}.`
+                    : "Nenhum número cadastrado."
+                }}
+              </p>
+              <div class="whatsapp-number">
+                <label for="whatsapp-phone">Número do WhatsApp</label>
+                <div class="whatsapp-row">
+                  <input
+                    id="whatsapp-phone"
+                    v-model="phoneDraft"
+                    type="tel"
+                    autocomplete="tel"
+                    placeholder="+55 69 99999-9999"
+                    :disabled="savingPhone"
+                    @keydown.enter.prevent="saveWhatsAppNumber"
+                  />
+                  <button
+                    type="button"
+                    class="secondary"
+                    :disabled="busy || savingPhone"
+                    @click="saveWhatsAppNumber"
+                  >
+                    {{ savingPhone ? "Salvando…" : "Salvar número" }}
+                  </button>
+                </div>
+                <small class="muted"
+                  >Código do país; em branco desativa os alertas.</small
+                >
+              </div>
+              <button
+                v-if="session.telefone"
+                type="button"
+                class="secondary full"
+                :disabled="busy || testingWhatsApp"
+                @click="sendWhatsAppTest"
               >
-                <UiIcon name="save" />{{
-                  busy ? "Salvando…" : "Salvar neste aparelho"
+                <UiIcon name="circle-check" />
+                {{
+                  testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
                 }}
               </button>
-            </form>
-          </section>
-          <section
-            v-if="session.role === 'GESTOR'"
-            class="panel whatsapp-panel"
-            data-testid="whatsapp-alerts"
-            aria-label="Alertas de emergência via WhatsApp"
-          >
-            <div class="section-heading">
-              <h2>Alertas de emergência via WhatsApp</h2>
-              <span class="badge" :class="{ success: session.telefone }">{{
-                session.telefone ? "Ativo" : "Não configurado"
-              }}</span>
-            </div>
-            <p class="muted">
-              {{
-                session.telefone
-                  ? `Alertas para ${session.telefone}.`
-                  : "Nenhum número cadastrado."
-              }}
-            </p>
-            <div class="whatsapp-number">
-              <label
-                >Número do WhatsApp
-                <input
-                  v-model="phoneDraft"
-                  type="tel"
-                  autocomplete="tel"
-                  placeholder="+55 69 99999-9999"
-                  :disabled="savingPhone"
-                  @keydown.enter.prevent="saveWhatsAppNumber"
-              /></label>
-              <small class="muted"
-                >Código do país; em branco desativa os alertas.</small
+              <p
+                v-if="whatsappFeedback"
+                class="notice"
+                :class="{ success: !whatsappSimulated }"
+                role="status"
               >
-              <button
-                type="button"
-                class="secondary"
-                :disabled="busy || savingPhone"
-                @click="saveWhatsAppNumber"
-              >
-                {{ savingPhone ? "Salvando…" : "Salvar número" }}
-              </button>
-            </div>
-            <button
-              v-if="session.telefone"
-              type="button"
-              class="secondary"
-              :disabled="busy || testingWhatsApp"
-              @click="sendWhatsAppTest"
-            >
-              <UiIcon name="circle-check" />
-              {{
-                testingWhatsApp ? "Enviando teste…" : "Testar envio de alerta"
-              }}
-            </button>
-            <p
-              v-if="whatsappFeedback"
-              class="notice"
-              :class="{ success: !whatsappSimulated }"
-              role="status"
-            >
-              <UiIcon
-                :name="whatsappSimulated ? 'info' : 'circle-check'"
-              /><span>{{ whatsappFeedback }}</span>
-            </p>
-            <p v-if="whatsappError" class="notice error" role="alert">
-              <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
-            </p>
-          </section>
+                <UiIcon
+                  :name="whatsappSimulated ? 'info' : 'circle-check'"
+                /><span>{{ whatsappFeedback }}</span>
+              </p>
+              <p v-if="whatsappError" class="notice error" role="alert">
+                <UiIcon name="circle-alert" /><span>{{ whatsappError }}</span>
+              </p>
+            </section>
+          </div>
         </div>
         <section class="panel consumption">
           <div class="section-heading">

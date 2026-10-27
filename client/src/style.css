@@ -361,8 +361,27 @@ small {
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
-.whatsapp-number button {
-  justify-self: start;
+.whatsapp-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.whatsapp-row input {
+  flex: 1;
+  min-width: 0;
+}
+.whatsapp-row button {
+  flex-shrink: 0;
+}
+.side-stack {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+  margin-bottom: var(--space-6);
+}
+/* The stack spaces its panels with gap; their own margin would double it. */
+.side-stack > .panel {
+  margin-bottom: 0;
 }
 .welcome {
   display: grid;
