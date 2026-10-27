@@ -45,13 +45,74 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     }
   });
 
-  it("workflow gera o .apk em modo debug, já assinado e instalável (um release sai sem assinatura)", () => {
+  it("workflow compila release arm64 e assina antes de enviar somente o APK verificado", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
     );
-    expect(workflow).toMatch(/cli android build --apk --debug\b/);
-    expect(workflow).not.toMatch(/cli android build --apk(?! --debug)/);
+    const android = workflow
+      .split("  build-mobile-android:")[1]!
+      .split("  create-release:")[0]!;
+    expect(android).toMatch(/cli android build --apk --target aarch64 --ci/);
+    expect(android).not.toContain("--debug");
+    expect(
+      android.indexOf("assinar-android-release.ts --sign"),
+    ).toBeGreaterThan(android.indexOf("cli android build"));
+    expect(android.indexOf("actions/upload-artifact")).toBeGreaterThan(
+      android.indexOf("assinar-android-release.ts --sign"),
+    );
+    expect(android).toContain(
+      "path: ${{ runner.temp }}/agrohacka-release/agrohacka-arm64-release.apk",
+    );
+    expect(android).toContain("if-no-files-found: error");
+    expect(android).not.toContain("outputs/apk/**/*.apk");
+    expect(android).toContain('"build-tools;35.0.0"');
+  });
+
+  it("valida credenciais antes do build e limita secrets aos passos de assinatura", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    const android = workflow
+      .split("  build-mobile-android:")[1]!
+      .split("  create-release:")[0]!;
+    const steps = android.split("      - name:");
+    const preflight = steps.findIndex((step) =>
+      step.includes("assinar-android-release.ts --validate-secrets"),
+    );
+    const build = steps.findIndex((step) => step.includes("cli android build"));
+    expect(preflight).toBeGreaterThan(-1);
+    expect(preflight).toBeLessThan(build);
+    for (const step of steps) {
+      if (step.includes("assinar-android-release.ts")) {
+        for (const secret of [
+          "ANDROID_KEYSTORE_BASE64",
+          "ANDROID_KEY_ALIAS",
+          "ANDROID_KEYSTORE_PASSWORD",
+          "ANDROID_KEY_PASSWORD",
+        ]) {
+          expect(step).toContain(secret + ": ${{ secrets." + secret + " }}");
+        }
+        const run = step.slice(step.indexOf("run:"));
+        expect(run).not.toContain("secrets.");
+        expect(run).not.toMatch(/echo|printenv|set -x|GITHUB_ENV/);
+      } else {
+        expect(step).not.toContain("secrets.ANDROID_");
+      }
+    }
+  });
+
+  it("preserva publicação somente por tag, sem reutilizar a release de entrega", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    const release = workflow.split("  create-release:")[1]!;
+    expect(release).toContain("startsWith(github.ref, 'refs/tags/v')");
+    expect(release).not.toContain("github.ref == 'refs/heads/main'");
+    expect(release).toContain("tag_name: ${{ github.ref_name }}");
+    expect(release).not.toContain("v1.0.0-entrega");
   });
 
   it("job Android não instala bibliotecas GTK/GLib do host: eram paliativo do `tauri dev` indevido (Tarefa 5.3)", () => {
