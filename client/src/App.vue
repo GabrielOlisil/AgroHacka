@@ -847,8 +847,12 @@ onUnmounted(() => {
         </p>
       </details>
       <template v-if="tab === 'overview'">
-        <section class="metrics" aria-label="Resumo da propriedade">
-          <article data-testid="stock-value">
+        <section
+          class="metrics"
+          :class="{ two: session.role !== 'GESTOR' }"
+          aria-label="Resumo da propriedade"
+        >
+          <article v-if="session.role === 'GESTOR'" data-testid="stock-value">
             <span>{{
               financialPartial
                 ? "CAPITAL CONHECIDO (PARCIAL)"
