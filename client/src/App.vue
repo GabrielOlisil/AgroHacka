@@ -5,6 +5,7 @@ import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
+import { APP_VERSION } from "./app-version";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -543,7 +544,10 @@ onUnmounted(() => {
           </button>
         </form>
       </div>
-      <small>AgroHack 2026 · Gestão inteligente de insumos rurais</small>
+      <small
+        >AgroHack 2026 · Gestão inteligente de insumos rurais · versão
+        {{ APP_VERSION }}</small
+      >
     </section>
   </div>
   <div v-else class="workspace">
@@ -1245,7 +1249,7 @@ onUnmounted(() => {
           }
         "
       />
-      <footer class="page-footer">AgroHacka</footer>
+      <footer class="page-footer">AgroHacka · versão {{ APP_VERSION }}</footer>
     </main>
     <div
       v-if="productStarted && session.role === 'GESTOR'"
