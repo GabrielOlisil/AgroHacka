@@ -25,7 +25,7 @@ export interface SeedProduct {
   categoria: string;
   unidadeMedida: string;
   estoqueMinimo: number;
-  precoAquisicao: number;
+  precoAquisicao?: number | null;
   validade?: Date | null;
   lote?: string;
   fornecedor?: string;
@@ -40,7 +40,13 @@ export interface SeedMovement {
   destino: string;
 }
 
+export interface SeedOrigin {
+  tipo: 'SIMULADO' | 'OFICIAL';
+  descricao: string;
+}
+
 export interface OfficialSeedDataset {
+  origem: SeedOrigin;
   farm: SeedFarm;
   gestor: SeedGestor;
   devices: SeedDevice[];
@@ -160,7 +166,18 @@ export function getOfficialSeedDataset(): OfficialSeedDataset {
       precoAquisicao: 35.0,
       fornecedor: 'AgroPeças Ariquemes',
     },
-    // Insumo 8: Respirador Semi-Facial
+    // Insumo 8: Mangueira de Gotejamento (Materiais de Irrigação, Anexo III)
+    {
+      ref: 'gotejamento',
+      nome: 'Mangueira de Gotejamento 16 mm',
+      categoria: 'Materiais de Irrigação',
+      unidadeMedida: 'm',
+      estoqueMinimo: 200,
+      precoAquisicao: 1.8,
+      lote: 'IRR-GOT-2026',
+      fornecedor: 'Irriga Norte',
+    },
+    // Insumo 9: Respirador Semi-Facial
     {
       ref: 'respirador',
       nome: 'Respirador Semi-Facial com Filtro Químico',
@@ -281,6 +298,22 @@ export function getOfficialSeedDataset(): OfficialSeedDataset {
       destino: 'Oficina Mecânica',
     },
     {
+      productRef: 'gotejamento',
+      tipo: 'ENTRADA',
+      quantidade: 1000,
+      dataMovimento: d(-25),
+      responsavel: 'Marcos Souza - Almoxarifado',
+      destino: 'Galpão de Irrigação',
+    },
+    {
+      productRef: 'gotejamento',
+      tipo: 'SAIDA',
+      quantidade: 150,
+      dataMovimento: d(-8),
+      responsavel: 'Carlos Silva - Tratorista',
+      destino: 'Talhão 02 - Horta irrigada',
+    },
+    {
       productRef: 'respirador',
       tipo: 'ENTRADA',
       quantidade: 25,
@@ -291,6 +324,11 @@ export function getOfficialSeedDataset(): OfficialSeedDataset {
   );
 
   return {
+    origem: {
+      tipo: 'SIMULADO',
+      descricao:
+        'Dados simulados criados pela equipe. Em 27/10/2026 a organização informou que não haverá base oficial e que as equipes devem criar seus dados.',
+    },
     farm,
     gestor,
     devices,

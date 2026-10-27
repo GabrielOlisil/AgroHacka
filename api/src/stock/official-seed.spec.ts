@@ -26,7 +26,12 @@ describe('Carga da Base Oficial do AgroHack (Tarefa 6.1)', () => {
     expect(codes).toContain('AGRO-02');
   });
 
-  it('deve cobrir todas as 7 categorias exigidas pelo regulamento do AgroHack', () => {
+  it('deve se identificar como base simulada enquanto a base oficial não for comprovada', () => {
+    expect(dataset.origem.tipo).toBe('SIMULADO');
+    expect(dataset.origem.descricao).toMatch(/simulad/i);
+  });
+
+  it('deve cobrir as 8 categorias do Anexo III do regulamento', () => {
     const categoriasObrigatorias = [
       'Fertilizantes',
       'Defensivos e biológicos',
@@ -34,6 +39,7 @@ describe('Carga da Base Oficial do AgroHack (Tarefa 6.1)', () => {
       'Corretivos',
       'Sementes',
       'Peças e manutenção',
+      'Materiais de Irrigação',
       'EPI e materiais diversos',
     ];
 

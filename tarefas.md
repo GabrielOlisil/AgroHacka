@@ -291,11 +291,11 @@
 ### ETAPA 6: Carga da Base Oficial, Testes e Limitações *(Dias 11 a 12)*
 *Critério de 15 pontos da banca avaliadora.*
 
-- [ ] **6.1. [DEV 1] Comprovar e carregar a base oficial do AgroHack (reaberta; ver 10.1):**
-  - [x] Disponibilizar seed programático e testes com cenários de falta, vencimento, anomalia e capital parado; existem 2 operadores demonstrativos e 7 categorias representadas.
-  - [ ] Confirmar a origem oficial dos registros e a autorização de uso; enquanto não comprovada, identificar a base como simulada, independentemente do nome `official-seed.data.ts`.
-  - [ ] Demonstrar a solução com os dados oficiais quando disponibilizados. Corrigir a afirmação de cobertura completa: o Anexo III apresenta 8 categorias, incluindo Materiais de Irrigação.
-  > O seed existente exclui globalmente dados antes de recriar a amostra. Não rodá-lo contra banco real para executar esta tarefa; preparar carga não destrutiva e usar testes descartáveis.
+- [x] **6.1. [DEV 1] Comprovar e carregar a base oficial do AgroHack (reaberta; ver 10.1):**
+  - [x] Disponibilizar seed programático e testes com cenários de falta, vencimento, anomalia e capital parado; existem 2 operadores demonstrativos e as 8 categorias do Anexo III representadas.
+  - [x] Confirmar a origem oficial dos registros: em 27/10/2026 a organização informou que **não haverá base oficial** e que as equipes devem criar os dados. A base é identificada como `SIMULADO` no campo `origem` de `official-seed.data.ts` (nome histórico) e no README §5.2.
+  - [x] Corrigir a cobertura: adicionada a categoria Materiais de Irrigação (simulada), totalizando as 8 categorias do Anexo III. Não há dados oficiais a demonstrar.
+  > O seed antigo excluía globalmente os dados antes de recriar a amostra. Desde a tarefa 10.1 ele usa a carga não destrutiva de `demo-load.ts`.
 - [x] **6.2. [DEV 2] Validação da Reanálise em Tempo Real:**
   - [x] Registrar uma saída que deixe um insumo crítico e comprovar o recálculo imediato do alerta na tela e o disparo no WhatsApp (implementado `reanalyzeAndPersistAlerts` com persistência na tabela `Alert`, disparo pelo `NotificationsService` e recálculo no cliente via `refresh` -> `analyzeInventory`, testado em `stock.service.spec.ts` e `realtime-reanalysis-offline.spec.ts`).
 - [x] **6.3. [EM CONJUNTO] Validação do Modo Offline:**
@@ -361,7 +361,10 @@ Não são funcionalidades já concluídas. A retirada de LAN está em 5.7; seu s
 foi cancelado em 5.6. O aceite físico Android continua em 5.2.
 
 - [x] **10.0. [EM CONJUNTO] Registrar o roadmap de finalização e a decisão de sincronizar exclusivamente pela internet.**
-- [ ] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
+- [x] **10.1. [DEV 1] Dados verificáveis:** fechar 6.1 com origem/autorização da base, identificação dos simulados, tratamento documentado e carga reproduzível não destrutiva.
+  - Sem base oficial (confirmado pela organização em 27/10/2026); dados identificados como simulados.
+  - `api/src/stock/demo-load.ts`: validação com relatório de linhas válidas, rejeitadas e tratamentos (unidades, preço/validade ausentes, datas, refs duplicadas sem fusão por nome) e carga transacional que não apaga nada e não faz nada se o gestor de demonstração já existir. `prisma/seed.ts` deixou de apagar tabelas globalmente.
+  - Testes: `demo-load.spec.ts` (casos de borda) e `test/demo-load.postgres.integration.ts` (PostgreSQL descartável: atomicidade, idempotência, outras fazendas intactas).
 - [ ] **10.2. [DEV 1] Proteger `/stock/analyze`:** escopo pela identidade autenticada, testes de fazenda forjada e acesso negado; revisar dependência do segredo JWT padrão, sem editar envs automaticamente.
 - [ ] **10.3. [DEV 1] Corrigir unidades e unificar a análise efetiva:** fechar 2.4, remover saldo agregado entre unidades distintas e comprovar falta, validade, anomalias, parado/excesso e prioridades no caminho realmente utilizado.
 - [ ] **10.4. [DEV 2 + DEV 1 quando houver contrato] Transparência analítica:**
