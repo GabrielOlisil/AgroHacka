@@ -94,6 +94,22 @@ git pull origin dev
 git checkout -b feat/nova-tarefa
 ```
 
+### 3.6 Atualização com o GitHub no Início de Cada Sessão
+
+O projeto tem mais de uma pessoa (e mais de um agente) trabalhando ao mesmo tempo. No início de cada sessão, antes de qualquer tarefa:
+
+```bash
+git fetch --all --prune
+git log --oneline dev..origin/dev          # commits novos em dev
+git log --oneline main..origin/main        # commits novos em main
+git branch -r                              # branches novas de outros membros
+gh pr list --state open                    # PRs abertos aguardando revisão
+```
+
+- Atualize as branches locais `dev` e `main` com `git pull --ff-only`.
+- **Informe ao usuário** o que mudou: commits novos, branches novas (autor, data e resumo do diff) e PRs abertos.
+- Não faça merge nem rebase do trabalho de outro membro sem o usuário pedir.
+
 ---
 
 ## 🚫 4. Regras e Restrições Rígidas
