@@ -90,7 +90,7 @@
 
 *"Como a organização não divulgou uma base oficial, criamos uma base simulada, identificada como tal, com produtos das oito categorias do desafio e os quatro cenários: falta, vencimento, consumo anômalo e capital parado."*
 
-*"Veja: alerta em vermelho — 'Ureia 45%'. Baseado no consumo recente, o estoque vai acabar em menos de três dias. A mensagem é clara: mantenha o consumo atual e o saldo será suficiente por apenas dois vírgula oito dias."*
+*"Veja: alerta urgente — 'Ureia Fertilizante 46% N'. O saldo já está abaixo do estoque mínimo e, no ritmo de consumo recente, dura só mais alguns dias. O sistema mostra a conta: consumo médio por dia, quantos dias de histórico usou e a autonomia estimada."*
 
 *"Segundo alerta — 'Trichoderma asperellum'. Esse produto vai vencer antes de ser consumido. O sistema calcula a validade e projeta o consumo, e quando a validade chega antes do fim do estoque, emite o alerta."*
 
@@ -98,7 +98,7 @@
 
 *"E na Curva ABC, você vê o que representa mais capital imobilizado. Aqui, o 'Adubo MAP' está com cento e quarenta e sete mil reais parados. O sistema classifica automaticamente os produtos em A, B e C por valor de estoque."*
 
-*"Todos esses alertas são persistidos no banco central e enviados como notificação — daqui a pouco você vai ver isso no WhatsApp."*
+*"Os alertas urgentes e de atenção também ficam registrados no banco central, e os urgentes geram aviso no WhatsApp do Gestor — daqui a pouco você vai ver isso."*
 
 ---
 
@@ -108,7 +108,7 @@
 
 *"Agora vou mostrar como o Operador de campo se conecta à fazenda. É um processo pensado para ser rápido e funcionar mesmo sem conhecimento técnico."*
 
-*"No painel do Gestor, clico em 'Conectar Operador'. Digito o nome do operador — aqui vou usar 'João da Silva'. O sistema gera automaticamente um QR Code e um código alfanumérico de seis caracteres — por exemplo, AGRO-88."*
+*"No painel do Gestor, clico em 'Conectar Operador'. Digito o nome do operador — aqui vou usar 'João da Silva'. O sistema gera automaticamente um QR Code e um código alternativo curto — no formato AGRO seguido de quatro caracteres, como AGRO-7X2K."*
 
 *"Agora pego o celular."*
 
@@ -120,9 +120,9 @@
 
 > **[Pausa para o QR ser lido]**
 
-*"Pronto. Pareado. O nome do operador ficou registrado, a fazenda foi vinculada, e o Operador já tem acesso ao banco local sincronizado."*
+*"Pronto. Ao ler o QR, o app já conecta sozinho. O nome do operador ficou registrado, a fazenda foi vinculada, e o Operador já tem acesso ao banco local sincronizado."*
 
-*"Mas, e se o celular do operador não tiver câmera? Simples: na mesma tela, tem o botão 'Digitar Código Manualmente'. Ele digita AGRO-88 e o pareamento acontece da mesma forma."*
+*"Mas, e se o celular do operador não tiver câmera? Simples: na mesma tela dá para escolher uma imagem do QR ou digitar o código manualmente. Ele digita o código mostrado no painel e o pareamento acontece da mesma forma."*
 
 ---
 
@@ -142,7 +142,7 @@
 
 *"A movimentação foi salva localmente no SQLite do celular — ela entrou na fila de sincronização, chamada de outbox. O sistema nunca perde essa informação. Quando a internet voltar, ela sobe automaticamente."*
 
-*"Vou registrar mais uma saída de Ureia — trezentos quilos. Confirmo."*
+*"Vou registrar mais uma saída de Ureia — cinco sacas. Confirmo."*
 
 *"Duas movimentações salvas, modo avião ligado, zero conexão. Isso é funcionamento offline de verdade."*
 
@@ -162,7 +162,7 @@
 
 > **[Aponta para os alertas na tela]**
 
-*"As movimentações do Operador chegaram. E o sistema fez algo automático: rodou a reanálise completa do estoque. Aquele alerta da Ureia que estava em três dias? Agora mostra menos de um dia — porque a saída do Operador foi considerada."*
+*"As movimentações do Operador chegaram. E o sistema fez algo automático: rodou a reanálise completa do estoque, no app e no servidor, com as mesmas regras. O saldo e a autonomia da Ureia caíram — porque a saída do Operador foi considerada."*
 
 *"E mais: cada movimentação tem um UUID único. Isso garante que, mesmo que a sincronização seja repetida, os dados não são duplicados no banco. Idempotência, como chamamos na engenharia de software."*
 
@@ -172,13 +172,13 @@
 
 > **[Narrador: GABRIEL — câmera mostrando o celular com o WhatsApp]**
 
-*"Quando um alerta atinge nível crítico — como a Ureia que está com menos de um dia de estoque — o sistema dispara automaticamente uma mensagem de WhatsApp para o número do Gestor cadastrado."*
+*"Quando um alerta atinge nível urgente — como a Ureia abaixo do mínimo — o servidor dispara automaticamente uma mensagem de WhatsApp para o número do Gestor cadastrado."*
 
 *"Aqui está a mensagem chegando."*
 
 > **[Câmera mostra a notificação do WhatsApp]**
 
-*"A mensagem vem via Twilio, que é o serviço de comunicação que integramos. Ela diz o nome do produto, o nível de alerta e o motivo: quantos dias restam baseado no consumo recente."*
+*"A mensagem vem via Twilio, o serviço de comunicação que integramos. Como estamos na conta de testes da Twilio, a Meta só permite modelos de mensagem pré-aprovados, então o texto é o do modelo de teste. O detalhe do alerta — produto, nível e motivo — está no app. Em produção, registramos um modelo próprio com o nome do insumo e o diagnóstico."*
 
 *"O Gestor não precisa estar com o app aberto. Não precisa lembrar de checar. O sistema avisa sozinho."*
 
@@ -247,9 +247,12 @@ Se possível, adicionar **legendas automáticas** no YouTube após o upload — 
 ## 📌 Checklist Antes de Gravar
 
 - [ ] API rodando na VPS (ou localmente para a demo)
+- [ ] Instaladores da versão avaliada `v1.0.1-entrega` (Releases do GitHub) no desktop e no celular
 - [ ] App desktop aberto e logado com a base simulada (`npm run seed` já executado)
 - [ ] Celular com o APK instalado e pareado
-- [ ] Twilio configurado e WhatsApp sandbox ativo
+- [ ] Twilio configurado: mandar de novo `join twilio-trial` para o número da Twilio se as mensagens pararam de chegar
+- [ ] **Resolver os alertas abertos da fazenda antes da Cena 8**, senão a sincronização não gera WhatsApp novo (o alerta já existe): `UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';`
+- [ ] Ensaiar uma vez: cada urgente consome uma das mensagens grátis da Twilio
 - [ ] Modo avião pronto para ser ativado/desativado no celular
 - [ ] OBS configurado com captura de tela + microfone
 - [ ] Roteiro impresso ou em segundo monitor
