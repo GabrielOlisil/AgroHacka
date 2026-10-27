@@ -46,6 +46,7 @@ function controller(options: {
     }),
     movements: ref([]),
     pendingCount: ref(0),
+    pendingIds: ref([]),
     reviews: ref([]),
     confirmedBalances: ref({}),
     lastSync: ref(null),

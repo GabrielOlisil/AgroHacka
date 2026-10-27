@@ -808,6 +808,11 @@ nav button.active {
   color: var(--color-surface);
   background: var(--color-secondary);
 }
+.badge.pending {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--border-default);
+}
 .alert-card {
   margin-top: var(--space-3);
   padding: var(--space-4);
@@ -1194,24 +1199,29 @@ td small {
     --control-lg: 48px;
   }
   .stock-panel table,
-  .stock-panel tbody {
+  .stock-panel tbody,
+  .history-panel table,
+  .history-panel tbody {
     display: block;
   }
-  .stock-panel thead {
+  .stock-panel thead,
+  .history-panel thead {
     position: absolute;
     width: 1px;
     height: 1px;
     clip-path: inset(50%);
     overflow: hidden;
   }
-  .stock-panel tbody tr {
+  .stock-panel tbody tr,
+  .history-panel tbody tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     border-top: 1px solid var(--border-default);
     padding-block: var(--space-3);
     white-space: normal;
   }
-  .stock-panel td {
+  .stock-panel td,
+  .history-panel td {
     display: flex;
     flex-direction: column;
     align-items: start;
@@ -1220,13 +1230,15 @@ td small {
     border: 0;
     min-width: 0;
   }
-  .stock-panel td[data-label]::before {
+  .stock-panel td[data-label]::before,
+  .history-panel td[data-label]::before {
     content: attr(data-label);
     color: var(--text-secondary);
     font-size: var(--font-size-xs);
   }
   .stock-panel td:first-child,
-  .stock-panel .movement-cell {
+  .stock-panel .movement-cell,
+  .history-panel td:first-child {
     grid-column: 1 / -1;
     max-width: none;
   }
