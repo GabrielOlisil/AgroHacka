@@ -110,7 +110,7 @@ npx prisma generate
 # 4. Execute a suíte de testes unitários e de integração
 npm test
 
-# 5. Opcional: Execute o seed da base simulada do AgroHack
+# 5. Opcional: carregue a fazenda de demonstração (dados simulados, não destrutiva; ver seção 5.2)
 npx tsx prisma/seed.ts
 
 # 6. Inicie o servidor em modo de desenvolvimento
@@ -162,7 +162,7 @@ O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta
 **Como funciona e limites**
 - O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
 - **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto não for resolvido, e a versão atual não resolve alertas sozinha. Um novo lançamento no mesmo insumo **não reenvia** a mensagem.
-- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base oficial, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
+- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base simulada, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
 - Os endpoints `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT do Gestor.
 
 **Para repetir a demonstração:** marque como resolvidos os alertas da fazenda, sem apagar o histórico. A próxima sincronização os recria e notifica de novo.
@@ -189,6 +189,20 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 | **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.”* |
 | **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias ou produto já vencido.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias ou anomalia de consumo.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Ordenação decrescente de severidade na tela principal do Gestor e acionamento do Twilio. |
 
+### 5.2. Origem dos Dados: Base Simulada
+
+**Todos os dados de demonstração são simulados, criados pela equipe.** Em 27/10/2026 a organização informou que não haverá base oficial e que as equipes devem criar seus próprios dados. O conjunto está em [`official-seed.data.ts`](api/src/stock/official-seed.data.ts) (o nome do arquivo é histórico) e se identifica no campo `origem` como `SIMULADO`.
+
+- **Cobertura:** 9 produtos nas 8 categorias do Anexo III, incluindo Materiais de Irrigação, 2 operadores e histórico de movimentações com os cenários de falta (Ureia), vencimento (Trichoderma), anomalia (Diesel S10) e capital parado (MAP).
+- **Carga não destrutiva** ([`demo-load.ts`](api/src/stock/demo-load.ts)): `npx tsx prisma/seed.ts` cria a fazenda de demonstração numa única transação. Ela **não apaga nada**, não toca em outras fazendas e não faz nada se o gestor de demonstração (`gestor@agrohack.com`) já existir. Se uma gravação falhar, nada fica no banco.
+- **Relatório de validação:** a carga imprime as linhas válidas, rejeitadas (ref ausente ou duplicada, quantidade ≤ 0, data ou tipo inválidos, produto inexistente) e os tratamentos aplicados:
+  - unidades padronizadas (`sacas` → `sc`, `litros` → `L`) ou avisadas quando não reconhecidas;
+  - preço ausente ou inválido vira desconhecido, nunca zero;
+  - validade inválida é descartada;
+  - responsável ausente vira "Não informado".
+- **Sem fusões por nome:** refs repetidas são rejeitadas e produtos com nomes parecidos ficam separados.
+- **Testes:** [`demo-load.spec.ts`](api/src/stock/demo-load.spec.ts) cobre as regras e os casos de borda. [`demo-load.postgres.integration.ts`](api/test/demo-load.postgres.integration.ts) (`npm run test:sync`) comprova a carga num PostgreSQL descartável: atomicidade, idempotência e outras fazendas intactas.
+
 ---
 
 ## 6. Demonstração e Casos de Uso
@@ -209,7 +223,7 @@ O motor analítico do cliente responde às **7 perguntas oficiais** do desafio. 
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 201 testes unitários e de integração aprovados na auditoria de 26/10. A suíte separada de 19 testes de concorrência (`npm run test:sync`) exige PostgreSQL descartável e não foi reexecutada no fechamento exclusivo do DEV 2 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
+- **API NestJS:** 213 testes unitários e de integração aprovados em 27/10. A suíte separada `npm run test:sync` (24 testes: concorrência do sync e carga da fazenda de demonstração) exige PostgreSQL descartável via Docker e foi aprovada em 27/10 ([`stock-engine.spec.ts`](api/src/stock-engine/stock-engine.spec.ts), [`sync.service.spec.ts`](api/src/sync/sync.service.spec.ts), [`auth.service.spec.ts`](api/src/auth/auth.service.spec.ts), etc.).
 - **Desktop/Mobile (Tauri + Vue):** 283 testes Vitest e 5 testes nativos Rust aprovados em 27/10. SQLite temporário real verifica transações, reabertura offline, recuperação e reenvio sem duplicidade; servidor simulado não comprova locks PostgreSQL nem execução Android ([`cloud-restart.spec.ts`](client/tests/cloud-restart.spec.ts), [`analysis-disclosure.spec.ts`](client/tests/analysis-disclosure.spec.ts), [`local-store.spec.ts`](client/tests/local-store.spec.ts), etc.).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 
