@@ -382,6 +382,10 @@ small {
   min-width: 0;
   margin-bottom: var(--space-6);
 }
+.actions-first > .action-row {
+  /* The operator's main task is recording: show it before the alert list. */
+  order: -1;
+}
 .action-row > .panel {
   /* The row spaces its panels with gap; their own margin would double it. */
   margin-bottom: 0;
@@ -833,6 +837,9 @@ nav button.active {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
+.movement-panel form .notice {
+  margin-bottom: 0;
+}
 .movement-panel h2 {
   font-size: var(--font-size-lg);
 }
@@ -1177,6 +1184,11 @@ td small {
   }
 }
 @media (max-width: 760px) {
+  :root {
+    /* Touch targets for field use (gloves, sun): 44–48 px. */
+    --control-md: 44px;
+    --control-lg: 48px;
+  }
   .stock-panel table,
   .stock-panel tbody {
     display: block;
@@ -1250,16 +1262,18 @@ td small {
     grid-column: 1 / -1;
     flex-direction: row;
     gap: var(--space-1);
+    overflow-x: auto;
   }
   .sidebar nav button {
-    flex: 1;
+    flex: 0 0 auto;
     justify-content: center;
-    min-width: 0;
-    padding: 0 var(--space-1);
+    min-height: 48px;
+    padding: 0 var(--space-3);
     border-left: 1px solid transparent;
     border-bottom: 2px solid transparent;
     gap: var(--space-1);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-md);
+    white-space: nowrap;
   }
   .sidebar nav button.active {
     border-left-color: transparent;

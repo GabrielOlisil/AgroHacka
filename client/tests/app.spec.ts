@@ -99,6 +99,79 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("formulário de movimentação da Visão geral", () => {
+  async function submitOverviewForm(state: ReturnType<typeof controller>) {
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    await panel.get("select").setValue("p");
+    await panel.get('input[type="number"]').setValue(3);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    return wrapper;
+  }
+
+  it("confirma o salvamento logo abaixo do botão, não só no topo (tarefa 11.3)", async () => {
+    const wrapper = await submitOverviewForm(withDiesel(controller("OPERADOR")));
+    expect(wrapper.get(".movement-panel [role='status']").text()).toContain(
+      "Salvo no aparelho",
+    );
+    expect(wrapper.find(".page-heading + .notice.success").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("mostra saldo e unidade do insumo escolhido e avisa, sem bloquear, saída maior que o saldo (tarefa 11.4)", async () => {
+    const state = withDiesel(controller("OPERADOR"), 10);
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    const quantity = panel.get('input[type="number"]');
+    expect(quantity.attributes("inputmode")).toBe("decimal");
+    expect(panel.find('[data-testid="form-balance"]').exists()).toBe(false);
+    await panel.get("select").setValue("p");
+    expect(panel.get('[data-testid="form-balance"]').text()).toBe("Saldo: 10 L");
+    expect(panel.text()).toContain("Quantidade (L)");
+    await quantity.setValue(5);
+    expect(panel.find('[data-testid="balance-warning"]').exists()).toBe(false);
+    await quantity.setValue(12);
+    expect(panel.get('[data-testid="balance-warning"]').text()).toContain("maior que o saldo");
+    await panel.findAll(".movement-kind button")[1]!.trigger("click");
+    expect(panel.find('[data-testid="balance-warning"]').exists()).toBe(false);
+    await panel.findAll(".movement-kind button")[0]!.trigger("click");
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    expect(state.record).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: "p", tipo: "SAIDA", quantidade: 12 }),
+    );
+    wrapper.unmount();
+  });
+
+  it("o seletor do gráfico não muda o insumo do formulário, nem o contrário (tarefa 11.5)", async () => {
+    const state = controller("GESTOR");
+    state.analysis.value.products = [
+      { id: "p", nome: "Diesel", unidadeMedida: "L", saldo: 10, consumoDiario: [] },
+      { id: "q", nome: "Ureia", unidadeMedida: "sc", saldo: 5, consumoDiario: [] },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const formSelect = wrapper.get(".movement-panel select");
+    const chartSelect = wrapper.get('select[aria-label="Insumo para analisar"]');
+    await chartSelect.setValue("q");
+    expect((formSelect.element as HTMLSelectElement).value).toBe("");
+    expect(wrapper.get(".chart").attributes("aria-label")).toContain("Ureia");
+    await formSelect.setValue("p");
+    expect((chartSelect.element as HTMLSelectElement).value).toBe("q");
+    expect(wrapper.get(".chart").attributes("aria-label")).toContain("Ureia");
+    wrapper.unmount();
+  });
+
+  it("mostra o erro do salvamento junto ao formulário", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    state.record.mockRejectedValueOnce(new Error("Quantidade inválida."));
+    const wrapper = await submitOverviewForm(state);
+    expect(wrapper.get(".movement-panel [role='alert']").text()).toContain(
+      "Quantidade inválida.",
+    );
+    wrapper.unmount();
+  });
+});
 describe("telas responsivas dos perfis", () => {
   it.each([
     [0, "Estimativa indisponível"],

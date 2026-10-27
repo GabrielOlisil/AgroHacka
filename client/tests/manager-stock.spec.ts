@@ -136,6 +136,20 @@ describe("controle de estoque do gestor", () => {
       wrapper.unmount();
     },
   );
+  it("no modal, avisa sem bloquear quando a saída passa do saldo (tarefa 11.4)", async () => {
+    const wrapper = mount(App, { props: { controller: controller() as never } });
+    await stock(wrapper);
+    await wrapper.get('[data-testid="saida-diesel"]').trigger("click");
+    const dialog = wrapper.get('[role="dialog"]');
+    const quantity = dialog.get('input[type="number"]');
+    expect(quantity.attributes("inputmode")).toBe("decimal");
+    await quantity.setValue(10);
+    expect(dialog.get('[data-testid="balance-warning"]').text()).toContain("maior que o saldo");
+    expect(dialog.get('button.primary').attributes("disabled")).toBeUndefined();
+    await quantity.setValue(1);
+    expect(dialog.find('[data-testid="balance-warning"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
   it("não fecha nem perde a quantidade quando o salvamento falha", async () => {
     const state = controller();
     state.record.mockRejectedValue(new Error("Saldo insuficiente"));
@@ -173,13 +187,29 @@ describe("controle de estoque do gestor", () => {
     );
     wrapper.unmount();
   });
-  it("esconde cadastro e ações administrativas do operador", async () => {
+  it("esconde o cadastro de insumo do operador", async () => {
     const wrapper = mount(App, {
       props: { controller: controller("OPERADOR") as never },
     });
     await stock(wrapper);
     expect(wrapper.find('[data-testid="new-product"]').exists()).toBe(false);
-    expect(wrapper.find('[data-testid="entrada-diesel"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+  it("o operador registra entrada e saída direto pela aba Estoque", async () => {
+    const state = controller("OPERADOR");
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await stock(wrapper);
+    expect(wrapper.find('[data-testid="entrada-diesel"]').exists()).toBe(true);
+    await wrapper.get('[data-testid="saida-diesel"]').trigger("click");
+    const dialog = wrapper.get('[role="dialog"]');
+    expect(dialog.text()).toContain("Saída");
+    await dialog.get('input[type="number"]').setValue(1);
+    await dialog.get("form").trigger("submit");
+    await flushPromises();
+    expect(state.record).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: "diesel", tipo: "SAIDA", quantidade: 1 }),
+    );
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     wrapper.unmount();
   });
   it("permite iniciar um catálogo vazio pelo cadastro", async () => {

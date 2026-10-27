@@ -418,6 +418,30 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 ---
 
+### ETAPA 11: Melhorias de UI/UX — mobile first e offline first (análise de 27/10)
+*Análise completa das telas nos dois perfis. A interface está boa e consistente; o problema principal é de fluxo: o app foi organizado em torno do painel do gestor no computador, e o operador no campo (celular, offline) ficou com o caminho mais longo. Cada item segue TDD (RED → GREEN → refatoração) e é só de cliente, sem API, contrato ou banco.*
+
+**Prioridade 1 — tarefa principal do operador (fazer antes da apresentação)**
+- [x] **11.1. Operador movimenta pela aba Estoque:** Entrada/Saída em cada insumo também para o operador, com o mesmo modal do gestor; o cadastro de insumo continua só do gestor (`manager-stock.spec.ts`).
+- [x] **11.2. Registro antes dos alertas para o operador:** "Movimente seu estoque" vem antes da lista de alertas na Visão geral do operador (`order` via classe `actions-first`); o gestor mantém alertas em largura total em cima (`whatsapp-alerts.spec.ts`).
+- [x] **11.3. Confirmação junto ao formulário:** "Salvo no aparelho · sincronização pendente" e os erros aparecem logo abaixo do botão Salvar da Visão geral (`app.spec.ts`).
+- [x] **11.4. Prevenir erro na quantidade:** saldo e unidade do insumo escolhido; aviso, sem bloquear, quando a saída passa do saldo (regra offline: registra e o gestor revisa); `inputmode="decimal"` no formulário e no modal (`app.spec.ts`, `manager-stock.spec.ts`).
+- [x] **11.5. Corrigir acoplamento:** o gráfico "Consumo ao longo do tempo" tem seleção própria (`chartProductId`) e não muda mais o insumo do formulário; o modal usa o insumo do formulário (`app.spec.ts`).
+- [x] **11.6. Alvos de toque de 44–48 px no celular:** `--control-md` 44 px e `--control-lg` 48 px até 760 px; abas do menu com 48 px, rótulos inteiros e rolagem lateral quando não cabem (`mobile-touch.spec.ts`).
+
+**Prioridade 2 — offline first e navegação no celular**
+- [ ] **11.7. Status de sincronização claro:** "Offline · N pendentes" / "Online · tudo enviado às HH:MM" no lugar de "Dados salvos neste aparelho".
+- [ ] **11.8. Histórico no celular em cartões, com etiqueta Pendente/Enviado** em cada registro.
+- [ ] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens; Backups em "Mais".
+
+**Prioridade 3 — depois da apresentação**
+- [ ] **11.10. Visão geral por perfil:** operador vê saldos e alertas do que usa; capital em estoque fica para o gestor.
+- [ ] **11.11. Busca na escolha do insumo** (lista longa sem filtro hoje).
+- [ ] **11.12. Sugestão de destinos recentes** ("Talhão 04", "Trator").
+- [ ] **11.13. Data e hora atrás de "alterar"**, já que quase sempre é "agora".
+
+---
+
 ## Roadmap detalhado de finalização
 
 Atualizado em 27/10/2026, com base na revisão do regulamento e da `dev` em
