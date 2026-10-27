@@ -436,9 +436,9 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 **Prioridade 3 — depois da apresentação**
 - [x] **11.10. Visão geral por perfil:** o capital em estoque fica só para o gestor. O operador vê "Insumos acompanhados" e "Atenção imediata" lado a lado, além dos alertas e dos saldos. Não há filtro por "o que o operador usa": o sistema não registra essa relação. Teste em `app.spec.ts`.
-- [ ] **11.11. Busca na escolha do insumo** (lista longa sem filtro hoje).
-- [ ] **11.12. Sugestão de destinos recentes** ("Talhão 04", "Trator").
-- [ ] **11.13. Data e hora atrás de "alterar"**, já que quase sempre é "agora".
+- [x] **11.11. Busca na escolha do insumo:** com mais de 5 insumos, aparece "Buscar insumo" acima da lista. A busca ignora acento e maiúsculas, e o insumo já escolhido nunca some da lista.
+- [x] **11.12. Sugestão de destinos recentes:** até 4 botões com os destinos mais recentes do histórico, sem repetir. Um toque preenche o campo. Vale na Visão geral e na janela de entrada/saída do Estoque.
+- [x] **11.13. Data e hora atrás de "alterar":** o formulário mostra "Data: agora · alterar". Sem alterar, o registro recebe a hora do salvamento, e não a hora em que o formulário foi aberto. Vale nos dois formulários. Testes das três tarefas em `app.spec.ts`.
 
 **Linguagem (pedido do usuário em 27/10: o público é rural, não técnico)**
 - [x] **11.14. Telas sem termos de informática:** "Atualizar agora" (sincronizar), "Sem internet" (offline), "lançamentos esperando envio" (pendências), "Cópias de segurança" (backups), "código de acesso" (pareamento), "Saldos a conferir" (conciliação), "Saldo confirmado / Com os lançamentos deste aparelho" (confirmado/provisório), "Precisa de internet para cadastrar…" (requer internet), sem IDs técnicos e com a data no nome das cópias. `plain-language.spec.ts` percorre todas as telas e modais dos dois perfis e a tela de entrada e falha se aparecer jargão.
