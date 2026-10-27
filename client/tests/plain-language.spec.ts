@@ -9,10 +9,10 @@ vi.mock("qrcode", () => ({
 import App from "../src/App.vue";
 import { analyzeInventory } from "../src/offline/analysis";
 
-// Tarefa 11.14: o público é rural, não técnico. Nenhuma tela mostra jargão de
-// informática. Os textos dos alertas vêm do motor de análise (tarefa 11.15).
+// Tarefas 11.14 e 11.15: o público é rural, não técnico. Nenhuma tela, alerta
+// incluído, mostra jargão de informática ou de estatística.
 const JARGON =
-  /sincroniz|nuvem|servidor|\bAPI\b|backup|pareamento|concilia|provisório|consolidado|requer internet|offline|amostragem|calendário|simulação|\bID:|token/i;
+  /sincroniz|nuvem|servidor|\bAPI\b|backup|pareamento|concilia|provisório|consolidado|requer internet|offline|amostragem|calendário|simulação|\bID:|token|autonomia|base (limitada|intermediária|ampliada)|crit[ée]rio|sazonalidade/i;
 
 const product = {
   id: "p",
@@ -40,7 +40,7 @@ function controller(role: "GESTOR" | "OPERADOR" | null) {
   return {
     ready: ref(true),
     session: ref(role ? { role, farmId: "f", farmNome: "Boa Vista", nome: "Ana", telefone: "+5569999999999" } : null),
-    analysis: ref({ ...analysis, alerts: [] }),
+    analysis: ref(analysis),
     movements: ref([entry, out]),
     pendingCount: ref(2),
     reviews: ref([{ id: "r1", message: "Lançamento recusado." }]),
@@ -89,6 +89,7 @@ async function visibleTexts(role: "GESTOR" | "OPERADOR") {
     await nav().find((b) => b.text().includes("Estoque"))!.trigger("click");
     await wrapper.get('[data-testid="new-product"]').trigger("click");
     texts.push(wrapper.text());
+    await nav().find((b) => b.text().includes("Operadores"))!.trigger("click");
     await wrapper.get('[data-testid="pairing"]').trigger("click");
     texts.push(wrapper.text());
   }

@@ -149,7 +149,7 @@ describe('paridade API × cliente na análise de estoque (tarefa 10.3)', () => {
         ...outs('p', [4], -1),
       ],
     );
-    expect(api.alerts.find((a) => a.tipo === 'FALTA')?.justificativa).toMatch(/Base limitada/);
+    expect(api.alerts.find((a) => a.tipo === 'FALTA')?.justificativa).toMatch(/poucos dados/);
   });
 
   it('limiares exatos: autonomia de 7, 15, 90 e 91 dias e saldo igual ao mínimo', () => {

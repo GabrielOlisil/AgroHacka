@@ -234,9 +234,9 @@ describe("formulário de movimentação da Visão geral", () => {
 describe("telas responsivas dos perfis", () => {
   it.each([
     [0, "Estimativa indisponível"],
-    [1, "Base limitada"],
-    [3, "Base intermediária"],
-    [5, "Base ampliada"],
+    [1, "Poucos dados"],
+    [3, "Dados razoáveis"],
+    [5, "Bons dados"],
   ] as const)(
     "qualifica a autonomia junto ao produto com %i retiradas",
     async (count, label) => {
@@ -371,7 +371,7 @@ describe("telas responsivas dos perfis", () => {
     const wrapper = mount(App, { props: { controller: state as never } });
     await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     expect(wrapper.get("h1").text()).toBe("Operadores da fazenda");
-    expect(wrapper.text()).toContain("Operadores pareados");
+    expect(wrapper.text()).toContain("Operadores conectados");
     expect(state.loadOperators).toHaveBeenCalledOnce();
     expect(wrapper.find('[data-testid="sync-balances"]').exists()).toBe(false);
     wrapper.unmount();
@@ -722,6 +722,7 @@ describe("telas responsivas dos perfis", () => {
       },
     });
     const wrapper = mount(App, { props: { controller: state as never } });
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     await wrapper.get('[data-testid="pairing"]').trigger("click");
     await wrapper.get('[role="dialog"] input').setValue("João");
     await wrapper.get('[role="dialog"] form').trigger("submit");
@@ -734,6 +735,7 @@ describe("telas responsivas dos perfis", () => {
       nome: "Ana",
     };
     await flushPromises();
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     await wrapper.get('[data-testid="pairing"]').trigger("click");
     expect(wrapper.text()).not.toContain("AGRO-AB12");
     wrapper.unmount();
@@ -760,12 +762,17 @@ describe("telas responsivas dos perfis", () => {
     expect(wrapper.find('[data-testid="pairing"]').exists()).toBe(false);
     wrapper.unmount();
   });
-  it("mostra estoque, alertas e pareamento para o gestor", () => {
+  it("mostra estoque e alertas para o gestor; Conectar operador só na aba Operadores", async () => {
     const wrapper = mount(App, {
       props: { controller: controller("GESTOR") as never },
     });
     expect(wrapper.text()).toContain("Alertas");
     expect(wrapper.text()).toContain("Estoque");
+    for (const label of ["Visão geral", "Estoque", "Histórico", "Cópias"]) {
+      await goToTab(wrapper, label);
+      expect(wrapper.find('[data-testid="pairing"]').exists(), label).toBe(false);
+    }
+    await wrapper.get('[data-testid="operators-nav"]').trigger("click");
     expect(wrapper.find('[data-testid="pairing"]').exists()).toBe(true);
     wrapper.unmount();
   });
