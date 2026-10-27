@@ -172,6 +172,21 @@ export function createApi(
       );
       return parsePairedOperators(result, session.farmId);
     },
+    async deactivateOperator(session: Session, deviceId: string) {
+      if (session.role !== "GESTOR")
+        throw new Error("Somente o gestor pode desativar operadores.");
+      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
+      const result = await unpack(
+        await client.POST("/devices/{id}/deactivate", {
+          params: {
+            header: { authorization },
+            path: { id: text(deviceId, "operador") },
+          },
+          signal: signal(),
+        }),
+      );
+      return parsePairedOperators(result, session.farmId);
+    },
     async login(body: LoginInput): Promise<Session> {
       return auth(
         await unpack(

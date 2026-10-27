@@ -1237,6 +1237,7 @@ onUnmounted(() => {
         :loading="operatorsLoading"
         :error="operatorsError"
         :refresh="workspace.loadOperators"
+        :deactivate="workspace.deactivateOperator"
         :connect="
           () => {
             showPairing = true;
