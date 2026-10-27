@@ -675,6 +675,10 @@ nav button.active {
 .sync-status .lucide {
   color: var(--color-secondary);
 }
+.sync-status.offline {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 .sync-status .pending {
   color: var(--color-support);
 }
@@ -1308,7 +1312,7 @@ td small {
     font-size: var(--font-size-xs);
   }
   .sync-status {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
   }
   .page-heading {
     gap: var(--space-4);

@@ -384,7 +384,38 @@ async function restore(name: string) {
 const online = () => {
   void workspace.sync();
 };
+// navigator.onLine only says there is a network, not that the API answers;
+// pending records still tell what has not reached the cloud.
+const isOnline = ref(navigator.onLine);
+const updateOnline = () => {
+  isOnline.value = navigator.onLine;
+};
+const syncLabel = computed(() => {
+  if (syncing.value) return "Sincronizando…";
+  if (!isOnline.value)
+    return pendingCount.value > 0
+      ? `Offline · ${pendingCount.value} registro(s) pendente(s)`
+      : "Offline · dados salvos neste aparelho";
+  if (pendingCount.value > 0)
+    return `${pendingCount.value} registro(s) pendente(s) de envio`;
+  return lastSync.value
+    ? `Tudo enviado · ${new Date(lastSync.value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+    : "Dados salvos neste aparelho";
+});
+const syncIcon = computed(() =>
+  syncing.value
+    ? "refresh"
+    : !isOnline.value
+      ? "wifi-off"
+      : pendingCount.value > 0
+        ? "hard-drive"
+        : lastSync.value
+          ? "circle-check"
+          : "hard-drive",
+);
 onMounted(async () => {
+  window.addEventListener("online", updateOnline);
+  window.addEventListener("offline", updateOnline);
   await workspace.initialize();
   if (!props.controller) {
     void workspace.sync();
@@ -400,6 +431,8 @@ onUnmounted(() => {
   if (timer) clearInterval(timer);
   if (backupTimer) clearInterval(backupTimer);
   window.removeEventListener("online", online);
+  window.removeEventListener("online", updateOnline);
+  window.removeEventListener("offline", updateOnline);
   stopScanner?.();
   workspace.dispose();
 });
@@ -645,20 +678,16 @@ onUnmounted(() => {
     </aside>
     <main class="main-content">
       <header class="topbar">
-        <span class="sync-status" role="status" :aria-busy="syncing"
+        <span
+          class="sync-status"
+          :class="{ offline: !isOnline }"
+          role="status"
+          :aria-busy="syncing"
           ><UiIcon
-            :name="
-              syncing ? 'refresh' : pendingCount > 0 ? 'wifi-off' : 'hard-drive'
-            "
-            :class="{ pending: pendingCount > 0 }"
+            :name="syncIcon"
+            :class="{ pending: pendingCount > 0 || !isOnline }"
           />
-          {{
-            syncing
-              ? "Sincronizando…"
-              : pendingCount > 0
-                ? `${pendingCount} registro(s) pendente(s)`
-                : "Dados salvos neste aparelho"
-          }}</span
+          {{ syncLabel }}</span
         ><button
           class="secondary"
           :disabled="syncing || busy"
