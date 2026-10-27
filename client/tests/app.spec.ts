@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { flushPromises, mount } from "@vue/test-utils";
 import { ref } from "vue";
 import { describe, expect, it, vi } from "vitest";
@@ -68,6 +70,29 @@ async function goToTab(wrapper: ReturnType<typeof mount>, label: string) {
     .trigger("click");
 }
 const balancesPanel = '[data-testid="sync-balances"]';
+describe("versão do aplicativo", () => {
+  const version = JSON.parse(
+    // happy-dom does not expose a file: import.meta.url; Vitest runs from client/.
+    readFileSync(resolve(process.cwd(), "src-tauri/tauri.conf.json"), "utf-8"),
+  ).version as string;
+
+  it("mostra no rodapé a mesma versão dos instaladores (tauri.conf.json)", () => {
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    const wrapper = mount(App, {
+      props: { controller: controller("OPERADOR") as never },
+    });
+    expect(wrapper.get(".page-footer").text()).toBe(
+      `AgroHacka · versão ${version}`,
+    );
+    wrapper.unmount();
+  });
+
+  it("mostra a versão também na tela de entrada, antes do login", () => {
+    const wrapper = mount(App, { props: { controller: controller() as never } });
+    expect(wrapper.get(".welcome").text()).toContain(`versão ${version}`);
+    wrapper.unmount();
+  });
+});
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   state.analysis.value.products = [
     { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },
