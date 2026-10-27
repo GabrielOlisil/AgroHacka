@@ -100,6 +100,122 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("formulário de movimentação mais rápido (tarefas 11.11 a 11.13)", () => {
+  const names = ["Diesel", "Ureia", "Glifosato", "Semente de soja", "Calcário", "Óleo 2T", "Adubo NPK"];
+  function withProducts(count: number) {
+    const state = controller("OPERADOR");
+    state.analysis.value.products = names.slice(0, count).map((nome, i) => ({
+      id: `p${i}`,
+      nome,
+      categoria: "Geral",
+      unidadeMedida: "L",
+      saldo: 10,
+    })) as never;
+    return state;
+  }
+  const options = (wrapper: ReturnType<typeof mount>) =>
+    wrapper
+      .get(".movement-panel select")
+      .findAll("option:not([disabled])")
+      .map((o) => o.text().split(" · ")[0]);
+
+  it("11.11: com lista longa, busca o insumo pelo nome, sem perder o já escolhido", async () => {
+    const short = mount(App, { props: { controller: withProducts(5) as never } });
+    expect(short.find('[data-testid="product-search"]').exists()).toBe(false);
+    short.unmount();
+    const wrapper = mount(App, { props: { controller: withProducts(7) as never } });
+    const search = wrapper.get('[data-testid="product-search"]');
+    await search.setValue("URE");
+    expect(options(wrapper)).toEqual(["Ureia"]);
+    await search.setValue("");
+    await wrapper.get(".movement-panel select").setValue("p0");
+    await search.setValue("calc");
+    expect(options(wrapper)).toEqual(["Diesel", "Calcário"]);
+    wrapper.unmount();
+  });
+
+  it("11.12: sugere até 4 destinos recentes, sem repetir, e preenche ao tocar", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const base = { productId: "p", farmId: "f", tipo: "SAIDA", quantidade: 1, responsavel: "Ana" };
+    state.movements.value = [
+      { ...base, id: "1", dataMovimento: "2026-10-27T10:00:00Z", destino: "Talhão 04" },
+      { ...base, id: "2", dataMovimento: "2026-10-26T10:00:00Z", destino: "Trator" },
+      { ...base, id: "3", dataMovimento: "2026-10-25T10:00:00Z", destino: "talhão 04 " },
+      { ...base, id: "4", dataMovimento: "2026-10-24T10:00:00Z" },
+      { ...base, id: "5", dataMovimento: "2026-10-23T10:00:00Z", destino: "Pulverizador" },
+      { ...base, id: "6", dataMovimento: "2026-10-22T10:00:00Z", destino: "Sede" },
+      { ...base, id: "7", dataMovimento: "2026-10-21T10:00:00Z", destino: "Galpão" },
+    ] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const chips = wrapper.findAll('.movement-panel [data-testid="recent-destination"]');
+    expect(chips.map((c) => c.text())).toEqual(["Talhão 04", "Trator", "Pulverizador", "Sede"]);
+    expect(chips[1]!.attributes("type")).toBe("button");
+    await chips[1]!.trigger("click");
+    expect(
+      (wrapper.get('.movement-panel input[maxlength="300"]').element as HTMLInputElement).value,
+    ).toBe("Trator");
+    wrapper.unmount();
+  });
+
+  it("11.13: a data é 'agora' na hora de salvar, e só abre o campo ao tocar em alterar", async () => {
+    const state = withDiesel(controller("OPERADOR"));
+    const wrapper = mount(App, { props: { controller: state as never } });
+    const panel = wrapper.get(".movement-panel");
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(panel.get('[data-testid="movement-date"]').text()).toContain("agora");
+    await panel.get("select").setValue("p");
+    await panel.get('input[type="number"]').setValue(1);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    const first = state.record.mock.calls[0]![0] as { dataMovimento: string };
+    expect(Math.abs(new Date(first.dataMovimento).getTime() - Date.now())).toBeLessThan(5_000);
+
+    await panel.get('[data-testid="change-date"]').trigger("click");
+    await panel.get('input[type="datetime-local"]').setValue("2026-10-20T08:30");
+    await panel.get('input[type="number"]').setValue(2);
+    await panel.get("form").trigger("submit");
+    await flushPromises();
+    expect(state.record.mock.calls[1]![0]).toMatchObject({
+      dataMovimento: new Date("2026-10-20T08:30").toISOString(),
+    });
+    expect(panel.find('input[type="datetime-local"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("a janela de entrada/saída do Estoque segue o mesmo padrão de data e destinos", async () => {
+    const state = controller("OPERADOR");
+    const product = {
+      id: "p",
+      farmId: "f",
+      nome: "Diesel",
+      categoria: "Combustível",
+      unidadeMedida: "L",
+      estoqueMinimo: 0,
+      precoAquisicao: 6,
+      validade: null,
+    };
+    const entry = {
+      id: "e",
+      productId: "p",
+      farmId: "f",
+      tipo: "ENTRADA" as const,
+      quantidade: 100,
+      dataMovimento: "2026-10-01T12:00:00Z",
+      responsavel: "Ana",
+      destino: "Galpão",
+    };
+    state.analysis.value = analyzeInventory([product], [entry], new Date("2026-10-16T12:00:00Z")) as never;
+    state.movements.value = [entry] as never;
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await goToTab(wrapper, "Estoque");
+    await wrapper.get('[data-testid="saida-p"]').trigger("click");
+    const modal = wrapper.get('[aria-labelledby="movement-title"]');
+    expect(modal.find('input[type="datetime-local"]').exists()).toBe(false);
+    expect(modal.get('[data-testid="movement-date"]').text()).toContain("agora");
+    expect(modal.findAll('[data-testid="recent-destination"]').map((c) => c.text())).toEqual(["Galpão"]);
+    wrapper.unmount();
+  });
+});
 describe("visão geral por perfil (tarefa 11.10)", () => {
   it("o capital em estoque aparece só para o gestor; o operador vê insumos e alertas", () => {
     const operator = mount(App, { props: { controller: controller("OPERADOR") as never } });

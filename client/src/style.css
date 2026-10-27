@@ -893,6 +893,29 @@ nav button.active {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
 }
+.date-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.date-line .text-button {
+  text-decoration: underline;
+}
+.recent-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.recent-destinations button {
+  /* Tarefa 11.12: toque rápido no destino de sempre. */
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  background: var(--color-surface);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
 .empty {
   padding: var(--space-7) var(--space-4);
   color: var(--text-secondary);

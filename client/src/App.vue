@@ -85,6 +85,8 @@ watch(session, () => {
   chartProductId.value = "";
   quantity.value = "";
   destination.value = "";
+  productSearch.value = "";
+  customDate.value = false;
   search.value = "";
   category.value = "";
   stockStatus.value = "";
@@ -196,17 +198,49 @@ async function record() {
       productId: productId.value,
       tipo: kind.value,
       quantidade: Number(quantity.value),
-      dataMovimento: new Date(movementDate.value).toISOString(),
+      dataMovimento: (customDate.value
+        ? new Date(movementDate.value)
+        : new Date()
+      ).toISOString(),
       ...(destination.value ? { destino: destination.value } : {}),
     });
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
+    customDate.value = false;
   }, "Salvo neste aparelho. Será enviado quando houver internet.");
 }
 const formProduct = computed(() =>
   analysis.value.products.find((p) => p.id === productId.value),
 );
+// 11.11: lista longa ganha busca (sem acento e sem maiúsculas); o escolhido nunca some.
+const productSearch = ref("");
+const plain = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("pt-BR");
+const formOptions = computed(() => {
+  const term = plain(productSearch.value.trim());
+  return analysis.value.products.filter(
+    (p) => !term || p.id === productId.value || plain(p.nome).includes(term),
+  );
+});
+// 11.12: até 4 destinos recentes, do mais novo ao mais antigo, sem repetir.
+const recentDestinations = computed(() => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const m of movements.value) {
+    const value = m.destino?.trim();
+    if (!value || seen.has(plain(value))) continue;
+    seen.add(plain(value));
+    result.push(value);
+    if (result.length === 4) break;
+  }
+  return result;
+});
+// 11.13: quase sempre é "agora"; a data só é usada se a pessoa tocar em alterar.
+const customDate = ref(false);
 // Offline-first records the fact even past the balance; warn, never block.
 const exceedsBalance = computed(
   () =>
@@ -235,6 +269,7 @@ function openMovement(id: string, type: "ENTRADA" | "SAIDA") {
   quantity.value = "";
   destination.value = "";
   movementDate.value = localDateTime();
+  customDate.value = false;
   movementError.value = "";
   showMovement.value = true;
 }
@@ -952,11 +987,18 @@ onUnmounted(() => {
                 </button>
               </div>
               <form @submit.prevent="recordFromForm">
+                <label v-if="analysis.products.length > 5"
+                  >Buscar insumo<input
+                    v-model="productSearch"
+                    data-testid="product-search"
+                    type="search"
+                    placeholder="Digite parte do nome"
+                /></label>
                 <label
                   >Insumo<select v-model="productId" required>
                     <option value="" disabled>Selecione um insumo</option>
                     <option
-                      v-for="p in analysis.products"
+                      v-for="p in formOptions"
                       :key="p.id"
                       :value="p.id"
                     >
@@ -1005,18 +1047,45 @@ onUnmounted(() => {
                     e o gestor vai conferir a diferença.</span
                   >
                 </p>
-                <label
+                <label v-if="customDate"
                   >Data e hora<input
                     v-model="movementDate"
                     type="datetime-local"
                     required /></label
-                ><label
+                ><p v-else class="date-line" data-testid="movement-date">
+                  Data: agora
+                  <button
+                    type="button"
+                    class="text-button"
+                    data-testid="change-date"
+                    @click="customDate = true"
+                  >
+                    alterar
+                  </button>
+                </p>
+                <label
                   >Destino / observação <span class="muted">(opcional)</span
                   ><input
                     v-model="destination"
                     maxlength="300"
-                    placeholder="Talhão, equipamento…" /></label
-                ><button
+                    placeholder="Talhão, equipamento…"
+                /></label>
+                <div
+                  v-if="recentDestinations.length"
+                  class="recent-destinations"
+                  aria-label="Destinos recentes"
+                >
+                  <button
+                    v-for="d in recentDestinations"
+                    :key="d"
+                    type="button"
+                    data-testid="recent-destination"
+                    @click="destination = d"
+                  >
+                    {{ d }}
+                  </button>
+                </div>
+                <button
                   class="primary full"
                   :disabled="busy || !analysis.products.length"
                 >
@@ -1501,13 +1570,25 @@ onUnmounted(() => {
               gestor vai conferir a diferença.</span
             >
           </p>
-          <label
+          <label v-if="customDate"
             >Data e hora<input
               v-model="movementDate"
               type="datetime-local"
               required
               :disabled="busy"
           /></label>
+          <p v-else class="date-line" data-testid="movement-date">
+            Data: agora
+            <button
+              type="button"
+              class="text-button"
+              data-testid="change-date"
+              :disabled="busy"
+              @click="customDate = true"
+            >
+              alterar
+            </button>
+          </p>
           <label
             >Destino / observação<input
               v-model="destination"
@@ -1515,6 +1596,22 @@ onUnmounted(() => {
               placeholder="Opcional"
               :disabled="busy"
           /></label>
+          <div
+            v-if="recentDestinations.length"
+            class="recent-destinations"
+            aria-label="Destinos recentes"
+          >
+            <button
+              v-for="d in recentDestinations"
+              :key="d"
+              type="button"
+              data-testid="recent-destination"
+              :disabled="busy"
+              @click="destination = d"
+            >
+              {{ d }}
+            </button>
+          </div>
           <button class="primary full" :disabled="busy">
             <UiIcon name="save" />{{
               busy ? "Salvando…" : "Salvar neste aparelho"
