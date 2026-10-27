@@ -100,6 +100,41 @@ function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   ] as never;
   return state;
 }
+describe("navegação inferior no celular (tarefa 11.9)", () => {
+  const nav = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.get('nav[aria-label="Navegação principal"]');
+
+  it("o gestor tem Mais, que abre Operadores e Cópias e fecha ao escolher", async () => {
+    const wrapper = mount(App, { props: { controller: controller("GESTOR") as never } });
+    const secondary = nav(wrapper).findAll("button.nav-secondary").map((b) => b.text());
+    expect(secondary).toEqual(["Operadores", "Cópias"]);
+    const more = nav(wrapper).get('[data-testid="more-nav"]');
+    expect(more.text()).toBe("Mais");
+    expect(more.attributes("aria-expanded")).toBe("false");
+    await more.trigger("click");
+    expect(more.attributes("aria-expanded")).toBe("true");
+    const menu = wrapper.get(".more-menu");
+    expect(menu.findAll("button").map((b) => b.text())).toEqual(["Operadores", "Cópias"]);
+    await menu.findAll("button")[1]!.trigger("click");
+    expect(wrapper.find(".more-menu").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Cópias de segurança deste aparelho");
+    expect(nav(wrapper).get('[data-testid="more-nav"]').classes()).toContain("active");
+    wrapper.unmount();
+  });
+
+  it("o operador já cabe em 4 abas: sem Mais, Cópias continua no menu", () => {
+    const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
+    expect(nav(wrapper).find('[data-testid="more-nav"]').exists()).toBe(false);
+    expect(nav(wrapper).findAll("button.nav-secondary")).toHaveLength(0);
+    expect(nav(wrapper).findAll("button").map((b) => b.text())).toEqual([
+      "Visão geral",
+      "Estoque",
+      "Histórico",
+      "Cópias",
+    ]);
+    wrapper.unmount();
+  });
+});
 describe("histórico em cartões com situação de envio (tarefa 11.8)", () => {
   it("marca cada registro como enviado ou esperando envio e rotula os campos do cartão", async () => {
     const state = withDiesel(controller("OPERADOR"));

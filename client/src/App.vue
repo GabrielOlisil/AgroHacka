@@ -325,6 +325,13 @@ function openOperators() {
   tab.value = "operators";
   void workspace.loadOperators();
 }
+// Tarefa 11.9: no celular, o gestor acessa Operadores e Cópias pelo "Mais".
+const showMore = ref(false);
+function chooseMore(next: "operators" | "backups") {
+  showMore.value = false;
+  if (next === "operators") openOperators();
+  else tab.value = next;
+}
 async function scanCamera() {
   await act(async () => {
     camera.value = true;
@@ -652,19 +659,40 @@ onUnmounted(() => {
         ><button
           v-if="session.role === 'GESTOR'"
           data-testid="operators-nav"
+          class="nav-secondary"
           :class="{ active: tab === 'operators' }"
           :aria-current="tab === 'operators' ? 'page' : undefined"
           @click="openOperators"
         >
           <UiIcon name="users" :size="18" /><span>Operadores</span></button
         ><button
-          :class="{ active: tab === 'backups' }"
+          :class="{
+            active: tab === 'backups',
+            'nav-secondary': session.role === 'GESTOR',
+          }"
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
         >
-          <UiIcon name="database-backup" :size="18" /><span>Cópias</span>
+          <UiIcon name="database-backup" :size="18" /><span>Cópias</span></button
+        ><button
+          v-if="session.role === 'GESTOR'"
+          data-testid="more-nav"
+          class="nav-more"
+          :class="{ active: tab === 'operators' || tab === 'backups' }"
+          :aria-expanded="showMore"
+          aria-controls="more-menu"
+          @click="showMore = !showMore"
+        >
+          <UiIcon name="ellipsis" :size="18" /><span>Mais</span>
         </button>
       </nav>
+      <div v-if="showMore" id="more-menu" class="more-menu">
+        <button @click="chooseMore('operators')">
+          <UiIcon name="users" :size="18" />Operadores</button
+        ><button @click="chooseMore('backups')">
+          <UiIcon name="database-backup" :size="18" />Cópias
+        </button>
+      </div>
       <div class="sidebar-bottom">
         <div class="avatar"><UiIcon name="user" :size="18" /></div>
         <div>

@@ -432,7 +432,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 **Prioridade 2 — offline first e navegação no celular**
 - [x] **11.7. Status de sincronização claro:** "Offline · N registro(s) pendente(s)", "N registro(s) pendente(s) de envio", "Tudo enviado · HH:MM" e "Sincronizando…", reagindo aos eventos `online`/`offline`; offline em destaque (`app.spec.ts`). `navigator.onLine` indica rede, não a API: as pendências seguem como fonte do que não chegou à nuvem.
 - [x] **11.8. Histórico no celular em cartões, com etiqueta de situação** em cada registro: "Esperando envio" (ainda só neste aparelho) ou "Enviado". No celular a tabela vira cartões, com o mesmo estilo do Estoque. O workspace expõe `pendingIds` (`cloud-only.spec.ts`); teste da tela em `app.spec.ts` e do CSS em `mobile-touch.spec.ts`.
-- [ ] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens; Backups em "Mais".
+- [x] **11.9. Navegação inferior no celular** (zona do polegar), até 4 itens. O gestor vê Visão geral, Estoque, Histórico e Mais (Operadores e Cópias); o operador vê Visão geral, Estoque, Histórico e Cópias. No computador, o menu lateral não muda. Testes em `app.spec.ts` (Mais abre, navega e fecha) e `mobile-touch.spec.ts` (menu fixo embaixo, abas de 56 px, conteúdo não fica coberto).
 
 **Prioridade 3 — depois da apresentação**
 - [ ] **11.10. Visão geral por perfil:** operador vê saldos e alertas do que usa; capital em estoque fica para o gestor.
