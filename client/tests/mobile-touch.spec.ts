@@ -29,6 +29,11 @@ describe("alvos de toque no celular (tarefa 11.6)", () => {
     expect(/\.main-content \{([^}]*)\}/.exec(mobile)?.[1]).toMatch(/padding-bottom/);
   });
 
+  it("as janelas (como Novo insumo) nunca ficam mais largas que a tela", () => {
+    const backdrop = /\.modal-backdrop \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(backdrop).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  });
+
   it("fora do celular, o botão Mais e o menu dele não aparecem", () => {
     const desktop = css.slice(0, start);
     expect(desktop).toMatch(/\.nav-more,\s*\.more-menu \{[^}]*display:\s*none/);

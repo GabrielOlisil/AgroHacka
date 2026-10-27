@@ -1101,6 +1101,8 @@ td small {
   inset: 0;
   z-index: 20;
   display: grid;
+  /* A coluna não cresce com o conteúdo: a janela nunca passa da largura da tela. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: var(--space-5);
   background: rgba(20, 24, 26, 0.48);
