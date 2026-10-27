@@ -201,7 +201,7 @@ async function record() {
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
-  }, "Salvo no aparelho · sincronização pendente.");
+  }, "Salvo neste aparelho. Será enviado quando houver internet.");
 }
 const formProduct = computed(() =>
   analysis.value.products.find((p) => p.id === productId.value),
@@ -275,7 +275,7 @@ async function sendWhatsAppTest() {
     const { simulado } = await workspace.testWhatsApp();
     whatsappSimulated.value = simulado;
     whatsappFeedback.value = simulado
-      ? "Teste em modo de simulação: o serviço de WhatsApp do servidor não está configurado, então nenhuma mensagem real foi enviada."
+      ? "O envio por WhatsApp ainda não está ativado no sistema, então nenhuma mensagem foi enviada."
       : `Mensagem de teste enviada para ${phone}. Confira o WhatsApp do gestor.`;
   } catch (cause) {
     whatsappError.value = `Não foi possível enviar o teste: ${describeWhatsAppFailure(cause)}`;
@@ -306,7 +306,7 @@ function describeWhatsAppFailure(cause: unknown) {
     (cause instanceof Error &&
       (cause.name === "TimeoutError" || cause.name === "AbortError"));
   if (offline)
-    return "sem conexão com o servidor. Verifique a internet e tente novamente.";
+    return "sem internet no momento. Tente de novo quando tiver sinal.";
   return cause instanceof Error ? cause.message : String(cause);
 }
 const cameraFallback = " Digite o código ou escolha uma imagem do QR Code.";
@@ -369,16 +369,21 @@ async function scanImage(event: Event) {
   });
   if (scanned) await authenticate();
 }
+// "backup-2026-10-27.db" → "27/10/2026"; other names are shown as they are.
+function backupDate(name: string) {
+  const match = /(\d{4})-(\d{2})-(\d{2})/.exec(name);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : name;
+}
 async function restore(name: string) {
   if (
     !window.confirm(
-      "Restaurar este backup? O estado atual terá uma cópia de recuperação. Movimentações posteriores ao backup sairão do banco ativo; confira as pendências antes de continuar.",
+      `Voltar para a cópia de ${backupDate(name)}? Os lançamentos feitos depois dela saem deste aparelho. Antes, o estado atual também é guardado.`,
     )
   )
     return;
   await act(
     () => workspace.restoreBackup(name),
-    "Backup restaurado. Confira o histórico antes de sincronizar.",
+    "Cópia restaurada. Confira o histórico antes de atualizar.",
   );
 }
 const online = () => {
@@ -391,16 +396,16 @@ const updateOnline = () => {
   isOnline.value = navigator.onLine;
 };
 const syncLabel = computed(() => {
-  if (syncing.value) return "Sincronizando…";
+  if (syncing.value) return "Atualizando…";
   if (!isOnline.value)
     return pendingCount.value > 0
-      ? `Offline · ${pendingCount.value} registro(s) pendente(s)`
-      : "Offline · dados salvos neste aparelho";
+      ? `Sem internet · ${pendingCount.value} lançamento(s) esperando envio`
+      : "Sem internet · tudo guardado neste aparelho";
   if (pendingCount.value > 0)
-    return `${pendingCount.value} registro(s) pendente(s) de envio`;
+    return `${pendingCount.value} lançamento(s) esperando envio`;
   return lastSync.value
     ? `Tudo enviado · ${new Date(lastSync.value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-    : "Dados salvos neste aparelho";
+    : "Tudo guardado neste aparelho";
 });
 const syncIcon = computed(() =>
   syncing.value
@@ -456,8 +461,8 @@ onUnmounted(() => {
         <p>Seu estoque, no campo e no escritório.</p>
       </div>
       <div class="welcome-note">
-        <UiIcon name="wifi-off" :size="20" /> Registre offline. Sincronize com
-        internet.
+        <UiIcon name="wifi-off" :size="20" /> Registre mesmo sem internet. Os
+        dados são enviados quando o sinal voltar.
       </div>
     </section>
     <section class="welcome-form">
@@ -475,8 +480,8 @@ onUnmounted(() => {
         <p class="muted">
           {{
             mode === "connect"
-              ? "Peça ao gestor o QR Code ou código de pareamento."
-              : "Primeiro acesso com internet."
+              ? "Peça ao gestor o QR Code ou o código de acesso."
+              : "No primeiro acesso, é preciso internet."
           }}
         </p>
         <div class="auth-options">
@@ -550,7 +555,7 @@ onUnmounted(() => {
           </template>
           <template v-else>
             <label
-              >Código ou conteúdo do QR Code<textarea
+              >Código de acesso<textarea
                 v-model="code"
                 required
                 rows="3"
@@ -656,7 +661,7 @@ onUnmounted(() => {
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
         >
-          <UiIcon name="database-backup" :size="18" /><span>Backups</span>
+          <UiIcon name="database-backup" :size="18" /><span>Cópias</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
@@ -694,7 +699,7 @@ onUnmounted(() => {
           @click="workspace.sync"
         >
           <UiIcon name="refresh" />{{
-            syncing ? "Sincronizando…" : "Sincronizar agora"
+            syncing ? "Atualizando…" : "Atualizar agora"
           }}
         </button>
       </header>
@@ -717,12 +722,12 @@ onUnmounted(() => {
                     ? "Histórico de movimentações"
                     : tab === "operators"
                       ? "Operadores da fazenda"
-                      : "Backups e recuperação"
+                      : "Cópias de segurança"
             }}
           </h1>
           <p v-if="lastSync" class="muted">
             {{
-              lastSync ? `Última sincronização: ${formatDate(lastSync)}` : ""
+              lastSync ? `Última atualização: ${formatDate(lastSync)}` : ""
             }}
           </p>
         </div>
@@ -745,17 +750,15 @@ onUnmounted(() => {
         v-if="reviews.length"
         class="panel"
         data-testid="sync-reviews"
-        aria-label="Registros para revisão"
+        aria-label="Lançamentos para conferir"
       >
-        <h2>Registros para revisão</h2>
+        <h2>Lançamentos para conferir</h2>
         <p class="muted">
-          Registros preservados, fora do saldo confirmado. Solicite revisão ao
-          gestor.
+          Estes lançamentos foram guardados, mas não entraram no saldo. Peça ao
+          gestor para conferir.
         </p>
         <p v-for="review in reviews" :key="review.id" class="notice error">
-          <UiIcon name="circle-alert" /><span
-            >{{ review.message }} <small>ID: {{ review.id }}</small></span
-          >
+          <UiIcon name="circle-alert" /><span>{{ review.message }}</span>
         </p>
       </section>
       <details
@@ -763,25 +766,25 @@ onUnmounted(() => {
         class="panel reconciliation"
         :open="hasDeficit || reviews.length > 0"
         data-testid="sync-balances"
-        aria-label="Conciliação do estoque"
+        aria-label="Saldos a conferir"
       >
         <summary>
-          Conciliação
+          Saldos a conferir
           <span class="badge">{{
             hasDeficit
               ? "Saldo negativo"
-              : `${pendingCount} registro(s) pendente(s)`
+              : `${pendingCount} lançamento(s) esperando envio`
           }}</span>
         </summary>
         <p class="muted">
-          Última atualização da nuvem:
-          {{ lastSync ? formatDate(lastSync) : "ainda não confirmada" }}. Outros
-          aparelhos podem ter registros offline ainda não recebidos.
+          Última atualização:
+          {{ lastSync ? formatDate(lastSync) : "ainda nenhuma" }}. Outros
+          celulares podem ter lançamentos que ainda não foram enviados.
         </p>
         <p v-for="p in analysis.products" :key="p.id">
-          <strong>{{ p.nome }}</strong> · Confirmado conhecido:
+          <strong>{{ p.nome }}</strong> · Saldo confirmado:
           {{ unitValue(confirmedBalances[p.id] ?? 0) }} {{ p.unidadeMedida }} ·
-          Provisório neste aparelho: {{ unitValue(p.saldo) }}
+          Com os lançamentos deste aparelho: {{ unitValue(p.saldo) }}
           {{ p.unidadeMedida }}
         </p>
         <p
@@ -791,8 +794,8 @@ onUnmounted(() => {
           data-testid="sync-deficit"
         >
           <UiIcon name="circle-alert" /><span
-            >Saldo consolidado negativo. Os registros foram preservados. O
-            gestor deve conferir entradas, retiradas e possíveis duplicidades
+            >O saldo ficou negativo. Nenhum lançamento foi apagado: o gestor deve
+            conferir entradas e saídas, inclusive se algo foi lançado duas vezes,
             antes de corrigir o estoque.</span
           >
         </p>
@@ -848,7 +851,7 @@ onUnmounted(() => {
                     ? ""
                     : session.role === "GESTOR"
                       ? "Cadastre seu primeiro insumo na aba Estoque."
-                      : "Sincronize para receber os insumos."
+                      : "Com internet, toque em Atualizar agora para receber os insumos."
                 }}
               </p>
             </div>
@@ -945,11 +948,11 @@ onUnmounted(() => {
                   data-testid="balance-warning"
                 >
                   <UiIcon name="info" /><span
-                    >A saída é maior que o saldo deste aparelho ({{
+                    >A saída é maior que o saldo ({{
                       unitValue(formProduct.saldo)
                     }}
-                    {{ formProduct.unidadeMedida }}). O registro será salvo e a
-                    diferença aparece para o gestor revisar.</span
+                    {{ formProduct.unidadeMedida }}). Ela será salva mesmo assim,
+                    e o gestor vai conferir a diferença.</span
                   >
                 </p>
                 <label
@@ -1098,7 +1101,7 @@ onUnmounted(() => {
               >
             </h2>
             <p v-if="financialPartial" class="helper">
-              Classificação parcial · itens sem preço fora da ABC.
+              Itens sem preço ficam fora da classe de valor (ABC).
             </p>
           </div>
           <button
@@ -1188,8 +1191,9 @@ onUnmounted(() => {
                   >
                     <summary>Detalhes</summary>
                     <p>
-                      {{ p.diasAmostra }} dia(s) de calendário. Indicador por
-                      amostragem; não é garantia de duração.
+                      Calculado com as retiradas dos últimos
+                      {{ p.diasAmostra }} dia(s). É uma estimativa, não uma
+                      garantia.
                     </p>
                   </details>
                 </td>
@@ -1295,24 +1299,25 @@ onUnmounted(() => {
       <section v-if="tab === 'backups'" class="panel">
         <div class="section-heading">
           <div>
-            <h2>Backups locais</h2>
-            <p class="muted">Cópias diárias · últimos 7 dias</p>
+            <h2>Cópias de segurança deste aparelho</h2>
+            <p class="muted">Uma cópia por dia · últimos 7 dias</p>
           </div>
           <button
             class="primary"
             :disabled="busy || syncing"
-            @click="act(workspace.createBackup, 'Backup do dia disponível.')"
+            @click="act(workspace.createBackup, 'Cópia de hoje guardada.')"
           >
-            <UiIcon name="database-backup" /> Criar backup do dia
+            <UiIcon name="database-backup" /> Fazer cópia de hoje
           </button>
         </div>
         <p class="notice">
-          Backups neste aparelho. Restauração com cópia de recuperação.
+          As cópias ficam neste aparelho. Antes de voltar para uma cópia, o
+          estado atual também é guardado.
         </p>
         <ul class="backup-list">
           <li v-for="backup in backups" :key="backup.name">
             <div>
-              <strong>{{ backup.name }}</strong
+              <strong>Cópia de {{ backupDate(backup.name) }}</strong
               ><small>{{ unitValue(backup.size / 1024) }} KB</small>
             </div>
             <button
@@ -1325,7 +1330,7 @@ onUnmounted(() => {
           </li>
         </ul>
         <p v-if="!backups.length" class="empty">
-          Nenhum backup disponível ainda.
+          Nenhuma cópia ainda.
         </p>
       </section>
       <OperatorsPanel
@@ -1367,7 +1372,10 @@ onUnmounted(() => {
           <UiIcon name="x" />
         </button>
         <h2 id="product-title">Novo insumo</h2>
-        <p class="muted">Requer internet · saldo adicionado por entrada.</p>
+        <p class="muted">
+          Precisa de internet para cadastrar. Depois, registre uma entrada com a
+          quantidade em estoque.
+        </p>
         <ProductForm
           :key="productFormKey"
           :categories="categories"
@@ -1426,11 +1434,11 @@ onUnmounted(() => {
             data-testid="balance-warning"
           >
             <UiIcon name="info" /><span
-              >A saída é maior que o saldo deste aparelho ({{
+              >A saída é maior que o saldo ({{
                 unitValue(formProduct.saldo)
               }}
-              {{ formProduct.unidadeMedida }}). O registro será salvo e a
-              diferença aparece para o gestor revisar.</span
+              {{ formProduct.unidadeMedida }}). Ela será salva mesmo assim, e o
+              gestor vai conferir a diferença.</span
             >
           </p>
           <label
@@ -1468,8 +1476,8 @@ onUnmounted(() => {
       >
         <button
           class="modal-close"
-          aria-label="Fechar pareamento"
-          title="Fechar pareamento"
+          aria-label="Fechar"
+          title="Fechar"
           @click="showPairing = false"
         >
           <UiIcon name="x" /></button
@@ -1488,8 +1496,8 @@ onUnmounted(() => {
           </button>
         </form>
         <div v-if="pairing" class="pairing-result">
-          <img :src="qrImage" alt="QR Code de pareamento com a fazenda" />
-          <p>Código manual</p>
+          <img :src="qrImage" alt="QR Code de acesso à fazenda" />
+          <p>Ou digite este código no celular</p>
           <strong class="pairing-code">{{ pairing.pairingCode }}</strong
           ><small
             >Compartilhe somente com

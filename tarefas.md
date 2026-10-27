@@ -440,6 +440,10 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - [ ] **11.12. Sugestão de destinos recentes** ("Talhão 04", "Trator").
 - [ ] **11.13. Data e hora atrás de "alterar"**, já que quase sempre é "agora".
 
+**Linguagem (pedido do usuário em 27/10: o público é rural, não técnico)**
+- [x] **11.14. Telas sem termos de informática:** "Atualizar agora" (sincronizar), "Sem internet" (offline), "lançamentos esperando envio" (pendências), "Cópias de segurança" (backups), "código de acesso" (pareamento), "Saldos a conferir" (conciliação), "Saldo confirmado / Com os lançamentos deste aparelho" (confirmado/provisório), "Precisa de internet para cadastrar…" (requer internet), sem IDs técnicos e com a data no nome das cópias. `plain-language.spec.ts` percorre todas as telas e modais dos dois perfis e a tela de entrada e falha se aparecer jargão.
+- [ ] **11.15. Textos dos alertas em linguagem simples:** "autonomia", "dias de calendário", "Base limitada", "Referência de acompanhamento" vêm do motor de análise, que existe igual no cliente e na API (`parity.spec.ts`); mudar os dois juntos e estender o teste de linguagem aos alertas.
+
 ---
 
 ## Roadmap detalhado de finalização

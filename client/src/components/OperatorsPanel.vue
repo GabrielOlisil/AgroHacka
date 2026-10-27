@@ -98,7 +98,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
           />
         </div>
         <select v-model="status" aria-label="Filtrar situação">
-          <option value="all">Todos os pareamentos</option>
+          <option value="all">Todos os operadores</option>
           <option value="active">Ativos</option>
           <option value="inactive">Inativos</option>
         </select>
@@ -126,7 +126,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
             <div>
               <strong>{{ operator.nomeOperador }}</strong
               ><small
-                >Pareamento criado em
+                >Conectado em
                 {{ formatDate(operator.createdAt) }}</small
               >
             </div>
@@ -220,13 +220,13 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
               revealedId === operator.id ? "Ocultar código" : "Ver código"
             }}
           </button>
-          <p v-else class="helper">Pareamento inativo.</p>
+          <p v-else class="helper">Operador desativado.</p>
           <div
             v-if="operator.ativo && revealedId === operator.id"
             :id="`code-${operator.id}`"
             class="operator-code"
           >
-            <small>CÓDIGO DE PAREAMENTO</small>
+            <small>CÓDIGO DE ACESSO</small>
             <strong>{{ operator.pairingCode }}</strong>
             <p class="helper">
               Mesmo código · compartilhe apenas com {{ operator.nomeOperador }}.
@@ -249,9 +249,13 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
       >
         <h2 id="delete-operator-title">Excluir {{ deleting.nomeOperador }}?</h2>
         <p>
-          O acesso será removido. Movimentações já sincronizadas serão mantidas.
+          O acesso será removido. Os lançamentos já enviados continuam no
+          histórico.
         </p>
-        <p>Sincronize pendências do aparelho antes de excluir.</p>
+        <p>
+          Antes de excluir, peça ao operador para tocar em Atualizar agora, com
+          internet, para enviar o que estiver guardado no celular.
+        </p>
         <p v-if="actionError" class="notice error" role="alert">
           {{ actionError }}
         </p>
