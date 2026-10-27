@@ -35,7 +35,10 @@ model Farm {
   id        String   @id @default(uuid())
   nome      String
   gestorId  String
+  /// Inerte desde a tarefa 5.7 (LAN removida): nenhum código lê ou grava. A coluna
+  /// fica porque o deploy roda `prisma db push`; removê-la exige migration autorizada.
   localIp   String?
+  /// Inerte desde a tarefa 5.7, como localIp.
   localPort Int?     @default(3333)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

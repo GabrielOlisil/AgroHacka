@@ -12,6 +12,8 @@ describe('Carga da Base Oficial do AgroHack (Tarefa 6.1)', () => {
 
   it('deve conter estrutura válida de fazenda e gestor oficial', () => {
     expect(dataset.farm.nome).toContain('AgroHack');
+    expect(dataset.farm).not.toHaveProperty('localIp');
+    expect(dataset.farm).not.toHaveProperty('localPort');
     expect(dataset.gestor.email).toBe('gestor@agrohack.com');
     expect(dataset.gestor.role).toBe('GESTOR');
     expect(dataset.gestor.telefone).toBeDefined();

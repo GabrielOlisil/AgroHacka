@@ -2,7 +2,8 @@
 
 Use esta rota junto com o `SKILL.md`. Na proposta `regra_de_sync.md` da raiz da
 aplicação, leia também as seções 8–13 antes de alterar cursores, correções,
-autenticação, retomada, LAN ou restauração.
+autenticação, retomada ou restauração. A parte de LAN da proposta é histórica: o
+cliente envia somente à API configurada (tarefa 5.7).
 
 ## Inspeção e dependência do contrato
 
@@ -38,7 +39,7 @@ limitação do contrato atual, mas não deve ser apresentada como recibo por ope
 
 Use uma rodada ativa por instalação/fazenda e capture os IDs do lote antes do envio.
 Um lançamento criado durante a requisição fica para a rodada seguinte. Preserve
-ID/conteúdo em timeout, reinício, retry e troca de rota LAN/nuvem.
+ID/conteúdo em timeout, reinício e retry.
 
 Quando o contrato oferecer recibos individuais:
 
@@ -55,9 +56,9 @@ Quando o contrato oferecer recibos individuais:
 - Páginas repetidas devem ser idempotentes; versões antigas não sobrescrevem versões
   mais novas. Snapshot/reset preserva e reincorpora pendências locais.
 
-Não declarar sucesso global porque a rede respondeu, o aparelho está online ou
-o gestor recebeu por LAN. Separe “salvo neste aparelho”, “recebido pelo gestor” e
-“confirmado na nuvem”, com revisão conhecida e pendências visíveis.
+Não declarar sucesso global porque a rede respondeu ou o aparelho está online.
+Separe “salvo neste aparelho” e “confirmado na nuvem”, com revisão conhecida e
+pendências visíveis.
 
 ## Conflitos e experiência do operador/gestor
 
@@ -92,7 +93,7 @@ snapshot; a skill não autoriza apagar o banco do usuário ou buscar seus tokens
 - Dois SQLite locais com operações legítimas iguais e referências físicas duplicadas.
 - Download do próprio evento confirmado; recibo incompleto/forjado; nova saída no
   meio de uma rodada e páginas repetidas após falha.
-- Saldo conhecido/provisório, divergência e estado LAN/nuvem coerentes na interface.
+- Saldo conhecido/provisório, divergência e estado local/nuvem coerentes na interface.
 - Expiração da sessão, cursor antigo, restauração de backup e troca de dispositivo.
 - Quantidades zero/nulas/ausentes/inválidas, lista vazia, unidades e precisão da matriz.
 

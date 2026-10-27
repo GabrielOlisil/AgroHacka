@@ -1,7 +1,6 @@
 import {
   Controller,
   Post,
-  Put,
   Body,
   Headers,
   HttpCode,
@@ -10,7 +9,7 @@ import {
 import { AuthService } from '../auth/auth.service';
 import { ApiHeader } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
-import { SyncPayloadDto, HeartbeatDto, SyncResponseDto } from './dto/sync.dto';
+import { SyncPayloadDto, SyncResponseDto } from './dto/sync.dto';
 
 @Controller('sync')
 export class SyncController {
@@ -39,18 +38,6 @@ export class SyncController {
     return this.syncService.syncData(
       dto,
       await this.auth.authenticateSync(authorization, deviceToken),
-    );
-  }
-
-  @Put('heartbeat')
-  @HttpCode(HttpStatus.OK)
-  async heartbeat(
-    @Body() dto: HeartbeatDto,
-    @Headers('authorization') authorization?: string,
-  ) {
-    return this.syncService.updateHeartbeat(
-      dto,
-      await this.auth.authenticateSync(authorization),
     );
   }
 }

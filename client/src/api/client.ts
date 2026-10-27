@@ -88,10 +88,12 @@ export function createApi(
       const result = object(
         await unpack(
           await client.POST("/notifications/test-whatsapp", {
-            body: { paraTelefone: text(paraTelefone, "WhatsApp") },
-            headers: {
-              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+            params: {
+              header: {
+                authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+              },
             },
+            body: { paraTelefone: text(paraTelefone, "WhatsApp") },
             signal: signal(),
           }),
         ),
@@ -116,11 +118,13 @@ export function createApi(
       const trimmed = telefone.trim();
       const result = object(
         await unpack(
-          await (client as any).PATCH("/auth/telefone", {
-            body: { telefone: trimmed || null },
-            headers: {
-              Authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+          await client.PATCH("/auth/telefone", {
+            params: {
+              header: {
+                authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+              },
             },
+            body: { telefone: trimmed || null },
             signal: signal(),
           }),
         ),
