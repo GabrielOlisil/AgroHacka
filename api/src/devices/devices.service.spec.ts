@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DevicesService } from './devices.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -13,7 +12,6 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
         create: vi.fn(),
         findUnique: vi.fn(),
         findMany: vi.fn(),
-        updateMany: vi.fn(),
       },
       farm: {
         findUnique: vi.fn(),
@@ -227,69 +225,6 @@ describe('DevicesService - Pareamento de Dispositivos', () => {
         }),
       ).rejects.toThrow('Código ou Token de pareamento inválido');
     });
-  });
-
-  describe('deactivateDevice', () => {
-    it('desativa só o aparelho da fazenda do gestor e devolve a lista atualizada', async () => {
-      prismaService.device.updateMany.mockResolvedValue({ count: 1 });
-      prismaService.device.findMany.mockResolvedValue([
-        {
-          id: 'd-1',
-          farmId: 'farm-1',
-          nomeOperador: 'Ana',
-          ativo: false,
-          pairingCode: 'AGRO-1234',
-          createdAt: new Date('2026-10-01T12:00:00Z'),
-        },
-      ]);
-
-      const result = await devicesService.deactivateDevice('farm-1', 'd-1');
-
-      expect(prismaService.device.updateMany).toHaveBeenCalledWith({
-        where: { id: 'd-1', farmId: 'farm-1' },
-        data: { ativo: false },
-      });
-      expect(result).toEqual({
-        farmId: 'farm-1',
-        operators: [
-          {
-            id: 'd-1',
-            farmId: 'farm-1',
-            nomeOperador: 'Ana',
-            ativo: false,
-            pairingCode: null,
-            createdAt: '2026-10-01T12:00:00.000Z',
-          },
-        ],
-      });
-    });
-
-    it('aparelho inexistente ou de outra fazenda responde "não encontrado", sem revelar qual', async () => {
-      prismaService.device.updateMany.mockResolvedValue({ count: 0 });
-      await expect(devicesService.deactivateDevice('farm-1', 'd-outra')).rejects.toThrow(
-        NotFoundException,
-      );
-      expect(prismaService.device.findMany).not.toHaveBeenCalled();
-    });
-
-    it('desativar de novo um aparelho já inativo continua dando certo', async () => {
-      prismaService.device.updateMany.mockResolvedValue({ count: 1 });
-      prismaService.device.findMany.mockResolvedValue([]);
-      await expect(devicesService.deactivateDevice('farm-1', 'd-1')).resolves.toEqual({
-        farmId: 'farm-1',
-        operators: [],
-      });
-    });
-
-    it.each([null, undefined, '', '   ', 0])(
-      'recusa identificador inválido %s antes de tocar no banco',
-      async (id) => {
-        await expect(devicesService.deactivateDevice('farm-1', id as never)).rejects.toThrow(
-          BadRequestException,
-        );
-        expect(prismaService.device.updateMany).not.toHaveBeenCalled();
-      },
-    );
   });
 
   it('não oferece mais atualização de IP local (tarefa 5.7-B)', () => {

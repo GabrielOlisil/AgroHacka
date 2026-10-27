@@ -148,6 +148,10 @@ beforeEach(async () => {
   await db.farm.create({
     data: { id: farmId, nome: 'Sync test only', gestorId: identity.actorId },
   });
+  await db.device.create({ data: {
+    id: other.deviceId, farmId, nomeOperador: other.nome,
+    deviceToken: randomUUID(), pairingCode: randomUUID(),
+  } });
   await db.product.create({
     data: {
       id: productId,

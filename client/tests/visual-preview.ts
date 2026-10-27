@@ -126,7 +126,23 @@ const controller: Workspace = {
   operatorsLoading: ref(false),
   operatorsError: ref(""),
   async loadOperators() {},
-  async deactivateOperator() {},
+  async updateOperator(id, patch) {
+    operators.value = operators.value.map((operator) =>
+      operator.id === id
+        ? {
+            ...operator,
+            ...patch,
+            pairingCode:
+              (patch.ativo ?? operator.ativo)
+                ? (operator.pairingCode ?? "AGRO-DEMO")
+                : null,
+          }
+        : operator,
+    );
+  },
+  async deleteOperator(id) {
+    operators.value = operators.value.filter((operator) => operator.id !== id);
+  },
   ready: ref(true),
   session,
   analysis,

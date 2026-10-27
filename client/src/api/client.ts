@@ -8,6 +8,8 @@ import {
   parsePairedOperators,
   parseSyncResponse,
   text,
+  parseOperatorUpdate,
+  type UpdateOperatorInput,
   type ConnectInput,
   type LoginInput,
   type PairingInput,
@@ -69,6 +71,24 @@ export function createApi(
     return result.data;
   }
   const signal = () => AbortSignal.timeout(timeoutMs);
+  function operatorAuthorization(session: Session) {
+    if (session.role !== "GESTOR")
+      throw new Error("Somente o gestor pode gerenciar operadores.");
+    return {
+      authorization: `Bearer ${text(session.accessToken, "token do gestor")}`,
+    };
+  }
+  function mutationResult(value: unknown, session: Session, id: string) {
+    const result = object(value);
+    if (
+      result.sucesso !== true ||
+      result.id !== id ||
+      result.farmId !== session.farmId
+    )
+      throw new Error(
+        "Alteração de operador não confirmada para esta fazenda.",
+      );
+  }
   function auth(value: unknown): Session {
     const response = object(value);
     const user = object(response.user);
@@ -83,6 +103,42 @@ export function createApi(
     });
   }
   return {
+    async updateOperator(
+      session: Session,
+      id: string,
+      input: UpdateOperatorInput,
+    ): Promise<void> {
+      const authorization = operatorAuthorization(session);
+      const operatorId = text(id, "operador");
+      const body = parseOperatorUpdate(input);
+      mutationResult(
+        await unpack(
+          await client.PATCH("/devices/{id}", {
+            params: { path: { id: operatorId } },
+            headers: authorization,
+            body,
+            signal: signal(),
+          }),
+        ),
+        session,
+        operatorId,
+      );
+    },
+    async deleteOperator(session: Session, id: string): Promise<void> {
+      const authorization = operatorAuthorization(session);
+      const operatorId = text(id, "operador");
+      mutationResult(
+        await unpack(
+          await client.DELETE("/devices/{id}", {
+            params: { path: { id: operatorId } },
+            headers: authorization,
+            signal: signal(),
+          }),
+        ),
+        session,
+        operatorId,
+      );
+    },
     async createProduct(
       input: ProductInput,
       session: Session,
@@ -167,21 +223,6 @@ export function createApi(
         await client.GET("/devices", {
           params: { header: { authorization } },
           cache: "no-store",
-          signal: signal(),
-        }),
-      );
-      return parsePairedOperators(result, session.farmId);
-    },
-    async deactivateOperator(session: Session, deviceId: string) {
-      if (session.role !== "GESTOR")
-        throw new Error("Somente o gestor pode desativar operadores.");
-      const authorization = `Bearer ${text(session.accessToken, "token do gestor")}`;
-      const result = await unpack(
-        await client.POST("/devices/{id}/deactivate", {
-          params: {
-            header: { authorization },
-            path: { id: text(deviceId, "operador") },
-          },
           signal: signal(),
         }),
       );
