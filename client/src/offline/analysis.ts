@@ -42,6 +42,8 @@ const num = (value: number, digits = 2) =>
     useGrouping: false,
   });
 const brDate = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+// Within a level: shortage stops the work first, expiry is a certain loss (tarefa 12.6).
+const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, PARADO: 3, EXCESSO: 4 };
 
 /** Janela de 30 dias de calendário UTC, incluindo dias sem retiradas desde a primeira amostra. */
 export function analyzeInventory(
@@ -59,6 +61,8 @@ export function analyzeInventory(
     now.getUTCDate(),
   );
   const alerts: InventoryAlert[] = [];
+  // Sort keys per alert id, lower first: [type, severity, -stock value].
+  const severity = new Map<string, number[]>();
   const balancesByUnit: Record<string, number> = {};
   const result = safeProducts.map((p): AnalyzedProduct => {
     const history = safeMovements
@@ -87,12 +91,16 @@ export function analyzeInventory(
       rate > 0 && out.length < 3
         ? ` Previsão com poucos dados: ${out.length} retirada(s) em ${days} dia(s); pode mudar.`
         : "";
+    const value =
+      p.precoAquisicao === null ? null : Math.max(0, saldo) * p.precoAquisicao;
     const add = (
       tipo: InventoryAlert["tipo"],
       nivel: InventoryAlert["nivel"],
       justificativa: string,
       acao: string,
-    ) =>
+      gravidade = 0,
+    ) => {
+      severity.set(`${tipo}:${p.id}`, [TYPE_ORDER[tipo], gravidade, -(value ?? -1)]);
       alerts.push({
         id: `${tipo}:${p.id}`,
         productId: p.id,
@@ -106,6 +114,7 @@ export function analyzeInventory(
             : "") +
           ` O que fazer: ${acao}`,
       });
+    };
     // Buy enough for 30 days of use, never below the minimum (tarefa 12.5).
     const restock = () => {
       const amount = Math.ceil(
@@ -125,6 +134,7 @@ export function analyzeInventory(
         "URGENTE",
         `${saldo <= 0 ? `Estoque zerado: restam ${num(saldo)} ${p.unidadeMedida}` : `Restam ${num(saldo)} ${p.unidadeMedida}, no mínimo ou abaixo do mínimo de ${num(p.estoqueMinimo)} ${p.unidadeMedida}`}. ${rate === 0 ? "Sem retiradas recentes para calcular quanto tempo dura." : `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias), dura cerca de ${num(daysLeft ?? 0, 1)} dia(s).`}`,
         restock(),
+        daysLeft ?? Infinity,
       );
     else if (daysLeft !== null && daysLeft <= 15)
       add(
@@ -132,18 +142,23 @@ export function analyzeInventory(
         daysLeft <= 7 ? "URGENTE" : "ATENCAO",
         `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias, contando os dias sem retirada), o estoque dura cerca de ${num(daysLeft, 1)} dia(s).`,
         restock(),
+        daysLeft,
       );
     if (p.validade && saldo > 0) {
       const remaining = Math.round(
         (Date.parse(p.validade.slice(0, 10)) - today) / DAY,
       );
       const surplus = Math.max(0, saldo - Math.max(0, remaining) * rate);
+      // Larger value left over first; unknown price after the priced ones.
+      const loss = (quantity: number) =>
+        p.precoAquisicao === null ? 1 : -quantity * p.precoAquisicao;
       if (remaining < 0)
         add(
           "VENCIMENTO",
           "URGENTE",
           `Venceu em ${brDate(p.validade)}, há ${Math.abs(remaining)} dia(s). Ainda há ${num(saldo)} ${p.unidadeMedida} em estoque.`,
           "separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar.",
+          loss(saldo),
         );
       else if (remaining <= 30 && surplus > 0)
         add(
@@ -151,6 +166,7 @@ export function analyzeInventory(
           remaining === 0 ? "URGENTE" : "ATENCAO",
           `Vence ${remaining === 0 ? "hoje" : `em ${remaining} dia(s)`}; no ritmo de uso atual (${num(rate)} ${p.unidadeMedida} por dia), devem sobrar cerca de ${num(surplus)} ${p.unidadeMedida} sem uso.${rate === 0 ? " Não houve retiradas recentes, então a previsão é incerta." : ""}`,
           "usar este produto primeiro e não repetir a compra nesse volume.",
+          loss(surplus),
         );
     }
     if (out.length >= 4) {
@@ -164,6 +180,7 @@ export function analyzeInventory(
           "ATENCAO",
           `Retirada de ${num(last.quantidade)} ${p.unidadeMedida}, ${num(last.quantidade / mean, 1)} vezes a média das ${previous.length} retiradas anteriores (${num(mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
           "conferir com quem retirou se a quantidade está certa.",
+          -last.quantidade / mean,
         );
     }
     const lastOut = history.filter((m) => m.tipo === "SAIDA").at(-1);
@@ -250,8 +267,21 @@ export function analyzeInventory(
     cumulative += p.percentualValor;
   }
   const priority = { URGENTE: 0, ATENCAO: 1, INFORMATIVO: 2 };
+  const bySeverity = (a: InventoryAlert, b: InventoryAlert) => {
+    const ka = severity.get(a.id)!;
+    const kb = severity.get(b.id)!;
+    for (let i = 0; i < ka.length; i++) {
+      // Infinity - Infinity is NaN: treat as a tie.
+      const diff = ka[i] - kb[i];
+      if (diff) return diff;
+    }
+    return 0;
+  };
   alerts.sort(
-    (a, b) => priority[a.nivel] - priority[b.nivel] || a.id.localeCompare(b.id),
+    (a, b) =>
+      priority[a.nivel] - priority[b.nivel] ||
+      bySeverity(a, b) ||
+      a.id.localeCompare(b.id),
   );
   return {
     products: result,

@@ -547,9 +547,33 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - excesso: "não comprar mais até o estoque baixar".
   - Testes: `alert-language.spec.ts` (cliente: todos os tipos, custo, sem preço, saldo negativo, saldo no mínimo, mínimo maior que 30 dias de uso, ordem depois do aviso de poucos dados) e `official-seed.spec.ts` (API: todo alerta da base simulada termina com a ação; Ureia com 127 sc e R$ 20320). A paridade garante textos idênticos nos dois motores.
   - Resultado: API com 382 testes e build aprovados; cliente com 542 testes e checagem de tipos aprovados. As 4 falhas de `build-packaging.spec.ts` já existiam na `dev` (o workflow mudou em `ed1ab38`/`fa9f0f2` sem atualizar o teste) e ficam para a 12.9.
-- [ ] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
+- [x] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
   - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
   - Escrever o critério na descrição do PR, para o DEV 2 levar ao README (12.13).
+  - Feito em 28/10, nos dois motores.
+  - **Critério (para o README e a tela "Como funciona"):**
+    1. nível: urgente → atenção → informativo;
+    2. tipo, dentro do nível: falta → vencimento → fora do padrão → parado → excesso (a falta para a operação; o vencimento é perda certa);
+    3. gravidade, dentro do tipo:
+       - falta: menos dias restantes primeiro, e sem previsão por último;
+       - vencimento: maior valor da sobra em R$ (o vencido conta todo o saldo), e sem preço por último;
+       - fora do padrão: maior múltiplo da média;
+       - parado e excesso: maior valor em estoque;
+    4. desempate: maior valor em estoque, depois o identificador.
+  - O `prioritizeAlerts`, que só ordenava pelo identificador, deixou de ser usado e foi removido com seus 2 testes.
+  - Na base simulada, a ordem passa a ser:
+    1. Ureia;
+    2. vencimento do Trichoderma;
+    3. Diesel;
+    4. MAP (R$ 147.000), Respirador e Bicos;
+    5. excesso do Trichoderma.
+  - Testes:
+    - `client/tests/alert-order.spec.ts` (novo): ordem completa com os 5 tipos nos 3 níveis, empate pelo valor, sem previsão, sem preço, independência da ordem de entrada e lista vazia;
+    - gabarito da base simulada (`official-seed.spec.ts`) e `stock.service.spec.ts` atualizados para a nova ordem;
+    - a paridade garante a mesma ordem nos dois motores.
+  - Resultado:
+    - API: 380 testes e build aprovados (menos os 2 do `prioritizeAlerts`);
+    - cliente: 545 testes e checagem de tipos aprovados; continuam só as 4 falhas de empacotamento que já existiam (12.9).
 - [ ] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
 - [ ] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
   - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;

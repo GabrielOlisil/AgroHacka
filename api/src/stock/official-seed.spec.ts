@@ -100,14 +100,16 @@ describe('Gabarito da base simulada no motor de produção (Tarefa 12.10)', () =
   };
 
   it('gera exatamente os alertas planejados, na ordem de prioridade', () => {
+    // Tarefa 12.6: no mesmo nível, vencimento antes de fora do padrão e parado antes de
+    // excesso; parados pelo valor parado (MAP R$ 147.000, respirador R$ 1.950, bicos R$ 1.750).
     expect(analyze().alerts.map((a) => `${a.nivel} ${a.tipo} ${a.productId}`)).toEqual([
       'URGENTE FALTA ureia',
-      'ATENCAO ANOMALIA diesel',
       'ATENCAO VENCIMENTO trichoderma',
-      'INFORMATIVO EXCESSO trichoderma',
-      'INFORMATIVO PARADO bicos',
+      'ATENCAO ANOMALIA diesel',
       'INFORMATIVO PARADO map',
       'INFORMATIVO PARADO respirador',
+      'INFORMATIVO PARADO bicos',
+      'INFORMATIVO EXCESSO trichoderma',
     ]);
   });
 
