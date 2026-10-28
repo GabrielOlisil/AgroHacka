@@ -92,3 +92,60 @@ describe("justificativas dos alertas em linguagem simples (tarefa 11.15)", () =>
     expect(text("EXCESSO", "excesso")).toContain("época do ano");
   });
 });
+
+// Tarefa 12.5: todo alerta termina com o que fazer. Na falta, comprar o
+// suficiente para 30 dias de uso, sem ficar abaixo do mínimo (arredonda para cima).
+describe("ação recomendada em todos os alertas (tarefa 12.5)", () => {
+  const only = (p: ReturnType<typeof product>, ms: ReturnType<typeof move>[]) =>
+    analyzeInventory([p], ms, NOW).alerts.find((a) => a.tipo === "FALTA")?.justificativa ?? "";
+
+  it("todo alerta termina com uma frase “O que fazer”", () => {
+    for (const alert of alerts) expect(alert.justificativa).toMatch(/ O que fazer: [^.]+\.$/);
+  });
+
+  it("falta: compra para 30 dias de uso, com o custo, depois do aviso de poucos dados", () => {
+    expect(text("FALTA", "zerado")).toMatch(
+      /pode mudar\. O que fazer: comprar cerca de 75 L \(cerca de R\$ 750\) para 30 dias de uso\.$/,
+    );
+    expect(text("FALTA", "curto")).toMatch(
+      /O que fazer: comprar cerca de 38 L \(cerca de R\$ 380\) para 30 dias de uso\.$/,
+    );
+  });
+
+  it("falta: quando o mínimo é maior que 30 dias de uso, volta ao mínimo", () => {
+    expect(text("FALTA", "minimo")).toMatch(
+      /O que fazer: comprar cerca de 5 L \(cerca de R\$ 50\) para voltar ao mínimo\.$/,
+    );
+  });
+
+  it("falta: sem retiradas recentes, volta ao mínimo; sem preço, não mostra custo", () => {
+    expect(
+      only(product("semPreco", { estoqueMinimo: 10, precoAquisicao: null }), [move("semPreco", "ENTRADA", 4, -5)]),
+    ).toMatch(/O que fazer: comprar cerca de 6 L para voltar ao mínimo\.$/);
+  });
+
+  it("falta: saldo negativo conta como zero na compra", () => {
+    expect(
+      only(product("negativo"), [move("negativo", "ENTRADA", 10, -5), move("negativo", "SAIDA", 15, -1)]),
+    ).toMatch(/O que fazer: comprar cerca de 225 L \(cerca de R\$ 2250\) para 30 dias de uso\.$/);
+  });
+
+  it("falta: saldo exatamente no mínimo e sem uso pede reposição, sem quantidade zero", () => {
+    expect(
+      only(product("noMinimo", { estoqueMinimo: 10 }), [move("noMinimo", "ENTRADA", 10, -5)]),
+    ).toMatch(/O que fazer: repor antes da próxima retirada, porque o saldo está no mínimo\.$/);
+  });
+
+  it("validade, fora do padrão, parado e excesso dizem o que fazer", () => {
+    expect(text("VENCIMENTO", "vencido")).toMatch(
+      /O que fazer: separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar\.$/,
+    );
+    expect(text("VENCIMENTO", "vence")).toMatch(
+      /O que fazer: usar este produto primeiro e não repetir a compra nesse volume\.$/,
+    );
+    expect(text("ANOMALIA", "pico")).toMatch(/O que fazer: conferir com quem retirou se a quantidade está certa\.$/);
+    expect(text("PARADO", "parado")).toMatch(/O que fazer: não comprar mais até voltar a ter saída\.$/);
+    expect(text("PARADO", "parado")).not.toContain("Avalie antes de comprar mais");
+    expect(text("EXCESSO", "excesso")).toMatch(/O que fazer: não comprar mais até o estoque baixar\.$/);
+  });
+});

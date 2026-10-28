@@ -118,7 +118,12 @@ export function analyzeStockInventory(
         ? ` Previsão com poucos dados: ${out.length} retirada(s) em ${days} dia(s); pode mudar.`
         : '';
 
-    const add = (tipo: StockInventoryAlert['tipo'], nivel: StockInventoryAlert['nivel'], justificativa: string) =>
+    const add = (
+      tipo: StockInventoryAlert['tipo'],
+      nivel: StockInventoryAlert['nivel'],
+      justificativa: string,
+      acao: string,
+    ) =>
       alerts.push({
         id: `${tipo}:${p.id}`,
         productId: p.id,
@@ -126,20 +131,31 @@ export function analyzeStockInventory(
         nivel,
         titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
         justificativa:
-          justificativa + (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : ''),
+          justificativa +
+          (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : '') +
+          ` O que fazer: ${acao}`,
       });
+    // Buy enough for 30 days of use, never below the minimum (tarefa 12.5).
+    const restock = () => {
+      const amount = Math.ceil(Math.max(p.estoqueMinimo, rate * 30) - Math.max(0, saldo) - 1e-9);
+      if (amount <= 0) return 'repor antes da próxima retirada, porque o saldo está no mínimo.';
+      const cost = p.precoAquisicao === null ? '' : ` (cerca de R$ ${num(amount * p.precoAquisicao)})`;
+      return `comprar cerca de ${num(amount)} ${p.unidadeMedida}${cost} para ${rate > 0 && rate * 30 >= p.estoqueMinimo ? '30 dias de uso' : 'voltar ao mínimo'}.`;
+    };
 
     if (saldo <= p.estoqueMinimo)
       add(
         'FALTA',
         'URGENTE',
         `${saldo <= 0 ? `Estoque zerado: restam ${num(saldo)} ${p.unidadeMedida}` : `Restam ${num(saldo)} ${p.unidadeMedida}, no mínimo ou abaixo do mínimo de ${num(p.estoqueMinimo)} ${p.unidadeMedida}`}. ${rate === 0 ? 'Sem retiradas recentes para calcular quanto tempo dura.' : `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias), dura cerca de ${num(daysLeft ?? 0, 1)} dia(s).`}`,
+        restock(),
       );
     else if (daysLeft !== null && daysLeft <= 15)
       add(
         'FALTA',
         daysLeft <= 7 ? 'URGENTE' : 'ATENCAO',
         `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias, contando os dias sem retirada), o estoque dura cerca de ${num(daysLeft, 1)} dia(s).`,
+        restock(),
       );
 
     if (p.validade && saldo > 0) {
@@ -150,12 +166,14 @@ export function analyzeStockInventory(
           'VENCIMENTO',
           'URGENTE',
           `Venceu em ${brDate(p.validade)}, há ${Math.abs(remaining)} dia(s). Ainda há ${num(saldo)} ${p.unidadeMedida} em estoque.`,
+          'separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar.',
         );
       else if (remaining <= 30 && surplus > 0)
         add(
           'VENCIMENTO',
           remaining === 0 ? 'URGENTE' : 'ATENCAO',
           `Vence ${remaining === 0 ? 'hoje' : `em ${remaining} dia(s)`}; no ritmo de uso atual (${num(rate)} ${p.unidadeMedida} por dia), devem sobrar cerca de ${num(surplus)} ${p.unidadeMedida} sem uso.${rate === 0 ? ' Não houve retiradas recentes, então a previsão é incerta.' : ''}`,
+          'usar este produto primeiro e não repetir a compra nesse volume.',
         );
     }
 
@@ -168,6 +186,7 @@ export function analyzeStockInventory(
           'ANOMALIA',
           'ATENCAO',
           `Retirada de ${num(last.quantidade)} ${p.unidadeMedida}, ${num(last.quantidade / mean, 1)} vezes a média das ${previous.length} retiradas anteriores (${num(mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
+          'conferir com quem retirou se a quantidade está certa.',
         );
     }
 
@@ -177,7 +196,8 @@ export function analyzeStockInventory(
       add(
         'PARADO',
         'INFORMATIVO',
-        'Há saldo, mas nenhuma retirada nos últimos 30 dias. Avalie antes de comprar mais.',
+        'Há saldo, mas nenhuma retirada nos últimos 30 dias.',
+        'não comprar mais até voltar a ter saída.',
       );
 
     if (daysLeft !== null && daysLeft > 90)
@@ -185,6 +205,7 @@ export function analyzeStockInventory(
         'EXCESSO',
         'INFORMATIVO',
         `Há estoque para cerca de ${num(daysLeft, 0)} dias no ritmo atual, mais de 90 dias. Considere a época do ano antes de decidir.`,
+        'não comprar mais até o estoque baixar.',
       );
 
     balancesByUnit[p.unidadeMedida] = (balancesByUnit[p.unidadeMedida] ?? 0) + saldo;

@@ -136,6 +136,17 @@ describe('Gabarito da base simulada no motor de produção (Tarefa 12.10)', () =
     );
   });
 
+  it('todo alerta termina com o que fazer (tarefa 12.5)', () => {
+    for (const alert of analyze().alerts) expect(alert.justificativa).toMatch(/ O que fazer: [^.]+\.$/);
+  });
+
+  it('Falta: sugere comprar a ureia para 30 dias de uso, com o custo (tarefa 12.5)', () => {
+    // 85 sc em 18 dias = 4,72 sc/dia; 30 dias = 141,7 sc; menos 15 em estoque = 126,7, arredonda para 127.
+    expect(analyze().alerts.find((a) => a.id === 'FALTA:ureia')?.justificativa).toMatch(
+      /O que fazer: comprar cerca de 127 sc \(cerca de R\$ 20320\) para 30 dias de uso\.$/,
+    );
+  });
+
   it('Capital parado: o MAP é classe A, com R$ 147.000 imobilizados', () => {
     const map = analyze().products.find((p) => p.id === 'map');
     expect(map?.classeAbc).toBe('A');

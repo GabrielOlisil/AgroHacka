@@ -526,12 +526,27 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
-- [ ] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
+- [x] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
   - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
   - Vencimento: usar primeiro e não repetir a compra nesse volume.
   - Fora do padrão: conferir a retirada.
   - Parado e excesso: não comprar até girar.
   - Testes: sem consumo, saldo zerado, saldo acima da meta, preço ausente, poucos dados e unidades diferentes.
+  - Feito em 28/10, nos dois motores (`analysis.ts` e `stock-engine.ts`). Todo alerta termina com "O que fazer: …", depois do aviso de poucos dados.
+  - **Regra da compra (para o README, 12.13):** quantidade = maior valor entre o mínimo e 30 dias do uso médio, menos o saldo (saldo negativo conta como zero), arredondada para cima.
+    - Mostra o custo quando o insumo tem preço.
+    - Diz "para 30 dias de uso" ou "para voltar ao mínimo", conforme o que pesou mais.
+    - Sem retiradas recentes, volta ao mínimo.
+    - Com o saldo exatamente no mínimo e sem uso, pede reposição antes da próxima retirada.
+    - Exemplo da base simulada: "comprar cerca de 127 sc (cerca de R$ 20320) para 30 dias de uso".
+  - **Textos dos outros alertas:**
+    - vencido: "separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar";
+    - perto de vencer: "usar este produto primeiro e não repetir a compra nesse volume";
+    - fora do padrão: "conferir com quem retirou se a quantidade está certa";
+    - parado: "não comprar mais até voltar a ter saída" (substitui "Avalie antes de comprar mais");
+    - excesso: "não comprar mais até o estoque baixar".
+  - Testes: `alert-language.spec.ts` (cliente: todos os tipos, custo, sem preço, saldo negativo, saldo no mínimo, mínimo maior que 30 dias de uso, ordem depois do aviso de poucos dados) e `official-seed.spec.ts` (API: todo alerta da base simulada termina com a ação; Ureia com 127 sc e R$ 20320). A paridade garante textos idênticos nos dois motores.
+  - Resultado: API com 382 testes e build aprovados; cliente com 542 testes e checagem de tipos aprovados. As 4 falhas de `build-packaging.spec.ts` já existiam na `dev` (o workflow mudou em `ed1ab38`/`fa9f0f2` sem atualizar o teste) e ficam para a 12.9.
 - [ ] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
   - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
   - Escrever o critério na descrição do PR, para o DEV 2 levar ao README (12.13).
@@ -545,6 +560,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**
 - [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+  - Antes, corrigir as 4 falhas de `client/tests/build-packaging.spec.ts`: o teste ainda espera só o build Android, mas o workflow voltou a ter Windows e Linux (`ed1ab38`, `fa9f0f2`).
 - [x] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
   - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
   - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
