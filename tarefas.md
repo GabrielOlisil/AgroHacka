@@ -461,7 +461,21 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 ### ETAPA 12: Final presencial (30/10/2026, 19h15, Auditório do CEI)
 *Origem: regras da final e parecer consolidado da seleção, ambos de 28/10/2026. A banca dá nota nova, de zero: C1 problema (20), C2 funcionamento e demonstração (20), C3 análises e apoio à decisão (20), C4 validação e testes (15), C5 código, documentação e IA (15), C6 clareza e respostas (10). O desempate usa C3, depois C2, depois C1. Na seleção, a equipe ficou em 4º (80,25); o C3 (14,75) foi o critério mais fraco.*
 
-*Prazo: melhorias até **30/10 às 14h**. Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+*Comparação com as outras seis finalistas (parecer do Claude). O que as mais bem avaliadas têm e nós não temos:*
+- *ação recomendada concreta em cada alerta, incluindo quantidade e custo da compra (3 Hacketeers, BDCACO, Aridev, Tetrarreme);*
+- *pontuação de prioridade documentada dentro de cada nível e resumo para o gestor no topo (3 Hacketeers, Hype Stack);*
+- *reanálise que mostra o que mudou depois do registro: alertas novos, resolvidos e que mudaram de nível (3 Hacketeers, Hype Stack);*
+- *página "Como funciona" com os critérios e as sete perguntas do desafio (3 Hacketeers, Hype Stack);*
+- *teste-gabarito: cada problema plantado gera o alerta esperado e os produtos normais não geram nenhum (Hype Stack, Tetrarreme, 3 Hacketeers);*
+- *aviso fixo de dados simulados na tela (3 Hacketeers, Tetrarreme, Aridev);*
+- *importação de nova base (cinco das seis).*
+
+*Fraquezas comuns que podemos explorar:*
+- *quase ninguém tem retorno de produtor ou da Agronomia;*
+- *a revisão humana do código gerado por IA raramente está registrada;*
+- *nenhuma concorrente tem app de celular nativo com sincronização ativa e WhatsApp; a Tetrarreme funciona offline no navegador, mas não sincroniza.*
+
+*Prazo: melhorias até **30/10 às 14h**.* Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
 
 **Prioridade 1 — obrigatório para a final**
 - [ ] **12.1. [EM CONJUNTO] Versão final identificada e informada até 30/10 às 14h:** criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
@@ -478,17 +492,28 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
   - internet alternativa testada.
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
-- [ ] **12.5. [DEV 1 + DEV 2] Quanto comprar:** o alerta de falta passa a sugerir a quantidade de reposição. Proposta: repor o suficiente para 30 dias de uso, sem ficar abaixo do mínimo.
-  - Testes: sem consumo, saldo zerado, saldo acima da meta, poucos dados e unidades diferentes.
-- [ ] **12.6. [DEV 1 + DEV 2] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador. Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média.
+- [ ] **12.5. [DEV 1 + DEV 2] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer.
+  - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
+  - Vencimento: usar primeiro e não repetir a compra nesse volume.
+  - Fora do padrão: conferir a retirada.
+  - Parado e excesso: não comprar até girar.
+  - Testes: sem consumo, saldo zerado, saldo acima da meta, preço ausente, poucos dados e unidades diferentes.
+- [ ] **12.6. [DEV 1 + DEV 2] Ordem dentro de cada nível e resumo no topo:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
+  - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
+  - Documentar esse critério no README.
+  - Mostrar no topo da Visão geral uma frase de resumo para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir".
 - [ ] **12.7. [DEV 1 + DEV 2] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
   - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
   - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
-- [ ] **12.8. [DEV 2] Avisar na tela que a fazenda de demonstração é simulada (C6):** o parecer apontou que só o README e os dados dizem isso.
+- [ ] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
+- [ ] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
+- [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**
 - [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
-- [ ] **12.10. [DEV 1] Testes dos cenários da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`. Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
+- [ ] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
+  - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
+  - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
 - [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
 - [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
 - [ ] **12.13. [EM CONJUNTO] README:**
@@ -496,6 +521,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
   - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
   - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
   - corrigir "desapercebidos" e a frase herdada da IA ("O usuário confirmou…");
+  - tabela de revisão humana do uso de IA: que parte, quem revisou e o que foi conferido;
   - registrar o retorno da 12.14.
 - [ ] **12.14. [EM CONJUNTO] Retorno do público (C4):** mostrar o app a pelo menos uma pessoa do público, como produtor, estudante ou professor de Agronomia, e registrar o retorno sem dados pessoais.
 
@@ -512,7 +538,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
   A banca pode perguntar a qualquer integrante, então os dois estudam tudo. Atualizar o baralho do Anki.
 
-**Fora do escopo até a final (responder como limitação):** importação de arquivo, lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
+**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
 ---
 
