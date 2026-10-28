@@ -14,9 +14,6 @@ vi.mock("@zxing/browser", () => ({
     decodeFromImageUrl = scanner.decodeImage;
   },
 }));
-vi.mock("../src/components/HelloWorld.vue", () => ({
-  default: { template: "<div>Template inicial</div>" },
-}));
 vi.mock("qrcode", () => ({
   default: {
     toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,dGVzdA=="),
