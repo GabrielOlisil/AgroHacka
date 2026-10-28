@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -73,6 +74,8 @@ function valid(m: SyncMovementDto, identity: SyncIdentity): SyncMovementDto {
 
 @Injectable()
 export class SyncService {
+  private readonly logger = new Logger(SyncService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly stockService?: StockService,
@@ -240,8 +243,14 @@ export class SyncService {
     if (results.some((r) => r.status === 'ACCEPTED')) {
       try {
         await this.stockService?.reanalyzeAndPersistAlerts(identity.farmId);
-      } catch {
-        // Falha na reanálise de alertas não deve impedir a conclusão do sync
+      } catch (error) {
+        // Falha na reanálise de alertas não deve impedir a conclusão do sync,
+        // mas precisa ficar registrada (tarefa 12.11).
+        const reason = error instanceof Error ? error : new Error(String(error));
+        this.logger.error(
+          `Falha na reanálise dos alertas da fazenda ${identity.farmId}: ${reason.message}`,
+          reason.stack,
+        );
       }
     }
 
