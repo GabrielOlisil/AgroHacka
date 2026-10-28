@@ -599,7 +599,13 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Resultado:
     - API: 385 testes e build aprovados;
     - cliente: 555 testes e checagem de tipos aprovados, mais as 4 falhas de empacotamento que já existiam (12.9).
-- [ ] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
+- [x] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe:
+    - na fazenda da carga de demonstração ("Fazenda Modelo AgroHack", sem diferenciar maiúsculas nem espaços), uma faixa fixa abaixo da barra superior diz: "Dados simulados: esta fazenda de demonstração e seus números foram criados pela equipe, não são de uma propriedade real.";
+    - vale para o gestor e o operador, em todas as abas, com `role="note"`;
+    - não aparece em outras fazendas nem na tela de entrada.
+  - Limitação: o app reconhece a fazenda pelo nome. Uma fazenda real com esse mesmo nome também mostraria o aviso.
+  - Testes em `app.spec.ts` (3 novos, RED antes da faixa). Cliente com 560 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
 - [ ] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
 - [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
 

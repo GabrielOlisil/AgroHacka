@@ -471,6 +471,12 @@ const isOnline = ref(navigator.onLine);
 const updateOnline = () => {
   isOnline.value = navigator.onLine;
 };
+// Farm created by the demo data load (api/src/stock/official-seed.data.ts): its
+// numbers are simulated, and every screen says so (tarefa 12.8).
+const isDemoFarm = computed(
+  () =>
+    session.value?.farmNome.trim().toLowerCase() === "fazenda modelo agrohack",
+);
 const syncLabel = computed(() => {
   if (syncing.value) return "Atualizando…";
   if (!isOnline.value)
@@ -804,6 +810,15 @@ onUnmounted(() => {
           }}
         </button>
       </header>
+      <p
+        v-if="isDemoFarm"
+        class="demo-notice"
+        role="note"
+        data-testid="demo-notice"
+      >
+        <strong>Dados simulados:</strong> esta fazenda de demonstração e seus
+        números foram criados pela equipe, não são de uma propriedade real.
+      </p>
       <div class="page-heading">
         <div>
           <span class="eyebrow">{{
