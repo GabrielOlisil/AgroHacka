@@ -509,8 +509,10 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
   - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
-- [ ] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
+- [x] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
   - Aceite: os tokens do repositório recebem 401 na API publicada.
+  - Em 28/10, a senha e os dois tokens do repositório funcionavam na API publicada (200). A senha do gestor de demonstração foi trocada direto no banco, com hash bcrypt gerado localmente; a senha nova não está no repositório. Os aparelhos `tok_tratorista_01` e `tok_almoxarife_02` foram desativados, sem apagar dados. No novo teste, a senha antiga e os dois tokens receberam 401. Sessões abertas e o celular pareado por QR Code continuam funcionando.
+  - `agro1234` continua valendo só para quem roda a carga localmente; o README deve dizer isso (12.13).
 - [ ] **12.4. [EM CONJUNTO] Logística da final:**
   - os dois presentes no CEI antes das 19h15 (atraso ou ausência de qualquer integrante desclassifica a equipe);
   - notebook carregado, com carregador e adaptador HDMI;
