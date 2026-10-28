@@ -627,7 +627,12 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - a reanálise falha, o sync conclui e o erro é registrado com a fazenda e o motivo;
     - sem movimentações aceitas, não há reanálise nem log.
   - Resultado: API com 382 testes e build aprovados.
-- [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
+- [x] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe:
+    - `HelloWorld.vue` removido, junto com os dois `vi.mock` que o simulavam nos testes (o app nunca o usava);
+    - `api/README.md` reescrito: o que a API faz, os comandos reais do `package.json`, onde está cada parte e links para as seções do README principal.
+  - Teste: `client/tests/template-leftovers.spec.ts` falhava com os restos (RED) e passou depois da remoção.
+  - Resultado: cliente com 557 testes, checagem de tipos e build aprovados (mais as 4 falhas de empacotamento que já existiam, da 12.9).
 - [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
   - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
   - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
