@@ -491,6 +491,12 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
   - cópia local dos slides, vídeos e dados;
   - internet alternativa testada.
 
+- [ ] **12.19. [EM CONJUNTO] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+  - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
+  - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
+  - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
+  - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
+
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
 - [ ] **12.5. [DEV 1 + DEV 2] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer.
   - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
