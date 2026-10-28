@@ -209,12 +209,13 @@ jobs:
       - name: Publicar Release no GitHub
         uses: softprops/action-gh-release@v2
         with:
-          # main: pré-release por execução; tags v*: release oficial da tag.
+          # main e tags v*: release oficial; main usa uma tag por execução.
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('android-build-{0}', github.run_number) }}
           target_commitish: ${{ github.sha }}
           name: AgroHacka - ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build {0}', github.run_number) }}
           draft: false
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          prerelease: false
+          make_latest: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
