@@ -130,6 +130,32 @@ describe("aviso de dados simulados na fazenda de demonstração (tarefa 12.8)", 
     welcome.unmount();
   });
 });
+describe("resumo no topo da Visão geral (tarefa 12.20)", () => {
+  const summary = '[data-testid="alert-summary"]';
+  const withAlerts = (role: "GESTOR" | "OPERADOR") => {
+    const state = controller(role);
+    state.analysis.value.products = [{ id: "p", nome: "Ureia", unidadeMedida: "sc", saldo: 5 }] as never;
+    state.analysis.value.alerts = [
+      { id: "FALTA:p", productId: "p", tipo: "FALTA", nivel: "URGENTE", titulo: "Ureia · Reposição", justificativa: "…" },
+    ] as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("o gestor vê a frase de resumo acima dos números", () => {
+    const wrapper = withAlerts("GESTOR");
+    expect(wrapper.get(summary).text()).toBe("Hoje: 1 compra urgente.");
+    wrapper.unmount();
+  });
+
+  it("o operador não vê o resumo; numa fazenda sem insumos, ninguém vê", () => {
+    const operator = withAlerts("OPERADOR");
+    expect(operator.find(summary).exists()).toBe(false);
+    operator.unmount();
+    const empty = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(empty.find(summary).exists()).toBe(false);
+    empty.unmount();
+  });
+});
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   state.analysis.value.products = [
     { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },

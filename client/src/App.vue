@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
+import { summarizeAlerts } from "./alert-summary";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
@@ -917,6 +918,13 @@ onUnmounted(() => {
         </p>
       </details>
       <template v-if="tab === 'overview'">
+        <p
+          v-if="session.role === 'GESTOR' && analysis.products.length"
+          class="alert-summary"
+          data-testid="alert-summary"
+        >
+          {{ summarizeAlerts(analysis.alerts) }}
+        </p>
         <section
           class="metrics"
           :class="{ two: session.role !== 'GESTOR' }"
