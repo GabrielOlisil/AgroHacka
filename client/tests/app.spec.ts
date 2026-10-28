@@ -91,6 +91,45 @@ describe("versão do aplicativo", () => {
     wrapper.unmount();
   });
 });
+// Tarefa 12.8: a fazenda carregada pela base de demonstração avisa, em toda tela,
+// que os dados são simulados. O nome é o da carga (api/src/stock/official-seed.data.ts).
+describe("aviso de dados simulados na fazenda de demonstração (tarefa 12.8)", () => {
+  const notice = '[data-testid="demo-notice"]';
+  const mountFarm = (role: "GESTOR" | "OPERADOR", farmNome: string) => {
+    const state = controller(role);
+    state.session.value = { role, farmId: "f", farmNome, nome: "Ana" } as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("aparece para o gestor e o operador da fazenda de demonstração, em todas as abas", async () => {
+    for (const role of ["GESTOR", "OPERADOR"] as const) {
+      const wrapper = mountFarm(role, "Fazenda Modelo AgroHack");
+      for (const tab of ["Visão geral", "Estoque", "Histórico"]) {
+        await goToTab(wrapper, tab);
+        expect(wrapper.get(notice).attributes("role")).toBe("note");
+        expect(wrapper.get(notice).text()).toBe(
+          "Dados simulados: esta fazenda de demonstração e seus números foram criados pela equipe, não são de uma propriedade real.",
+        );
+      }
+      wrapper.unmount();
+    }
+  });
+
+  it("reconhece o nome mesmo com espaços ou letras diferentes", () => {
+    const wrapper = mountFarm("GESTOR", "  fazenda modelo agrohack ");
+    expect(wrapper.find(notice).exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("não aparece numa fazenda real nem na tela de entrada", () => {
+    const real = mountFarm("GESTOR", "Boa Vista");
+    expect(real.find(notice).exists()).toBe(false);
+    real.unmount();
+    const welcome = mount(App, { props: { controller: controller() as never } });
+    expect(welcome.find(notice).exists()).toBe(false);
+    welcome.unmount();
+  });
+});
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   state.analysis.value.products = [
     { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },

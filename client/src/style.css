@@ -669,6 +669,14 @@ nav button.active {
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border-default);
 }
+/* Demo farm: simulated data, said on every screen (tarefa 12.8). */
+.demo-notice {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-primary);
+  background: rgba(227, 183, 26, 0.16);
+  border-left: 4px solid var(--color-accent);
+}
 .sync-status {
   display: inline-flex;
   align-items: center;
