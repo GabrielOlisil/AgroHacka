@@ -500,7 +500,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - **30/10 até 12h:** `dev` → `main`, release e tag (12.1);
 - **30/10 às 14h:** congelado.
 
-Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30.
+Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30; 12.21 por último (depois das outras tarefas ou no dia 30, o que acontecer primeiro).
 
 **Prioridade 1 — obrigatório para a final**
 - [ ] **12.1. [DEV 2] Versão final identificada e informada até 30/10 às 14h** (qualquer um dos dois pode mandar a mensagem à organização): criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
@@ -569,6 +569,12 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30.
   - variação de preço.
 
   A banca pode perguntar a qualquer integrante, então os dois estudam tudo. Atualizar o baralho do Anki.
+- [ ] **12.21. [EM CONJUNTO] Revisão final da apresentação (por último):** fazer depois de todas as outras tarefas ou no dia 30/10, o que acontecer primeiro.
+  - Conferir se os slides, as falas e os vídeos refletem a versão final: nome do software (12.19), ações recomendadas (12.5), ordem por gravidade (12.6), resumo no topo (12.20), "o que mudou" (12.17), tela "Como funciona" (12.18) e a tag da versão (12.1).
+  - Regravar os vídeos que mostram telas que mudaram.
+  - Cronometrar a apresentação completa com a demonstração ao vivo: no máximo 10 minutos, com folga.
+  - Conferir os números citados (testes, alertas, valores da base) contra o app e o README.
+  - Atualizar as respostas da sabatina e o Anki com o que mudou.
 
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
