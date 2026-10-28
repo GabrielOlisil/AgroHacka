@@ -475,13 +475,39 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - *a revisão humana do código gerado por IA raramente está registrada;*
 - *nenhuma concorrente tem app de celular nativo com sincronização ativa e WhatsApp; a Tetrarreme funciona offline no navegador, mas não sincroniza.*
 
-*Prazo: melhorias até **30/10 às 14h**.* Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+*Prazo: melhorias até **30/10 às 14h**. Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+
+**Divisão para trabalhar em paralelo.** Cada um fica com um conjunto de arquivos, para que nenhum precise esperar o outro e os PRs não entrem em conflito.
+- **DEV 1 (Kauê) — motor de análise e API:** `api/src/**`, `client/src/offline/analysis.ts` e os testes deles, incluindo o `parity.spec.ts`.
+- **DEV 2 (Gabriel) — telas, documentação e entrega:** `client/src/App.vue`, `client/src/components/`, `client/src/style.css`, `client/src-tauri/tauri.conf.json`, `.github/workflows/` e `README.md`.
+
+| Ordem | DEV 1 (Kauê) | DEV 2 (Gabriel) |
+| --- | --- | --- |
+| 1 | 12.3 credenciais da demonstração e a parte de API da 12.2 | 12.19 nome (depois da escolha conjunta) e 12.12 restos de modelo |
+| 2 | 12.10 teste-gabarito, que serve de base para as regras novas | 12.8 aviso de dados simulados e 12.20 resumo no topo |
+| 3 | 12.5 ação recomendada | 12.17 o que mudou depois do registro |
+| 4 | 12.6 ordem por gravidade | 12.18 tela "Como funciona" |
+| 5 | 12.11 registro da falha da reanálise | 12.9 testes do cliente no CI |
+| 6 | 12.7, se der tempo | 12.13 README e 12.1 tag e release |
+
+**Por que ninguém espera ninguém:**
+- a ação recomendada (12.5) entra no próprio texto do alerta, que a tela já exibe; não precisa mudar a interface;
+- o resumo (12.20) e o "o que mudou" (12.17) usam o nível e o tipo dos alertas, que já existem hoje;
+- o DEV 2 escreve a tela "Como funciona" e o README com as regras atuais; o DEV 1 descreve, na descrição de cada PR, o texto das regras novas, e o DEV 2 só acrescenta no fim.
+
+**Marcos:**
+- **29/10 até 23h:** todo o código na `dev`;
+- **30/10 até 12h:** `dev` → `main`, release e tag (12.1);
+- **30/10 às 14h:** congelado.
+
+Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30.
 
 **Prioridade 1 — obrigatório para a final**
-- [ ] **12.1. [EM CONJUNTO] Versão final identificada e informada até 30/10 às 14h:** criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
+- [ ] **12.1. [DEV 2] Versão final identificada e informada até 30/10 às 14h** (qualquer um dos dois pode mandar a mensagem à organização): criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
   - Corrigir as divergências apontadas no parecer: o README cita `android-build-21` como versão de entrega, mas o link baixa a release mais recente; o roteiro do vídeo cita `v1.0.4-entrega`, que não existe.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
-  - Confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
+  - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
+  - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
   - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
 - [ ] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
   - Aceite: os tokens do repositório recebem 401 na API publicada.
@@ -491,24 +517,24 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
   - cópia local dos slides, vídeos e dados;
   - internet alternativa testada.
 
-- [ ] **12.19. [EM CONJUNTO] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+- [ ] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
   - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
   - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
   - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
   - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
-- [ ] **12.5. [DEV 1 + DEV 2] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer.
+- [ ] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
   - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
   - Vencimento: usar primeiro e não repetir a compra nesse volume.
   - Fora do padrão: conferir a retirada.
   - Parado e excesso: não comprar até girar.
   - Testes: sem consumo, saldo zerado, saldo acima da meta, preço ausente, poucos dados e unidades diferentes.
-- [ ] **12.6. [DEV 1 + DEV 2] Ordem dentro de cada nível e resumo no topo:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
+- [ ] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
   - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
-  - Documentar esse critério no README.
-  - Mostrar no topo da Visão geral uma frase de resumo para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir".
-- [ ] **12.7. [DEV 1 + DEV 2] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
+  - Escrever o critério na descrição do PR, para o DEV 2 levar ao README (12.13).
+- [ ] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
+- [ ] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
   - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
   - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
 - [ ] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
@@ -522,7 +548,7 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
   - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
 - [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
 - [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
-- [ ] **12.13. [EM CONJUNTO] README:**
+- [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
   - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
   - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
   - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
