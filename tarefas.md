@@ -574,7 +574,22 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Resultado:
     - API: 380 testes e build aprovados (menos os 2 do `prioritizeAlerts`);
     - cliente: 545 testes e checagem de tipos aprovados; continuam só as 4 falhas de empacotamento que já existiam (12.9).
-- [ ] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
+- [x] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - Exemplo: "Hoje: 2 compras urgentes, 1 produto vencido ou vencendo hoje, 1 retirada para conferir e 3 insumos parados ou sobrando."
+  - Ordem dos grupos (`client/src/alert-summary.ts`):
+    1. compras urgentes;
+    2. vencidos ou vencendo hoje;
+    3. compras para planejar;
+    4. perto de vencer;
+    5. retiradas para conferir;
+    6. consumo em alta;
+    7. parados ou sobrando.
+  - Sem alertas, a frase é "Hoje: nenhum alerta, estoque em dia.". Só o gestor vê o resumo, e ele não aparece numa fazenda sem insumos.
+  - Testes:
+    - `alert-summary.spec.ts` (novo): vazio, singular, ordem e conectivos, urgente × planejar, dois grupos;
+    - `app.spec.ts`: o gestor vê; o operador e a fazenda vazia, não.
+  - Resultado: cliente com 567 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
 - [x] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
   - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
   - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.

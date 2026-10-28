@@ -669,6 +669,13 @@ nav button.active {
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--border-default);
 }
+/* One-sentence summary for the manager (tarefa 12.20). */
+.alert-summary {
+  margin: 0 0 var(--space-4);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
 /* Demo farm: simulated data, said on every screen (tarefa 12.8). */
 .demo-notice {
   margin: var(--space-3) 0 0;
