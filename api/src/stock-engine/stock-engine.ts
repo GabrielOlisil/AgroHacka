@@ -35,7 +35,7 @@ export interface AnalyzedProductOutput extends StockInventoryProduct {
 export interface StockInventoryAlert {
   id: string;
   productId: string;
-  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'PARADO' | 'EXCESSO';
+  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'CRESCENTE' | 'PARADO' | 'EXCESSO';
   nivel: 'URGENTE' | 'ATENCAO' | 'INFORMATIVO';
   titulo: string;
   justificativa: string;
@@ -59,7 +59,7 @@ const num = (value: number, digits = 2) =>
   value.toLocaleString('pt-BR', { maximumFractionDigits: digits, useGrouping: false });
 const brDate = (isoDate: string) => isoDate.slice(0, 10).split('-').reverse().join('/');
 // Within a level: shortage stops the work first, expiry is a certain loss (tarefa 12.6).
-const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, PARADO: 3, EXCESSO: 4 };
+const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, CRESCENTE: 3, PARADO: 4, EXCESSO: 5 };
 const LEVEL_ORDER = { URGENTE: 0, ATENCAO: 1, INFORMATIVO: 2 };
 
 /**
@@ -120,7 +120,7 @@ export function analyzeStockInventory(
         productId: p.id,
         tipo,
         nivel,
-        titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
+        titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'CRESCENTE' ? 'Consumo crescente' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
         justificativa:
           justificativa +
           (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : '') +
@@ -175,17 +175,39 @@ export function analyzeStockInventory(
         );
     }
 
-    if (out.length >= 4) {
-      const previous = out.slice(0, -1);
-      const mean = previous.reduce((sum, m) => sum + m.quantidade, 0) / previous.length;
-      const last = out[out.length - 1];
-      if (mean > 0 && last.quantidade >= mean * 3)
+    // Every withdrawal with at least 3 before it in the window, against the mean of
+    // those before it; the alert points to the largest multiple (tarefa 12.7).
+    let peak: { quantity: number; date: string; mean: number; count: number } | undefined;
+    for (let i = 3; i < out.length; i++) {
+      const mean = out.slice(0, i).reduce((sum, m) => sum + m.quantidade, 0) / i;
+      const quantity = out[i].quantidade;
+      if (mean > 0 && quantity >= mean * 3 && (!peak || quantity / mean >= peak.quantity / peak.mean))
+        peak = { quantity, date: out[i].dataMovimento, mean, count: i };
+    }
+    if (peak)
+      add(
+        'ANOMALIA',
+        'ATENCAO',
+        `Retirada de ${num(peak.quantity)} ${p.unidadeMedida} em ${brDate(peak.date)}, ${num(peak.quantity / peak.mean, 1)} vezes a média das ${peak.count} retiradas anteriores (${num(peak.mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
+        'conferir com quem retirou se a quantidade está certa.',
+        -peak.quantity / peak.mean,
+      );
+    // Growing use: last 15 days against the 15 before, per day. The earlier half
+    // counts from its first withdrawal, so a product that just started is not "growing".
+    const split = today - 14 * DAY;
+    const recentOut = out.filter((m) => Date.parse(m.dataMovimento.slice(0, 10)) >= split);
+    const earlierOut = out.filter((m) => Date.parse(m.dataMovimento.slice(0, 10)) < split);
+    if (earlierOut.length >= 2 && recentOut.length >= 2) {
+      const earlierDays = Math.round((split - Date.parse(earlierOut[0].dataMovimento.slice(0, 10))) / DAY);
+      const earlierRate = earlierOut.reduce((sum, m) => sum + m.quantidade, 0) / earlierDays;
+      const recentRate = recentOut.reduce((sum, m) => sum + m.quantidade, 0) / 15;
+      if (earlierRate > 0 && recentRate >= earlierRate * 1.5)
         add(
-          'ANOMALIA',
+          'CRESCENTE',
           'ATENCAO',
-          `Retirada de ${num(last.quantidade)} ${p.unidadeMedida}, ${num(last.quantidade / mean, 1)} vezes a média das ${previous.length} retiradas anteriores (${num(mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
-          'conferir com quem retirou se a quantidade está certa.',
-          -last.quantidade / mean,
+          `O uso médio subiu de ${num(earlierRate)} ${p.unidadeMedida} por dia para ${num(recentRate)} ${p.unidadeMedida} por dia nos últimos 15 dias, ${num(Math.round((recentRate / earlierRate - 1) * 100), 0)}% a mais que nos 15 dias anteriores. Consideramos crescente a partir de 50% a mais.`,
+          'conferir se o aumento era esperado e antecipar a próxima compra se ele continuar.',
+          -recentRate / earlierRate,
         );
     }
 

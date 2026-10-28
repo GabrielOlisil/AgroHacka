@@ -134,8 +134,32 @@ describe('Gabarito da base simulada no motor de produção (Tarefa 12.10)', () =
 
   it('Fora do padrão: a retirada de 950 L de diesel é 15,8 vezes a média', () => {
     expect(analyze().alerts.find((a) => a.id === 'ANOMALIA:diesel')?.justificativa).toContain(
-      'Retirada de 950 L, 15,8 vezes a média das 13 retiradas anteriores (60 L).',
+      'Retirada de 950 L em 18/10/2026, 15,8 vezes a média das 13 retiradas anteriores (60 L).',
     );
+  });
+
+  it('Consumo crescente (tarefa 12.7): nenhum insumo da base é marcado, nem a ureia, que começou a ser usada há 17 dias', () => {
+    expect(analyze().alerts.filter((a) => a.tipo === 'CRESCENTE')).toEqual([]);
+  });
+
+  it('Consumo crescente (tarefa 12.7): o motor da API avisa quando o uso por dia sobe 50% ou mais', () => {
+    const day = (d: number) => new Date(NOW.getTime() + d * 86_400_000);
+    const items: [number, number][] = [
+      [5, -28], [5, -24], [5, -20], [5, -16], [10, -12], [10, -10], [10, -8], [10, -6], [10, -4], [10, -2],
+    ];
+    const { alerts } = analyzeStockInventory(
+      [{ id: 'p', farmId: 'f', nome: 'p', categoria: 'Teste', unidadeMedida: 'un', estoqueMinimo: 0, precoAquisicao: 10 }],
+      [
+        { id: 'e', farmId: 'f', productId: 'p', tipo: 'ENTRADA', quantidade: 10_000, dataMovimento: day(-40) },
+        ...items.map(([q, d], i) => ({ id: `s${i}`, farmId: 'f', productId: 'p', tipo: 'SAIDA' as const, quantidade: q, dataMovimento: day(d) })),
+      ],
+      NOW,
+    );
+    expect(alerts.find((a) => a.tipo === 'CRESCENTE')).toMatchObject({
+      nivel: 'ATENCAO',
+      titulo: 'p · Consumo crescente',
+      justificativa: expect.stringContaining('subiu de 1,43 un por dia para 4 un por dia nos últimos 15 dias, 180% a mais'),
+    });
   });
 
   it('todo alerta termina com o que fazer (tarefa 12.5)', () => {
