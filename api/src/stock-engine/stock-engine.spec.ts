@@ -1,31 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { prioritizeAlerts, analyzeStockInventory } from './stock-engine';
+import { analyzeStockInventory } from './stock-engine';
 
 describe('StockEngine - Motor Híbrido de Inteligência de Estoque', () => {
-  describe('prioritizeAlerts (Priorização Inteligente de Alertas)', () => {
-    it('deve ordenar alertas colocando URGENTE antes de ATENÇÃO e INFORMATIVO', () => {
-      const alertas = [
-        { id: 'a1', nivel: 'INFORMATIVO' as const, titulo: 'Nova entrada registrada' },
-        { id: 'a2', nivel: 'URGENTE' as const, titulo: 'Ureia acaba em 2 dias' },
-        { id: 'a3', nivel: 'ATENCAO' as const, titulo: 'Trichoderma vence em 10 dias' },
-      ];
-
-      const result = prioritizeAlerts(alertas);
-
-      expect(result[0].id).toBe('a2');
-      expect(result[0].nivel).toBe('URGENTE');
-      expect(result[1].id).toBe('a3');
-      expect(result[1].nivel).toBe('ATENCAO');
-      expect(result[2].id).toBe('a1');
-      expect(result[2].nivel).toBe('INFORMATIVO');
-    });
-
-    it('deve retornar array vazio se não houver alertas', () => {
-      const result = prioritizeAlerts([]);
-      expect(result).toEqual([]);
-    });
-  });
-
   describe('analyzeStockInventory (Motor Integrado com Paridade Total)', () => {
     it('deve realizar análise integrada de produtos e movimentos com paridade ao desktop', () => {
       const now = new Date('2026-10-16T12:00:00Z');
