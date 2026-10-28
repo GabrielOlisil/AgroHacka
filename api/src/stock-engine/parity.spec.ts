@@ -141,6 +141,29 @@ describe('paridade API × cliente na análise de estoque (tarefa 10.3)', () => {
     );
   });
 
+  it('fora do padrão no meio da janela e consumo crescente (tarefa 12.7)', () => {
+    const entry = (id: string): M => ({ productId: id, tipo: 'ENTRADA', quantidade: 10_000, dataMovimento: at(-40) });
+    const items = (id: string, list: [number, number][]): M[] =>
+      list.map(([quantidade, day]) => ({ productId: id, tipo: 'SAIDA', quantidade, dataMovimento: at(day) }));
+    const api = compare(
+      [{ id: 'meio' }, { id: 'sobe' }, { id: 'limite' }, { id: 'comeco' }],
+      [
+        entry('meio'),
+        ...items('meio', [[10, -6], [10, -5], [10, -4], [200, -3], [10, -2]]),
+        entry('sobe'),
+        ...items('sobe', [[5, -28], [5, -24], [5, -20], [5, -16], [10, -12], [10, -8], [10, -4], [10, -2]]),
+        entry('limite'),
+        ...items('limite', [[7, -28], [7, -24], [7, -20], [7, -16], [15, -10], [15, -6], [15, -2]]),
+        entry('comeco'),
+        ...items('comeco', Array.from({ length: 17 }, (_, i): [number, number] => [5, -17 + i])),
+      ],
+    );
+    expect(api.alerts.map((a) => a.id)).toEqual(
+      expect.arrayContaining(['ANOMALIA:meio', 'CRESCENTE:sobe', 'CRESCENTE:limite']),
+    );
+    expect(api.alerts.some((a) => a.id === 'CRESCENTE:comeco')).toBe(false);
+  });
+
   it('poucas amostras levam o aviso de base limitada', () => {
     const api = compare(
       [{ id: 'p' }],

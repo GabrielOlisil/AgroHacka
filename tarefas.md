@@ -575,9 +575,30 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - API: 380 testes e build aprovados (menos os 2 do `prioritizeAlerts`);
     - cliente: 545 testes e checagem de tipos aprovados; continuam só as 4 falhas de empacotamento que já existiam (12.9).
 - [ ] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
-- [ ] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
+- [x] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
   - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
   - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
+  - Feito em 28/10, nos dois motores. Responde à pergunta 23 do parecer.
+  - **Fora do padrão (para o README e a tela "Como funciona"):**
+    - cada retirada com ao menos 3 retiradas antes dela na janela de 30 dias é comparada com a média dessas anteriores;
+    - o alerta aponta a de maior múltiplo e agora diz a data, por exemplo "Retirada de 950 L em 18/10/2026, 15,8 vezes a média…".
+  - **Consumo crescente** (tipo novo, atenção, limiar escolhido pela equipe):
+    - compara o uso médio por dia dos últimos 15 dias com o dos 15 anteriores;
+    - a metade anterior conta a partir da primeira retirada, para não confundir início de uso com aumento;
+    - exige 2 ou mais retiradas em cada metade e avisa a partir de 50% a mais;
+    - texto: "O uso médio subiu de X por dia para Y por dia nos últimos 15 dias, Z% a mais que nos 15 dias anteriores…";
+    - O que fazer: "conferir se o aumento era esperado e antecipar a próxima compra se ele continuar".
+  - Ordem no mesmo nível: falta → vencimento → fora do padrão → consumo crescente → parado → excesso.
+  - O consumo crescente não é gravado na tabela de alertas da API (não está em `PERSISTED_TYPES`) e não vai para o WhatsApp, que só leva urgentes. Aparece na análise do app e na rota `/stock/analyze`.
+  - A base simulada não ganha alerta novo: a Ureia, que começou a ser usada há 17 dias, não é marcada como crescente.
+  - Testes:
+    - `client/tests/alert-trend.spec.ts` (novo): pico no meio da janela com data, dois picos, menos de 3 retiradas antes, abaixo de 3 vezes, crescente com a conta, exatamente 50%, abaixo de 50%, menos de 2 retiradas por metade, início de uso e ordem;
+    - `parity.spec.ts`: cenário novo;
+    - gabarito da API: nenhum crescente na base e um caso positivo;
+    - `alert-language.spec.ts`: o texto com data.
+  - Resultado:
+    - API: 385 testes e build aprovados;
+    - cliente: 555 testes e checagem de tipos aprovados, mais as 4 falhas de empacotamento que já existiam (12.9).
 - [ ] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
 - [ ] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
 - [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.

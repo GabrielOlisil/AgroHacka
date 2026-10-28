@@ -86,7 +86,7 @@ describe("justificativas dos alertas em linguagem simples (tarefa 11.15)", () =>
   });
 
   it("consumo fora do padrão, estoque parado e excesso em palavras do dia a dia", () => {
-    expect(text("ANOMALIA", "pico")).toMatch(/Retirada de 950 L, 15,8 vezes a média/);
+    expect(text("ANOMALIA", "pico")).toMatch(/Retirada de 950 L em 19\/10\/2026, 15,8 vezes a média/);
     expect(text("ANOMALIA", "pico")).toContain("a partir de 3 vezes a média");
     expect(text("PARADO", "parado")).toContain("nenhuma retirada nos últimos 30 dias");
     expect(text("EXCESSO", "excesso")).toContain("época do ano");
