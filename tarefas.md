@@ -458,6 +458,64 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 ---
 
+### ETAPA 12: Final presencial (30/10/2026, 19h15, Auditório do CEI)
+*Origem: regras da final e parecer consolidado da seleção, ambos de 28/10/2026. A banca dá nota nova, de zero: C1 problema (20), C2 funcionamento e demonstração (20), C3 análises e apoio à decisão (20), C4 validação e testes (15), C5 código, documentação e IA (15), C6 clareza e respostas (10). O desempate usa C3, depois C2, depois C1. Na seleção, a equipe ficou em 4º (80,25); o C3 (14,75) foi o critério mais fraco.*
+
+*Prazo: melhorias até **30/10 às 14h**. Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+
+**Prioridade 1 — obrigatório para a final**
+- [ ] **12.1. [EM CONJUNTO] Versão final identificada e informada até 30/10 às 14h:** criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
+  - Corrigir as divergências apontadas no parecer: o README cita `android-build-21` como versão de entrega, mas o link baixa a release mais recente; o roteiro do vídeo cita `v1.0.4-entrega`, que não existe.
+- [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
+  - Confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
+  - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
+- [ ] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
+  - Aceite: os tokens do repositório recebem 401 na API publicada.
+- [ ] **12.4. [EM CONJUNTO] Logística da final:**
+  - os dois presentes no CEI antes das 19h15 (atraso ou ausência de qualquer integrante desclassifica a equipe);
+  - notebook carregado, com carregador e adaptador HDMI;
+  - cópia local dos slides, vídeos e dados;
+  - internet alternativa testada.
+
+**Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
+- [ ] **12.5. [DEV 1 + DEV 2] Quanto comprar:** o alerta de falta passa a sugerir a quantidade de reposição. Proposta: repor o suficiente para 30 dias de uso, sem ficar abaixo do mínimo.
+  - Testes: sem consumo, saldo zerado, saldo acima da meta, poucos dados e unidades diferentes.
+- [ ] **12.6. [DEV 1 + DEV 2] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador. Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média.
+- [ ] **12.7. [DEV 1 + DEV 2] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
+  - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
+  - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
+- [ ] **12.8. [DEV 2] Avisar na tela que a fazenda de demonstração é simulada (C6):** o parecer apontou que só o README e os dados dizem isso.
+
+**Prioridade 3 — testes, código e documentação (C4 e C5)**
+- [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+- [ ] **12.10. [DEV 1] Testes dos cenários da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`. Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
+- [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
+- [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
+- [ ] **12.13. [EM CONJUNTO] README:**
+  - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
+  - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
+  - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
+  - corrigir "desapercebidos" e a frase herdada da IA ("O usuário confirmou…");
+  - registrar o retorno da 12.14.
+- [ ] **12.14. [EM CONJUNTO] Retorno do público (C4):** mostrar o app a pelo menos uma pessoa do público, como produtor, estudante ou professor de Agronomia, e registrar o retorno sem dados pessoais.
+
+**Prioridade 4 — apresentação e sabatina**
+- [ ] **12.15. [EM CONJUNTO] Apresentação de até 10 minutos:**
+  - montar a demonstração ao vivo da 12.2 dentro da apresentação;
+  - atualizar os slides com a versão final e as melhorias da Etapa 12;
+  - ensaiar com cronômetro: até 10 minutos, mais 3 de perguntas.
+- [ ] **12.16. [EM CONJUNTO] Sabatina:** preparar respostas para as perguntas 21 a 25 do parecer e para os limites que não serão resolvidos a tempo:
+  - importação de nova base;
+  - preço, validade e lote por entrada, não por produto;
+  - cadastros duplicados;
+  - variação de preço.
+
+  A banca pode perguntar a qualquer integrante, então os dois estudam tudo. Atualizar o baralho do Anki.
+
+**Fora do escopo até a final (responder como limitação):** importação de arquivo, lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
+
+---
+
 ## Roadmap detalhado de finalização
 
 Atualizado em 27/10/2026, com base na revisão do regulamento e da `dev` em
