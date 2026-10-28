@@ -221,6 +221,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ## 6. Demonstração e Casos de Uso
 
+**Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
+
 **Vídeo final:** [assista à demonstração do AgroHacka no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 
 ### 6.1. Roteiro Demonstrativo do Sistema
@@ -296,6 +298,7 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
 - **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente. Tags `v*` publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
 - **Vídeo final da entrega:** [demonstração no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
+- **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
 - **Branch de Desenvolvimento:** `dev`
 - **Branch de Produção / Entrega:** `main`
