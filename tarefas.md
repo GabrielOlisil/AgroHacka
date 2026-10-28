@@ -597,7 +597,15 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - O gabarito passou de primeira, porque o motor já acertava. Teste de mutação: com a regra de fora do padrão trocada de 3 para 30 vezes a média, 2 testes do gabarito falharam; a mudança foi desfeita.
   - As funções antigas (`normalizeUnitAndName`, `calculateRunoutTime`, `checkExpiryRisk`, `detectConsumptionAnomalies`, `checkStagnantAndExcess` e `calculateAbcCurve`) e seus 22 testes foram removidos. A ABC antiga tratava preço ausente como zero.
   - API: 380 testes e build aprovados (eram 400: menos 22 testes antigos, mais 2 do gabarito).
-- [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
+- [x] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
+  - Feito em 28/10:
+    - a falha agora vai para o log de erro do NestJS (`Logger`), com a fazenda, o motivo e a pilha;
+    - a sincronização continua sendo concluída e os recibos são devolvidos normalmente;
+    - o log aparece no Coolify.
+  - Testes em `sync.service.spec.ts`:
+    - a reanálise falha, o sync conclui e o erro é registrado com a fazenda e o motivo;
+    - sem movimentações aceitas, não há reanálise nem log.
+  - Resultado: API com 382 testes e build aprovados.
 - [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
 - [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
   - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
