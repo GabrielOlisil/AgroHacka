@@ -345,7 +345,7 @@
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
   - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.4-entrega` (27/10, com a Etapa 11) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
-  - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
+  - [x] 6. Demonstração (vídeo final informado pela equipe em 27/10: https://youtu.be/Pwy9RCFmI4M; link incluído no README §6 e §10).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
@@ -357,7 +357,7 @@
 ### ETAPA 8: Vídeo Demonstrativo e Preparação do Pitch *(Dia 13 — Pré-Apresentação)*
 *Entregáveis para a banca antes do dia 29/10.*
 
-- [ ] **8.1. [EM CONJUNTO] Gravação do Vídeo Demonstrativo (3 a 5 min):**
+- [x] **8.1. [EM CONJUNTO] Gravação do Vídeo Demonstrativo (3 a 5 min):**
   - [x] Roteiro: *`roteiro_video_demonstrativo.md`, com pré-requisitos, ações na tela e plano B (27/10).*
     1. Abertura: Dores do produtor rural (falta inesperada e dinheiro parado).
     2. Demonstração do Painel do Gestor com alertas críticos e Curva ABC.
@@ -366,7 +366,7 @@
     5. Sincronização automática e reanálise instantânea dos alertas na tela.
     6. Recebimento do alerta urgente no WhatsApp via Twilio.
     7. Demonstração do backup automático e restauração em 1 clique (estilo Anki).
-  - [ ] Upload no YouTube (não listado) e inclusão do link no `README.md`.
+  - [x] Vídeo final publicado no YouTube e link incluído no `README.md`: https://youtu.be/Pwy9RCFmI4M (informado pela equipe em 27/10; duração e configuração de visibilidade não verificadas pelo agente).
 - [ ] **8.2. [EM CONJUNTO] Produção dos Slides do Pitch:**
   - [x] Apresentação visual focada em: Problema -> Solução Híbrida -> Demonstração Prática -> Impacto no Bolso do Produtor -> Limitações. *Deck de 12 slides com notas do apresentador (27/10); números da base simulada e dos testes. Duração do pitch ainda não divulgada pela organização.*
   - [ ] Salvar versão final em PDF no repositório.
@@ -455,6 +455,122 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 - [x] **11.18. Calendário abre ao tocar no campo de data:** em alguns navegadores e WebViews, o calendário só abria pelo ícone, ou não abria. Agora um toque em qualquer parte de "Data e hora" (nos dois formulários) e de "Validade" chama `showPicker()`. Onde não há suporte, o campo continua funcionando normalmente. Testes em `app.spec.ts` e `product-form.spec.ts`; conferido no Edge a 414 px com toque real.
 - [x] **11.17. Janelas cabem na tela do celular:** a janela "Novo insumo" passava da borda direita. A coluna do fundo das janelas passa a ser `minmax(0, 1fr)`, o que corrige todas as janelas. Conferido a 414 px: a janela termina em 398 px e a página não rola para o lado. Teste em `mobile-touch.spec.ts`.
 - [x] **11.16. "Conectar operador" só na aba Operadores:** o botão saiu do cabeçalho das outras abas (`app.spec.ts`); título "Operadores conectados".
+
+---
+
+### ETAPA 12: Final presencial (30/10/2026, 19h15, Auditório do CEI)
+*Origem: regras da final e parecer consolidado da seleção, ambos de 28/10/2026. A banca dá nota nova, de zero: C1 problema (20), C2 funcionamento e demonstração (20), C3 análises e apoio à decisão (20), C4 validação e testes (15), C5 código, documentação e IA (15), C6 clareza e respostas (10). O desempate usa C3, depois C2, depois C1. Na seleção, a equipe ficou em 4º (80,25); o C3 (14,75) foi o critério mais fraco.*
+
+*Comparação com as outras seis finalistas (parecer do Claude). O que as mais bem avaliadas têm e nós não temos:*
+- *ação recomendada concreta em cada alerta, incluindo quantidade e custo da compra (3 Hacketeers, BDCACO, Aridev, Tetrarreme);*
+- *pontuação de prioridade documentada dentro de cada nível e resumo para o gestor no topo (3 Hacketeers, Hype Stack);*
+- *reanálise que mostra o que mudou depois do registro: alertas novos, resolvidos e que mudaram de nível (3 Hacketeers, Hype Stack);*
+- *página "Como funciona" com os critérios e as sete perguntas do desafio (3 Hacketeers, Hype Stack);*
+- *teste-gabarito: cada problema plantado gera o alerta esperado e os produtos normais não geram nenhum (Hype Stack, Tetrarreme, 3 Hacketeers);*
+- *aviso fixo de dados simulados na tela (3 Hacketeers, Tetrarreme, Aridev);*
+- *importação de nova base (cinco das seis).*
+
+*Fraquezas comuns que podemos explorar:*
+- *quase ninguém tem retorno de produtor ou da Agronomia;*
+- *a revisão humana do código gerado por IA raramente está registrada;*
+- *nenhuma concorrente tem app de celular nativo com sincronização ativa e WhatsApp; a Tetrarreme funciona offline no navegador, mas não sincroniza.*
+
+*Prazo: melhorias até **30/10 às 14h**. Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+
+**Divisão para trabalhar em paralelo.** Cada um fica com um conjunto de arquivos, para que nenhum precise esperar o outro e os PRs não entrem em conflito.
+- **DEV 1 (Kauê) — motor de análise e API:** `api/src/**`, `client/src/offline/analysis.ts` e os testes deles, incluindo o `parity.spec.ts`.
+- **DEV 2 (Gabriel) — telas, documentação e entrega:** `client/src/App.vue`, `client/src/components/`, `client/src/style.css`, `client/src-tauri/tauri.conf.json`, `.github/workflows/` e `README.md`.
+
+| Ordem | DEV 1 (Kauê) | DEV 2 (Gabriel) |
+| --- | --- | --- |
+| 1 | 12.3 credenciais da demonstração e a parte de API da 12.2 | 12.19 nome (depois da escolha conjunta) e 12.12 restos de modelo |
+| 2 | 12.10 teste-gabarito, que serve de base para as regras novas | 12.8 aviso de dados simulados e 12.20 resumo no topo |
+| 3 | 12.5 ação recomendada | 12.17 o que mudou depois do registro |
+| 4 | 12.6 ordem por gravidade | 12.18 tela "Como funciona" |
+| 5 | 12.11 registro da falha da reanálise | 12.9 testes do cliente no CI |
+| 6 | 12.7, se der tempo | 12.13 README e 12.1 tag e release |
+
+**Por que ninguém espera ninguém:**
+- a ação recomendada (12.5) entra no próprio texto do alerta, que a tela já exibe; não precisa mudar a interface;
+- o resumo (12.20) e o "o que mudou" (12.17) usam o nível e o tipo dos alertas, que já existem hoje;
+- o DEV 2 escreve a tela "Como funciona" e o README com as regras atuais; o DEV 1 descreve, na descrição de cada PR, o texto das regras novas, e o DEV 2 só acrescenta no fim.
+
+**Marcos:**
+- **29/10 até 23h:** todo o código na `dev`;
+- **30/10 até 12h:** `dev` → `main`, release e tag (12.1);
+- **30/10 às 14h:** congelado.
+
+Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30.
+
+**Prioridade 1 — obrigatório para a final**
+- [ ] **12.1. [DEV 2] Versão final identificada e informada até 30/10 às 14h** (qualquer um dos dois pode mandar a mensagem à organização): criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
+  - Corrigir as divergências apontadas no parecer: o README cita `android-build-21` como versão de entrega, mas o link baixa a release mais recente; o roteiro do vídeo cita `v1.0.4-entrega`, que não existe.
+- [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
+  - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
+  - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
+  - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
+- [ ] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
+  - Aceite: os tokens do repositório recebem 401 na API publicada.
+- [ ] **12.4. [EM CONJUNTO] Logística da final:**
+  - os dois presentes no CEI antes das 19h15 (atraso ou ausência de qualquer integrante desclassifica a equipe);
+  - notebook carregado, com carregador e adaptador HDMI;
+  - cópia local dos slides, vídeos e dados;
+  - internet alternativa testada.
+
+- [ ] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+  - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
+  - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
+  - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
+  - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
+
+**Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
+- [ ] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
+  - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
+  - Vencimento: usar primeiro e não repetir a compra nesse volume.
+  - Fora do padrão: conferir a retirada.
+  - Parado e excesso: não comprar até girar.
+  - Testes: sem consumo, saldo zerado, saldo acima da meta, preço ausente, poucos dados e unidades diferentes.
+- [ ] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
+  - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
+  - Escrever o critério na descrição do PR, para o DEV 2 levar ao README (12.13).
+- [ ] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
+- [ ] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
+  - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
+  - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
+- [ ] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
+- [ ] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
+- [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
+
+**Prioridade 3 — testes, código e documentação (C4 e C5)**
+- [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+- [ ] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
+  - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
+  - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
+- [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
+- [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
+- [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
+  - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
+  - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
+  - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
+  - corrigir "desapercebidos" e a frase herdada da IA ("O usuário confirmou…");
+  - tabela de revisão humana do uso de IA: que parte, quem revisou e o que foi conferido;
+  - registrar o retorno da 12.14.
+- [ ] **12.14. [EM CONJUNTO] Retorno do público (C4):** mostrar o app a pelo menos uma pessoa do público, como produtor, estudante ou professor de Agronomia, e registrar o retorno sem dados pessoais.
+
+**Prioridade 4 — apresentação e sabatina**
+- [ ] **12.15. [EM CONJUNTO] Apresentação de até 10 minutos:**
+  - montar a demonstração ao vivo da 12.2 dentro da apresentação;
+  - atualizar os slides com a versão final e as melhorias da Etapa 12;
+  - ensaiar com cronômetro: até 10 minutos, mais 3 de perguntas.
+- [ ] **12.16. [EM CONJUNTO] Sabatina:** preparar respostas para as perguntas 21 a 25 do parecer e para os limites que não serão resolvidos a tempo:
+  - importação de nova base;
+  - preço, validade e lote por entrada, não por produto;
+  - cadastros duplicados;
+  - variação de preço.
+
+  A banca pode perguntar a qualquer integrante, então os dois estudam tudo. Atualizar o baralho do Anki.
+
+**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
 ---
 

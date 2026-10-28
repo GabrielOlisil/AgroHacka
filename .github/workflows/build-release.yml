@@ -1,4 +1,4 @@
-name: Release - Android (AgroHacka)
+name: Release - Windows, Android e Linux (AgroHacka)
 
 on:
   push:
@@ -17,47 +17,88 @@ env:
   VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.arikem.qzz.io' }}
 
 jobs:
-  # Build de PC pausado; descomentar este bloco para reativar.
-  # build-desktop-windows:
-  #   name: Build Desktop Windows (.exe / .msi)
-  #   runs-on: windows-latest
-  #
-  #   steps:
-  #     - name: Checkout do Repositório
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Configurar Node.js 22
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: 'npm'
-  #         cache-dependency-path: client/package-lock.json
-  #
-  #     - name: Configurar Rust Toolchain
-  #       uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: x86_64-pc-windows-msvc
-  #
-  #     - name: Instalar Dependências do Desktop
-  #       working-directory: client
-  #       run: npm ci
-  #
-  #     - name: Compilar Frontend Vite
-  #       working-directory: client
-  #       run: npm run build
-  #
-  #     - name: Compilar Instalador Tauri Windows
-  #       working-directory: client
-  #       run: npx @tauri-apps/cli build
-  #
-  #     - name: Upload Artefatos Windows (.exe / .msi)
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: agrohacka-desktop-windows
-  #         path: |
-  #           client/src-tauri/target/release/bundle/nsis/*.exe
-  #           client/src-tauri/target/release/bundle/msi/*.msi
-  #         if-no-files-found: warn
+  build-desktop-windows:
+    name: Build Windows (.exe / .msi / portable)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Configurar Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Instalar Dependências do Cliente
+        working-directory: client
+        run: npm ci
+
+      - name: Compilar Instaladores Tauri Windows
+        working-directory: client
+        run: npx @tauri-apps/cli build --bundles nsis,msi
+
+      - name: Preparar executável portable
+        shell: pwsh
+        run: |
+          Copy-Item -LiteralPath client/src-tauri/target/release/app.exe -Destination client/src-tauri/target/release/app-portable.exe -ErrorAction Stop
+
+      - name: Upload Artefatos Windows (.exe / .msi / portable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: agrohacka-desktop-windows
+          path: |
+            client/src-tauri/target/release/bundle/nsis/*.exe
+            client/src-tauri/target/release/bundle/msi/*.msi
+            client/src-tauri/target/release/app-portable.exe
+          if-no-files-found: error
+
+  build-desktop-linux:
+    name: Build Linux (.AppImage)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instalar dependências Linux do Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev patchelf
+
+      - name: Configurar Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar Dependências do Cliente
+        working-directory: client
+        run: npm ci
+
+      - name: Compilar AppImage
+        working-directory: client
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: npx @tauri-apps/cli build --bundles appimage
+
+      - name: Upload Artefatos Linux (.AppImage)
+        uses: actions/upload-artifact@v4
+        with:
+          name: agrohacka-desktop-linux
+          path: client/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
 
   build-mobile-android:
     name: Build Mobile Android (.apk)
@@ -137,14 +178,28 @@ jobs:
           if-no-files-found: error
 
   create-release:
-    name: Publicar APK no GitHub Releases
-    needs: [build-mobile-android]
+    name: Publicar Windows, Android e Linux no GitHub Releases
+    needs: [build-desktop-windows, build-mobile-android, build-desktop-linux]
     if: |
+      needs.build-desktop-windows.result == 'success' &&
+      needs.build-desktop-linux.result == 'success' &&
       needs.build-mobile-android.result == 'success' &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
 
     steps:
+      - name: Baixar Artefatos do Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: agrohacka-desktop-windows
+          path: release-assets/windows
+
+      - name: Baixar Artefatos do Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: agrohacka-desktop-linux
+          path: release-assets/linux
+
       - name: Baixar Artefatos do Android
         uses: actions/download-artifact@v4
         with:
@@ -154,16 +209,20 @@ jobs:
       - name: Publicar Release no GitHub
         uses: softprops/action-gh-release@v2
         with:
-          # main: pré-release por execução; tags v*: release oficial da tag.
+          # main e tags v*: release oficial; main usa uma tag por execução.
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('android-build-{0}', github.run_number) }}
           target_commitish: ${{ github.sha }}
-          name: AgroHacka Android - ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build {0}', github.run_number) }}
+          name: AgroHacka - ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build {0}', github.run_number) }}
           draft: false
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          prerelease: false
+          make_latest: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
             release-assets/android/**/*.apk
+            release-assets/windows/**/*.exe
+            release-assets/windows/**/*.msi
+            release-assets/linux/**/*.AppImage
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
