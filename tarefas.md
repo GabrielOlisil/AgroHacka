@@ -545,9 +545,18 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**
 - [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
-- [ ] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
+- [x] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
   - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
   - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
+  - Feito em 28/10. O gabarito roda a base simulada com data fixa (20/10/2026) no `analyzeStockInventory`, o mesmo motor da API, e exige a lista exata de alertas na ordem de prioridade:
+    - falta urgente da Ureia;
+    - fora do padrão do Diesel (950 L, 15,8 vezes a média);
+    - vencimento do Trichoderma (atenção) e excesso (informativo);
+    - parado do MAP, dos Bicos e do Respirador.
+  - Calcário, Semente Milho e Mangueira de Gotejamento não geram alerta. O MAP é classe A, com R$ 147.000.
+  - O gabarito passou de primeira, porque o motor já acertava. Teste de mutação: com a regra de fora do padrão trocada de 3 para 30 vezes a média, 2 testes do gabarito falharam; a mudança foi desfeita.
+  - As funções antigas (`normalizeUnitAndName`, `calculateRunoutTime`, `checkExpiryRisk`, `detectConsumptionAnomalies`, `checkStagnantAndExcess` e `calculateAbcCurve`) e seus 22 testes foram removidos. A ABC antiga tratava preço ausente como zero.
+  - API: 380 testes e build aprovados (eram 400: menos 22 testes antigos, mais 2 do gabarito).
 - [ ] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
 - [ ] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
 - [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
