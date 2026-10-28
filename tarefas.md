@@ -345,7 +345,7 @@
   - [x] 3. Solução (arquitetura híbrida, Central Dinâmica e paridade Desktop/Mobile).
   - [x] 4. Como testar (instruções reproduzíveis e links diretos dos instaladores). *Release `v1.0.4-entrega` (27/10, com a Etapa 11) com `.exe`, `.msi` e `.apk`; link no README §4 e §10.*
   - [x] 5. Dados e critérios (origem comprovada da base, tratamentos e limites das análises). *Sem base oficial (confirmado pela organização em 27/10); base simulada, tratamentos e limites no README §5 e §5.2 (tarefas 10.1 e 10.3).*
-  - [ ] 6. Demonstração (vídeo publicado, exemplos e evidências de reanálise).
+  - [x] 6. Demonstração (vídeo final informado pela equipe em 27/10: https://youtu.be/Pwy9RCFmI4M; link incluído no README §6 e §10).
   - [x] 7. Validação e testes (resultados observados e limitações da solução).
   - [x] 8. Tecnologias e declaração de IA (incluir as ferramentas efetivamente usadas, finalidades e revisão humana). *Claude Code, Codex/ChatGPT e Gemini, confirmados pela equipe em 27/10.*
   - [ ] 9. Autoria e licença (alinhar licença e metadados e revisar a publicação de credenciais/dados).
@@ -357,7 +357,7 @@
 ### ETAPA 8: Vídeo Demonstrativo e Preparação do Pitch *(Dia 13 — Pré-Apresentação)*
 *Entregáveis para a banca antes do dia 29/10.*
 
-- [ ] **8.1. [EM CONJUNTO] Gravação do Vídeo Demonstrativo (3 a 5 min):**
+- [x] **8.1. [EM CONJUNTO] Gravação do Vídeo Demonstrativo (3 a 5 min):**
   - [x] Roteiro: *`roteiro_video_demonstrativo.md`, com pré-requisitos, ações na tela e plano B (27/10).*
     1. Abertura: Dores do produtor rural (falta inesperada e dinheiro parado).
     2. Demonstração do Painel do Gestor com alertas críticos e Curva ABC.
@@ -366,7 +366,7 @@
     5. Sincronização automática e reanálise instantânea dos alertas na tela.
     6. Recebimento do alerta urgente no WhatsApp via Twilio.
     7. Demonstração do backup automático e restauração em 1 clique (estilo Anki).
-  - [ ] Upload no YouTube (não listado) e inclusão do link no `README.md`.
+  - [x] Vídeo final publicado no YouTube e link incluído no `README.md`: https://youtu.be/Pwy9RCFmI4M (informado pela equipe em 27/10; duração e configuração de visibilidade não verificadas pelo agente).
 - [ ] **8.2. [EM CONJUNTO] Produção dos Slides do Pitch:**
   - [x] Apresentação visual focada em: Problema -> Solução Híbrida -> Demonstração Prática -> Impacto no Bolso do Produtor -> Limitações. *Deck de 12 slides com notas do apresentador (27/10); números da base simulada e dos testes. Duração do pitch ainda não divulgada pela organização.*
   - [ ] Salvar versão final em PDF no repositório.

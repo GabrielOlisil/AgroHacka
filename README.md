@@ -93,12 +93,11 @@ O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para g
 
 ## 4. Como Testar e Executar
 
-**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`) ou o APK Android (debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
+**Instalar sem compilar:** baixe o instalador Windows (`.exe` ou `.msi`), o executável Windows sem instalador (`app-portable.exe`), o APK Android (debug) ou o Linux `.AppImage` em [Releases → versão oficial mais recente](https://github.com/GabrielOlisil/AgroHacka/releases/latest). Os apps já apontam para a API publicada: crie uma conta de gestor na tela inicial e conecte operadores pelo QR Code ou código. Para rodar tudo localmente com a base simulada, siga as seções 4.2 e 4.3.
 
 A compilação Android permanece em **debug**, com assinatura automática de
-desenvolvimento, sem exigir chave release ou secrets Android. O novo pacote com
-as melhorias de estoque ainda precisa ser gerado; o cadastro exige publicar
-também a API atualizada.
+desenvolvimento, sem exigir chave release ou secrets Android. A publicação dos
+pacotes depende da conclusão dos três builds no GitHub Actions (Windows, Android e Linux).
 
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
@@ -222,6 +221,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ## 6. Demonstração e Casos de Uso
 
+**Vídeo final:** [assista à demonstração do AgroHacka no YouTube](https://youtu.be/Pwy9RCFmI4M).
+
 ### 6.1. Roteiro Demonstrativo do Sistema
 1. **Abertura:** O Gestor visualiza no Dashboard os cartões com contagem de alertas críticos e capital imobilizado.
 2. **Identificação de Problema Crítico:** O insumo *Ureia* está abaixo do estoque mínimo, com a justificativa do consumo médio, dos dias de histórico e da autonomia estimada.
@@ -282,7 +283,8 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada:** `v1.0.4-entrega` (app versão 1.0.4), com instaladores Windows (`.exe`/`.msi`) e Android (`.apk` debug) em [Releases → v1.0.4-entrega](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega). A tag identifica o commit avaliado.
+- **Versão do aplicativo:** **1.0.4**, com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). [Baixar a release oficial mais recente](https://github.com/GabrielOlisil/AgroHacka/releases/latest).
+- **Tag da entrega em compilação:** [`android-build-21`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/android-build-21), referente ao commit [`26aa2ba`](https://github.com/GabrielOlisil/AgroHacka/commit/26aa2ba707fd4a3219365a987282efa8010a9df9). O link da tag ficará disponível após a [execução #21](https://github.com/GabrielOlisil/AgroHacka/actions/runs/40616791559) concluir os três builds e publicar a release. O prefixo histórico `android-build` identifica o build das três plataformas, não apenas o Android.
   - Traz as melhorias de uso no celular da Etapa 11:
     - alertas em linguagem simples;
     - menu inferior;
@@ -292,7 +294,8 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
     - urgente em vermelho.
 - **Versões anteriores:** `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3) e `v1.0.1-entrega` (27/10, antes do cadastro de produtos), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
 - **Versão anterior:** `v1.0.0-entrega` (21/10), preservada sem alteração.
-- **Como as releases são geradas:** cada tag `v*` enviada ao GitHub compila os instaladores e publica a release daquela tag. O merge na `main` compila e faz o deploy da API, mas não altera nenhuma release.
+- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente. Tags `v*` publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
+- **Vídeo final da entrega:** [demonstração no YouTube](https://youtu.be/Pwy9RCFmI4M).
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
 - **Branch de Desenvolvimento:** `dev`
 - **Branch de Produção / Entrega:** `main`
