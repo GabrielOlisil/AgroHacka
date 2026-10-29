@@ -329,10 +329,13 @@ async function recordFromStock() {
 const inactiveProducts = computed(
   () => workspace.inactiveProducts?.value ?? [],
 );
+// Ativos e desativados: o cadastro não repete o nome de nenhum deles.
+const catalog = computed(() => [
+  ...analysis.value.products,
+  ...inactiveProducts.value,
+]);
 const productName = (id: string) =>
-  [...analysis.value.products, ...inactiveProducts.value].find(
-    (p) => p.id === id,
-  )?.nome ?? id;
+  catalog.value.find((p) => p.id === id)?.nome ?? id;
 const editingProduct = ref<Product | null>(null);
 const confirmingDelete = ref(false);
 const productError = ref("");
@@ -1741,6 +1744,7 @@ onUnmounted(() => {
         <ProductForm
           :key="productFormKey"
           :categories="categories"
+          :existing="catalog"
           :save="workspace.createProduct"
           @saved="productSaved"
         />
@@ -1771,6 +1775,7 @@ onUnmounted(() => {
         <ProductForm
           :key="editingProduct.id"
           :categories="categories"
+          :existing="catalog"
           :product="editingProduct"
           :lock-unit="editingHasMovements"
           :save="saveProductEdit"

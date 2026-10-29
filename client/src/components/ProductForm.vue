@@ -7,6 +7,7 @@ import {
 } from "../offline/types";
 import UiIcon from "./UiIcon.vue";
 import { openPicker } from "../open-picker";
+import { nameKey } from "../offline/analysis";
 
 const props = defineProps<{
   categories: string[];
@@ -14,7 +15,24 @@ const props = defineProps<{
   /** Com produto, o formulário edita esse cadastro em vez de criar outro. */
   product?: Product;
   lockUnit?: boolean;
+  /** Catálogo da fazenda, inclusive desativados: bloqueia nome repetido. */
+  existing?: Product[];
 }>();
+// Mesma regra do alerta de cadastro duplicado. Na edição, só confere se o nome
+// mudar, para que um duplicado antigo ainda possa ser corrigido.
+function sameName(input: ProductInput) {
+  const key = nameKey(input.nome);
+  if (!key || (editing && key === nameKey(editing.nome))) return;
+  const same = props.existing?.find(
+    (p) => p.id !== input.id && nameKey(p.nome) === key,
+  );
+  if (same)
+    throw new Error(
+      same.ativo === false
+        ? `Já existe o insumo “${same.nome}” (${same.unidadeMedida}), desativado. Reative-o em Insumos desativados, no fim do Estoque, ou mude o nome.`
+        : `Já existe o insumo “${same.nome}” (${same.unidadeMedida}). Use o cadastro existente ou mude o nome.`,
+    );
+}
 const emit = defineEmits<{ saved: [] }>();
 const editing = props.product;
 const nome = ref(editing?.nome ?? "");
@@ -53,8 +71,9 @@ async function submit() {
           : {}),
       });
     // O cadastro novo repete o mesmo conteúdo na nova tentativa; a edição não.
-    if (editing) pending = input();
-    else pending ??= input();
+    const draft = editing || !pending ? input() : pending;
+    sameName(draft);
+    pending = draft;
     saving.value = true;
     submitted.value = !editing;
     await props.save(pending);
