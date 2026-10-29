@@ -297,6 +297,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 9. **Sem importação de planilha:** os dados entram pelo app (cadastro e movimentações) ou pela carga de demonstração reproduzível.
 10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes e variação de preço entre compras não são tratados. Cadastros duplicados só são detectados quando o nome é o mesmo sem contar maiúsculas, acentos, espaços e símbolos; nomes parecidos, como "Ureia" e "Uréia granulada", não são comparados. O app não junta os cadastros: o gestor exclui o duplicado sem movimentações ou desativa o que já tem histórico, e as movimentações não mudam de um cadastro para o outro.
 11. **Sem retorno do público:** ver seção 7.1.
+12. **Um gestor por fazenda e sem recuperação de senha:** cada fazenda tem um único gestor, que também recebe os alertas de WhatsApp; operadores são aparelhos pareados, sem conta. O banco já liga usuários à fazenda e cada movimentação grava quem a fez, mas não há convite de outros gestores, papel de consulta (para o agrônomo ou o contador) nem "esqueci minha senha". Próximo passo: convidar gestores com os mesmos poderes, criar o papel de consulta e a recuperação de senha. Um administrador acima dos gestores só compensa com várias fazendas por usuário.
 
 ---
 
