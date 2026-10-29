@@ -1,5 +1,7 @@
-# 🌾 AgroHacka — Gestão Inteligente de Insumos Rurais
+# 🌾 Paiol — Gestão Inteligente de Insumos Rurais
 
+> **Paiol** é o nome do software: o depósito da fazenda, onde se guardam grãos, sementes e insumos. *AgroHacka* é só o nome do repositório.
+>
 > **Solução Oficial da Equipe Oliveira & Oliveira para o AGROHACK 2026/2 — IFRO Campus Ariquemes**  
 > *Transformando registros de estoque rural em informações estratégicas para antecipar necessidades, evitar prejuízos e apoiar decisões com arquitetura 100% Offline-First.*
 
@@ -41,7 +43,7 @@ Em uma propriedade rural produtiva, dezenas de insumos circulam continuamente: f
 Apesar de cadastrarem entradas e saídas, os produtores rurais enfrentam gargalos críticos:
 1. **Falta Inesperada:** Insumos essenciais acabam em momentos cruciais de plantio ou colheita, paralisando tratores e equipes.
 2. **Prejuízo com Vencimento:** Produtos nobres e caros (como biológicos e defensivos) vencem no barracão antes de serem utilizados por falta de controle de ritmo de uso.
-3. **Anomalias Invisíveis:** Desvios ou vazamentos em tanques de combustível passam desapercebidos em meio a centenas de anotações manuais.
+3. **Anomalias Invisíveis:** Desvios ou vazamentos em tanques de combustível passam despercebidos em meio a centenas de anotações manuais.
 4. **Capital Parado:** Milhares de reais imobilizados em adubos e peças sem giro, gerando custo de oportunidade financeiro.
 5. **Conectividade Precária:** A maioria dos talhões e barracões não possui sinal de internet (Wi-Fi ou 4G/5G). Sistemas web comuns travam ou impedem lançamentos no momento do fato gerador.
 
@@ -53,7 +55,7 @@ Apesar de cadastrarem entradas e saídas, os produtores rurais enfrentam gargalo
 
 ## 3. Solução e Arquitetura
 
-O **AgroHacka** é uma plataforma híbrida **Offline-First**, estruturada para garantir operação contínua no campo e consolidação confiável em nuvem.
+O **Paiol** é uma plataforma híbrida **Offline-First**, estruturada para garantir operação contínua no campo e consolidação confiável em nuvem.
 
 ### 3.1. Arquitetura do Ecossistema
 
@@ -102,7 +104,7 @@ pacotes depende da conclusão dos três builds no GitHub Actions (Windows, Andro
 ### 4.1. Requisitos de Ambiente
 - **Node.js:** versão 22 ou 24 LTS
 - **Rust e Tauri CLI:** para execução nativa dos clientes (opcional para testes de lógica)
-- **Docker:** (opcional, para testes de concorrência com PostgreSQL temporário)
+- **Docker:** para subir o PostgreSQL local e para os testes de concorrência com PostgreSQL temporário (`npm run test:sync`)
 
 ### 4.2. Executando o Backend (API NestJS)
 
@@ -110,22 +112,31 @@ pacotes depende da conclusão dos três builds no GitHub Actions (Windows, Andro
 # 1. Acesse o diretório da API
 cd AgroHacka/api
 
-# 2. Instale as dependências
-npm install
+# 2. Crie o .env a partir do exemplo (DATABASE_URL e JWT_SECRET; Twilio é opcional)
+cp .env.example .env
 
-# 3. Gere o Prisma Client
+# 3. Suba um PostgreSQL local, com o mesmo usuário, senha e banco do DATABASE_URL do exemplo
+docker run -d --name paiol-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=agrohacka -p 5432:5432 postgres:16
+
+# 4. Instale as dependências e gere o Prisma Client
+npm install
 npx prisma generate
 
-# 4. Execute a suíte de testes unitários e de integração
+# 5. Crie as tabelas aplicando as migrations (antes da carga)
+npx prisma migrate deploy
+
+# 6. Execute os testes unitários e de HTTP (não precisam do banco)
 npm test
 
-# 5. Opcional: carregue a fazenda de demonstração (dados simulados, não destrutiva; ver seção 5.2)
+# 7. Opcional: carregue a fazenda de demonstração (dados simulados, não destrutiva; ver seção 5.2)
 npx tsx prisma/seed.ts
 
-# 6. Inicie o servidor em modo de desenvolvimento
+# 8. Inicie o servidor em modo de desenvolvimento
 npm run start:dev
 ```
 A API estará acessível em `http://localhost:3000` (documentação Swagger em `http://localhost:3000/api/docs`).
+
+A carga cria o gestor `gestor@agrohack.com` com a senha `agro1234`, que vale só para o banco local criado por ela. A conta de demonstração da API publicada usa outra senha, que não fica no repositório (tarefa 12.3).
 
 ### 4.3. Executando o Cliente (Desktop / Mobile - Vue 3 + Tauri)
 
@@ -186,7 +197,7 @@ UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';
 ## 5. Dados e Critérios Agronômicos
 
 O motor analítico responde às **7 perguntas oficiais** do desafio com as mesmas regras no cliente ([`analysis.ts`](client/src/offline/analysis.ts)) e na API ([`stock-engine.ts`](api/src/stock-engine/stock-engine.ts)). A rota `POST /stock/analyze` e a reanálise que grava alertas e dispara o WhatsApp usam esse motor. A paridade é verificada por [`parity.spec.ts`](api/src/stock-engine/parity.spec.ts), que roda os dois motores com as mesmas fixtures e a mesma data de referência e exige resultados iguais:
-- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, parado/excesso, ABC e ordem dos alertas.
+- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, consumo crescente, parado/excesso, ABC, textos dos alertas (com a ação recomendada) e ordem dos alertas.
 - **Fixtures:** a base simulada, litros e quilos juntos, validade hoje, poucas amostras, limiares exatos, listas vazias, zero e preço ausente.
 - **Limite:** a paridade vale para essas fixtures, não é uma prova formal para qualquer entrada. As duas cópias precisam mudar juntas, e o teste falha se divergirem.
 - **Saldos por unidade:** os saldos são agrupados por unidade (`balancesByUnit`); não existe saldo total somando unidades diferentes.
@@ -195,13 +206,34 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 | Pergunta Oficial do AgroHack | Regra / Critério de Análise Agronômica | Justificativa Gerada |
 | :--- | :--- | :--- |
-| **1. O que está acabando e precisa ser comprado?** | **Cálculo de Runout Time em Dias de Calendário:**<br>Analisa janela móvel de 30 dias de calendário UTC. Dias amostrados = `today - firstDay + 1` (inclui dias sem retirada). Taxa diária = $\frac{\sum \text{quantidades}}{\text{dias}}$. Autonomia = $\frac{\text{Saldo}}{\text{Taxa}}$. | *“Com o uso médio de 5 sc por dia (últimos 10 dias, contando os dias sem retirada), o estoque dura cerca de 3 dia(s).”* |
+| **1. O que está acabando e precisa ser comprado?** | **Cálculo de Runout Time em Dias de Calendário:**<br>Analisa janela móvel de 30 dias de calendário UTC. Dias amostrados = `today - firstDay + 1` (inclui dias sem retirada). Taxa diária = $\frac{\sum \text{quantidades}}{\text{dias}}$. Autonomia = $\frac{\text{Saldo}}{\text{Taxa}}$.<br>**Quanto comprar:** o suficiente para 30 dias de uso, sem ficar abaixo do mínimo: $\lceil \max(\text{mínimo}, 30 \times \text{Taxa}) - \max(0, \text{Saldo}) \rceil$, com o custo quando há preço. | *“Restam 15 sc, no mínimo ou abaixo do mínimo de 40 sc. Com o uso médio de 4,72 sc por dia (últimos 18 dias), dura cerca de 3,2 dia(s). O que fazer: comprar cerca de 127 sc (cerca de R$ 20320) para 30 dias de uso.”* |
 | **2. Quais produtos podem vencer antes do uso?** | **Risco de Vencimento vs. Ritmo de Consumo:**<br>Compara os dias até o vencimento ($\Delta t$) com a autonomia. Calcula a sobra estimada: $\text{Sobra} = \text{Saldo} - (\Delta t \times \text{Taxa Diária})$. Se $\text{Sobra} > 0$ e $\Delta t \le 30$ dias, dispara alerta. | *“Vence em 12 dia(s); no ritmo de uso atual (0,1 L por dia), devem sobrar cerca de 38 L sem uso.”* |
-| **3. Quanto está sendo consumido de cada produto?** | **Histograma de Consumo Diário:**<br>Mapeamento de saídas por dia de calendário na janela de 30 dias, permitindo visualizar sazonalidade e picos. | Gráfico de barras com histórico diário exibido no painel de cada insumo. |
-| **4. Existem consumos fora do padrão?** | **Detecção Estatística de Anomalias:**<br>Exige histórico mínimo de 3 retiradas. Compara a retirada atual com a média das retiradas anteriores. Se $\ge 3\times$ a média, classifica como anomalia grave. | *“Retirada de 950 L, 15,8 vezes a média das 13 retiradas anteriores (60 L). Consideramos fora do padrão a partir de 3 vezes a média.”* |
+| **3. Quanto está sendo consumido de cada produto?** | **Histograma de Consumo Diário:**<br>Mapeamento de saídas por dia de calendário na janela de 30 dias, permitindo visualizar os picos. | Gráfico de barras com histórico diário exibido no painel de cada insumo. |
+| **4. Existem consumos fora do padrão?** | **Retirada fora do padrão (múltiplo da média):**<br>Cada retirada da janela de 30 dias que tenha pelo menos 3 retiradas antes dela é comparada com a média dessas anteriores. Se for $\ge 3\times$ a média, gera alerta de **atenção**; o alerta aponta a de maior múltiplo, com a data.<br>**Consumo crescente:** uso médio por dia dos últimos 15 dias pelo menos 50% maior que o dos 15 anteriores, com 2 ou mais retiradas em cada metade. A metade anterior conta a partir da primeira retirada, para não confundir início de uso com aumento. Nível **atenção**. | *“Retirada de 950 L em 18/10/2026, 15,8 vezes a média das 13 retiradas anteriores (60 L). Consideramos fora do padrão a partir de 3 vezes a média. O que fazer: conferir com quem retirou se a quantidade está certa.”* |
 | **5. Por quanto tempo o estoque será suficiente?** | **Autonomia com base da amostragem:**<br>A interface mostra a quantidade de retiradas e os dias usados no cálculo: "Poucos dados" (1–2 retiradas), "Dados razoáveis" (3–4) ou "Bons dados" (5 ou mais). Sem consumo recente, a previsão fica indisponível. | Indicador heurístico por produto, não confiança estatística nem garantia de duração. |
-| **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Há saldo, mas nenhuma retirada nos últimos 30 dias. Avalie antes de comprar mais.”* |
-| **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias ou produto já vencido.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias ou anomalia de consumo.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Ordenação decrescente de severidade na tela principal do Gestor e acionamento do Twilio. |
+| **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Há saldo, mas nenhuma retirada nos últimos 30 dias. O que fazer: não comprar mais até voltar a ter saída.”* |
+| **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias, produto vencido ou vencendo hoje.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias, retirada fora do padrão ou consumo crescente.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Resumo no topo da Visão geral do Gestor ("Hoje: 2 compras urgentes, …"), alertas do mais grave para o menos grave e WhatsApp para os urgentes. |
+
+**O que fazer.** Todo alerta termina com uma ação recomendada:
+
+| Alerta | O que fazer |
+| :--- | :--- |
+| Falta | Comprar cerca de X para 30 dias de uso (ou para voltar ao mínimo), com o custo quando há preço |
+| Vencido | Separar o produto e confirmar com o responsável técnico antes de usar ou descartar |
+| Perto de vencer | Usar este produto primeiro e não repetir a compra nesse volume |
+| Fora do padrão | Conferir com quem retirou se a quantidade está certa |
+| Consumo crescente | Conferir se o aumento era esperado e antecipar a próxima compra |
+| Parado e excesso | Não comprar mais até voltar a ter saída ou até o estoque baixar |
+
+**Ordem dos alertas.**
+1. Nível: urgente → atenção → informativo.
+2. Tipo, no mesmo nível: falta → vencimento → fora do padrão → consumo crescente → parado → excesso. A falta para a operação; o vencimento é perda certa.
+3. Gravidade, dentro do tipo: falta com menos dias restantes; vencimento com maior valor da sobra; fora do padrão com maior múltiplo da média; parado e excesso com maior valor em estoque.
+4. Empate: maior valor em estoque.
+
+Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, que mudaram de nível e resolvidos. As mesmas regras estão no app, em linguagem simples, na tela **Como funciona**.
+
+**Origem dos limites.** Os limites de 7, 15, 30 e 90 dias, de 3 vezes a média e de 50% são parâmetros escolhidos pela equipe, simples de explicar e de conferir. Não vêm de referência agronômica publicada nem de calibração com produtores: numa fazenda real, devem ser ajustados com a Agronomia, por cultura e época do ano.
 
 ### 5.2. Origem dos Dados: Base Simulada
 
@@ -215,6 +247,8 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
   - validade inválida é descartada;
   - responsável ausente vira "Não informado".
 - **Sem fusões por nome:** refs repetidas são rejeitadas e produtos com nomes parecidos ficam separados.
+- **Teste-gabarito:** [`official-seed.spec.ts`](api/src/stock/official-seed.spec.ts) roda a base simulada, com data fixa, no mesmo motor da API e exige exatamente os alertas planejados (falta da Ureia, vencimento e excesso do Trichoderma, Diesel fora do padrão, MAP, Bicos e Respirador parados), sem nenhum alerta nos insumos normais. Para provar que o teste detecta erros, a regra de fora do padrão foi quebrada de propósito (3 → 30 vezes a média) e o gabarito falhou.
+- **No app:** a fazenda de demonstração mostra, em todas as telas, o aviso "Dados simulados".
 - **Testes:** [`demo-load.spec.ts`](api/src/stock/demo-load.spec.ts) cobre as regras e os casos de borda. [`demo-load.postgres.integration.ts`](api/test/demo-load.postgres.integration.ts) (`npm run test:sync`) comprova a carga num PostgreSQL descartável: atomicidade, idempotência e outras fazendas intactas.
 
 ---
@@ -223,17 +257,18 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 
-**Vídeo final:** [assista à demonstração do AgroHacka no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
+**Vídeo final:** [assista à demonstração do Paiol no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 
 ### 6.1. Roteiro Demonstrativo do Sistema
 1. **Abertura:** O Gestor visualiza no Dashboard os cartões com contagem de alertas críticos e capital imobilizado.
 2. **Identificação de Problema Crítico:** O insumo *Ureia* está abaixo do estoque mínimo, com a justificativa do consumo médio, dos dias de histórico e da autonomia estimada.
 3. **Pareamento em 10 Segundos:** O Gestor cadastra o operador e gera um QR Code com código alternativo no formato `AGRO-XXXX`; ao ler o QR, o celular conecta sozinho.
 4. **Operação no Campo 100% Offline:** Em modo avião, o operador registra saídas de Diesel S10 e de Ureia. Os registros ficam salvos no aparelho, na fila de sincronização.
-5. **Detecção de Anomalia:** Um lançamento atípico de 950 litros de Diesel gera imediatamente um alerta de desvio estatístico.
-6. **Convergência e Sincronização:** Ao restabelecer conexão (ou via botão *Sincronizar*), as transações locais sobem para a VPS sem duplicidade e recebem recibos individuais confirmados.
-7. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor (pré-requisitos e como reiniciar os alertas na seção 4.4).
-8. **Segurança de Dados:** Demonstração do backup automático no SQLite com restauração atômica em 1 clique.
+5. **Retirada fora do padrão:** Um lançamento atípico de 950 litros de Diesel gera um alerta de atenção, com a data, o múltiplo da média e o que fazer.
+6. **Reanálise visível:** depois de salvar, a tela mostra o que mudou na análise (alertas novos, que mudaram de nível e resolvidos).
+7. **Convergência e Sincronização:** Ao restabelecer conexão (ou no botão *Atualizar agora*), as transações locais sobem para a VPS sem duplicidade e recebem recibos individuais confirmados.
+8. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor (pré-requisitos e como reiniciar os alertas na seção 4.4).
+9. **Segurança de Dados:** Demonstração do backup automático no SQLite com restauração atômica em 1 clique.
 
 ---
 
@@ -241,9 +276,12 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 400 testes unitários/HTTP aprovados em 27/10. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, também aprovados.
-- **Desktop/Mobile (Tauri + Vue):** 538 testes Vitest de cadastro, SQLite, interface (incluindo usabilidade no celular), gestão de operadores e empacotamento debug aprovados em 27/10. Os testes e scripts exclusivos de assinatura release foram retirados ao retornar ao debug. Os 5 testes Rust anteriores não foram reexecutados nesta alteração, que não muda o código nativo. O usuário confirmou o teste offline do APK Android anterior; o novo APK e as novas telas ainda exigem validação no aparelho.
+- **API NestJS:** 385 testes unitários e de HTTP aprovados em 28/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 27/10.
+- **Desktop/Mobile (Tauri + Vue):** 589 testes Vitest aprovados em 28/10, cobrindo cadastro, SQLite, interface (incluindo usabilidade no celular e linguagem simples), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
+- **Integração contínua:** o GitHub Actions roda os testes da API e os testes e a checagem de tipos do app a cada push e Pull Request na `dev` e na `main` ([`ci.yml`](.github/workflows/ci.yml)).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
+- **Em aparelho real:** o modo offline (registro em modo avião, "Esperando envio" e envio ao reconectar), o pareamento por QR Code e o WhatsApp foram testados pela equipe num celular Motorola g75 5G (Android 16) e gravados no vídeo de 28/10. Não há medições de desempenho.
+- **Retorno do público:** a equipe **não** conseguiu mostrar o app a produtores nem à Agronomia antes da final. A validação é só técnica (testes, gabarito e uso pela própria equipe).
 
 ### 7.2. Registro Transparente de Limitações
 Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza os limites da versão atual:
@@ -254,6 +292,10 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 5. **Sincronização exclusivamente pela internet:** decisão de 26/10. LAN foi cancelada, não adiada; o gestor não atua como servidor intermediário. Sem internet, os lançamentos continuam no SQLite/outbox e são enviados à API central ao reconectar. Em 27/10, a tarefa 5.7-A retirou do cliente o transporte LAN, o uso de IPs antigos e o script de firewall, preservando sessões e pendências. As tarefas 5.7-B/C retiraram da API as rotas `POST /devices/local-ip` e `PUT /sync/heartbeat` e o IP/porta do pareamento e da conexão, e o contrato do cliente foi regenerado; as colunas antigas da fazenda ficam inertes no banco. O plano está em [`ROADMAP_FINALIZACAO.md`](ROADMAP_FINALIZACAO.md). Não é necessário abrir portas no firewall para a sincronização cloud.
 6. **Administração de operadores:** o Gestor edita o nome, desativa/reativa (`PATCH /devices/:id`) e exclui (`DELETE /devices/:id`) operadores da própria fazenda. Um aparelho inativo ou excluído é recusado na sincronização (401), inclusive se a exclusão concorrer com um envio, e mantém sua fila local; nomes e movimentações já enviados continuam no histórico. Antes de excluir, convém sincronizar as pendências do aparelho.
 7. **WhatsApp na conta de testes da Twilio:** a mensagem chega com o texto do modelo pré-aprovado da Twilio; o alerta completo (insumo, nível, diagnóstico) fica no app. Detalhes na seção 4.4.
+8. **Previsão simples:** a duração usa a média dos últimos 30 dias, sem considerar a cultura nem a época do ano. Os limites dos alertas são parâmetros da equipe (seção 5.1), ainda não calibrados com a Agronomia.
+9. **Sem importação de planilha:** os dados entram pelo app (cadastro e movimentações) ou pela carga de demonstração reproduzível.
+10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes, variação de preço entre compras e cadastros duplicados com nomes diferentes não são tratados.
+11. **Sem retorno do público:** ver seção 7.1.
 
 ---
 
@@ -270,6 +312,18 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 ### 8.2. Declaração Formal de Uso Ético de Inteligência Artificial
 Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe declara:
 > *“Ferramentas de Inteligência Artificial Generativa foram utilizadas como assistentes de codificação: **Claude Code** (Anthropic), **Codex/ChatGPT** (OpenAI) e **Gemini** (Google, via Antigravity IDE). Elas auxiliaram na geração de código e scaffolding, na escrita de testes automatizados no ciclo TDD, na revisão de tipagem TypeScript, na investigação de falhas de build e na elaboração de documentação técnica. Toda alteração passou por revisão humana dos integrantes, que definiram os requisitos, as regras de negócio agronômicas, a modelagem e a arquitetura de sincronização, validaram os testes e decidiram o que entrou no repositório por meio de Pull Requests.”*
+
+**Revisão humana por parte do projeto:**
+
+| Parte | Quem revisou | O que foi conferido |
+| :--- | :--- | :--- |
+| Motor de análise (app e API) | Kauê | Regras contra o gabarito calculado à mão, teste de mutação, paridade entre os dois motores e textos dos alertas |
+| API, sincronização e banco | Kauê | Testes de HTTP e com PostgreSQL real, idempotência, travas por fazenda e credenciais da demonstração |
+| Telas do app (Vue) | Gabriel | Testes de interface, linguagem simples, uso no celular e fluxo offline no aparelho |
+| Empacotamento e CI (Tauri, GitHub Actions) | Gabriel | Builds de Windows, Linux e Android e instalação no aparelho |
+| Documentação | Kauê e Gabriel | Conferência com o código e com os testes |
+
+Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resumo no topo, "o que mudou", tela Como funciona e nome Paiol) foi feita e revisada pelo Kauê, para adiantar as tarefas do Gabriel.
 
 ---
 
@@ -302,4 +356,4 @@ Em cumprimento ao item 8 do Anexo II do regulamento do AGROHACK 2026/2, a equipe
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
 - **Branch de Desenvolvimento:** `dev`
 - **Branch de Produção / Entrega:** `main`
-- **Data da Apresentação:** 29 de outubro de 2026 — Semana Nacional de Ciência e Tecnologia (SNCT) no IFRO Campus Ariquemes.
+- **Data da Apresentação:** 30 de outubro de 2026, às 19h15 — final presencial do AGROHACK 2026/2 no Auditório do CEI (Centro de Empreendedorismo e Inovação), IFRO Campus Ariquemes.
