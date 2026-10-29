@@ -530,7 +530,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - cópia local dos slides, vídeos e dados;
   - internet alternativa testada.
 
-- [ ] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+- [x] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
   - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
   - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
   - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
@@ -539,7 +539,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Aplicado pelo DEV 1, a pedido da equipe: marca da tela de entrada e do menu, rodapé ("Paiol · versão …"), título da página (`index.html`) e título da janela (`tauri.conf.json`).
   - **`productName` mantido como `agrohacka`, de propósito:** no Windows ele define a pasta de instalação, e trocá-lo faria a versão nova ser instalada ao lado da antiga, como outro programa. Por isso só o nome do arquivo do instalador continua `agrohacka_…`. O `identifier` não mudou.
   - Testes em `app.spec.ts`: marca, rodapé, título, `productName` e `identifier`. Cliente com 583 testes, checagem de tipos e build aprovados.
-  - Falta: o README (12.13) e os slides (12.21).
+  - README aplicado no PR #128 (12.13); slides com o nome Paiol na capa desde 28/10.
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
 - [x] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
