@@ -6,6 +6,8 @@ import {
   type UpdateOperatorInput,
 } from "../offline/types";
 import UiIcon from "./UiIcon.vue";
+import PaginationBar from "./PaginationBar.vue";
+import { DEFAULT_PAGE_SIZE, paginate } from "../pagination";
 
 const props = defineProps<{
   operators: PairedOperator[];
@@ -61,6 +63,14 @@ const filtered = computed(() =>
         operator.ativo === (status.value === "active")),
   ),
 );
+const page = ref(1);
+const pageSize = ref(DEFAULT_PAGE_SIZE);
+const pagination = computed(() =>
+  paginate(filtered.value, page.value, pageSize.value),
+);
+watch([search, status], () => {
+  page.value = 1;
+});
 const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
 </script>
 
@@ -118,7 +128,7 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
       </p>
       <ul v-else class="operator-list">
         <li
-          v-for="operator in filtered"
+          v-for="operator in pagination.items"
           :key="operator.id"
           :data-testid="`operator-${operator.id}`"
         >
@@ -234,6 +244,12 @@ const formatDate = (date: string) => new Date(date).toLocaleDateString("pt-BR");
           </div>
         </li>
       </ul>
+      <PaginationBar
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :pagination="pagination"
+        label="operadores"
+      />
     </template>
     <div
       v-if="deleting"

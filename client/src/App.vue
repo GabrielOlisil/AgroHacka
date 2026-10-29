@@ -8,6 +8,8 @@ import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
+import PaginationBar from "./components/PaginationBar.vue";
+import { DEFAULT_PAGE_SIZE, paginate } from "./pagination";
 import { APP_VERSION } from "./app-version";
 import { formatPhone, maskPhone, toWhatsApp } from "./phone";
 import { openPicker } from "./open-picker";
@@ -122,6 +124,19 @@ const filteredProducts = computed(() =>
         (stockStatus.value === "empty" && p.saldo <= 0) ||
         (stockStatus.value === "unpriced" && p.precoAquisicao === null)),
   ),
+);
+const stockPage = ref(1);
+const stockPageSize = ref(DEFAULT_PAGE_SIZE);
+const stockPagination = computed(() =>
+  paginate(filteredProducts.value, stockPage.value, stockPageSize.value),
+);
+watch([search, category, stockStatus], () => {
+  stockPage.value = 1;
+});
+const historyPage = ref(1);
+const historyPageSize = ref(DEFAULT_PAGE_SIZE);
+const historyPagination = computed(() =>
+  paginate(movements.value, historyPage.value, historyPageSize.value),
 );
 // The chart has its own selection: browsing consumption must not change the form.
 const chartProductId = ref("");
@@ -1384,7 +1399,7 @@ onUnmounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in filteredProducts" :key="p.id">
+              <tr v-for="p in stockPagination.items" :key="p.id">
                 <td>
                   <strong>{{ p.nome }}</strong
                   ><small
@@ -1478,6 +1493,12 @@ onUnmounted(() => {
         <p v-if="!filteredProducts.length" class="empty">
           Nenhum insumo encontrado.
         </p>
+        <PaginationBar
+          v-model:page="stockPage"
+          v-model:page-size="stockPageSize"
+          :pagination="stockPagination"
+          label="insumos"
+        />
       </section>
       <section v-if="tab === 'history'" class="panel history-panel">
         <div class="section-heading">
@@ -1498,7 +1519,7 @@ onUnmounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="m in movements" :key="m.id">
+              <tr v-for="m in historyPagination.items" :key="m.id">
                 <td>{{ formatDate(m.dataMovimento) }}</td>
                 <td data-label="Insumo">
                   {{
@@ -1536,6 +1557,12 @@ onUnmounted(() => {
           </table>
         </div>
         <p v-if="!movements.length" class="empty">Nenhuma movimentação.</p>
+        <PaginationBar
+          v-model:page="historyPage"
+          v-model:page-size="historyPageSize"
+          :pagination="historyPagination"
+          label="registros"
+        />
       </section>
       <HowItWorks v-if="tab === 'help'" />
       <section v-if="tab === 'backups'" class="panel">
