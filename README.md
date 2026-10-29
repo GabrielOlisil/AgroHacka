@@ -197,7 +197,7 @@ UPDATE alerts SET resolvido = true WHERE "farmId" = '<id da fazenda>';
 ## 5. Dados e Critérios Agronômicos
 
 O motor analítico responde às **7 perguntas oficiais** do desafio com as mesmas regras no cliente ([`analysis.ts`](client/src/offline/analysis.ts)) e na API ([`stock-engine.ts`](api/src/stock-engine/stock-engine.ts)). A rota `POST /stock/analyze` e a reanálise que grava alertas e dispara o WhatsApp usam esse motor. A paridade é verificada por [`parity.spec.ts`](api/src/stock-engine/parity.spec.ts), que roda os dois motores com as mesmas fixtures e a mesma data de referência e exige resultados iguais:
-- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, consumo crescente, parado/excesso, ABC, textos dos alertas (com a ação recomendada) e ordem dos alertas.
+- **O que é comparado:** saldo, consumo, autonomia, confiabilidade, validade, anomalia, consumo crescente, cadastro duplicado, parado/excesso, ABC, textos dos alertas (com a ação recomendada) e ordem dos alertas.
 - **Fixtures:** a base simulada, litros e quilos juntos, validade hoje, poucas amostras, limiares exatos, listas vazias, zero e preço ausente.
 - **Limite:** a paridade vale para essas fixtures, não é uma prova formal para qualquer entrada. As duas cópias precisam mudar juntas, e o teste falha se divergirem.
 - **Saldos por unidade:** os saldos são agrupados por unidade (`balancesByUnit`); não existe saldo total somando unidades diferentes.
@@ -212,7 +212,7 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 | **4. Existem consumos fora do padrão?** | **Retirada fora do padrão (múltiplo da média):**<br>Cada retirada da janela de 30 dias que tenha pelo menos 3 retiradas antes dela é comparada com a média dessas anteriores. Se for $\ge 3\times$ a média, gera alerta de **atenção**; o alerta aponta a de maior múltiplo, com a data.<br>**Consumo crescente:** uso médio por dia dos últimos 15 dias pelo menos 50% maior que o dos 15 anteriores, com 2 ou mais retiradas em cada metade. A metade anterior conta a partir da primeira retirada, para não confundir início de uso com aumento. Nível **atenção**. | *“Retirada de 950 L em 18/10/2026, 15,8 vezes a média das 13 retiradas anteriores (60 L). Consideramos fora do padrão a partir de 3 vezes a média. O que fazer: conferir com quem retirou se a quantidade está certa.”* |
 | **5. Por quanto tempo o estoque será suficiente?** | **Autonomia com base da amostragem:**<br>A interface mostra a quantidade de retiradas e os dias usados no cálculo: "Poucos dados" (1–2 retiradas), "Dados razoáveis" (3–4) ou "Bons dados" (5 ou mais). Sem consumo recente, a previsão fica indisponível. | Indicador heurístico por produto, não confiança estatística nem garantia de duração. |
 | **6. Quais produtos representam maior valor financeiro?** | **Curva ABC & Estoque Parado:**<br>- Classe A: até 80% do capital acumulado.<br>- Classe B: 80% a 95% do capital.<br>- Classe C: 95% a 100% do capital.<br>- **Estoque Parado:** Saldo positivo sem nenhuma saída há $\ge 30$ dias.<br>- **Excesso de Estoque:** Autonomia $> 90$ dias. | *“Há saldo, mas nenhuma retirada nos últimos 30 dias. O que fazer: não comprar mais até voltar a ter saída.”* |
-| **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias, produto vencido ou vencendo hoje.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias, retirada fora do padrão ou consumo crescente.<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Resumo no topo da Visão geral do Gestor ("Hoje: 2 compras urgentes, …"), alertas do mais grave para o menos grave e WhatsApp para os urgentes. |
+| **7. Quais itens merecem atenção imediata?** | **Priorização Tripla de Alertas:**<br>1. **URGENTE:** Estoque zerado, saldo $\le$ mínimo, autonomia $\le 7$ dias, produto vencido ou vencendo hoje.<br>2. **ATENÇÃO:** Autonomia entre 8 e 15 dias, sobra antes da validade em até 30 dias, retirada fora do padrão, consumo crescente ou cadastro duplicado (dois ou mais insumos com o mesmo nome, sem contar maiúsculas, acentos, espaços e símbolos).<br>3. **INFORMATIVO:** Estoque parado há 30 dias ou excesso acima de 90 dias. | Resumo no topo da Visão geral do Gestor ("Hoje: 2 compras urgentes, …"), alertas do mais grave para o menos grave e WhatsApp para os urgentes. |
 
 **O que fazer.** Todo alerta termina com uma ação recomendada:
 
@@ -223,11 +223,12 @@ O motor analítico responde às **7 perguntas oficiais** do desafio com as mesma
 | Perto de vencer | Usar este produto primeiro e não repetir a compra nesse volume |
 | Fora do padrão | Conferir com quem retirou se a quantidade está certa |
 | Consumo crescente | Conferir se o aumento era esperado e antecipar a próxima compra |
+| Cadastro duplicado | Conferir os cadastros e registrar as próximas movimentações em um só |
 | Parado e excesso | Não comprar mais até voltar a ter saída ou até o estoque baixar |
 
 **Ordem dos alertas.**
 1. Nível: urgente → atenção → informativo.
-2. Tipo, no mesmo nível: falta → vencimento → fora do padrão → consumo crescente → parado → excesso. A falta para a operação; o vencimento é perda certa.
+2. Tipo, no mesmo nível: falta → vencimento → fora do padrão → consumo crescente → cadastro duplicado → parado → excesso. A falta para a operação; o vencimento é perda certa.
 3. Gravidade, dentro do tipo: falta com menos dias restantes; vencimento com maior valor da sobra; fora do padrão com maior múltiplo da média; parado e excesso com maior valor em estoque.
 4. Empate: maior valor em estoque.
 
@@ -276,8 +277,8 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 385 testes unitários e de HTTP aprovados em 28/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 27/10.
-- **Desktop/Mobile (Tauri + Vue):** 606 testes Vitest aprovados em 29/10, cobrindo cadastro, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
+- **API NestJS:** 386 testes unitários e de HTTP aprovados em 29/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 27/10.
+- **Desktop/Mobile (Tauri + Vue):** 613 testes Vitest aprovados em 29/10, cobrindo cadastro, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
 - **Integração contínua:** o GitHub Actions roda os testes da API e os testes e a checagem de tipos do app a cada push e Pull Request na `dev` e na `main` ([`ci.yml`](.github/workflows/ci.yml)).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 - **Em aparelho real:** o modo offline (registro em modo avião, "Esperando envio" e envio ao reconectar), o pareamento por QR Code e o WhatsApp foram testados pela equipe num celular Motorola g75 5G (Android 16) e gravados no vídeo de 28/10. Não há medições de desempenho.
@@ -294,7 +295,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 7. **WhatsApp na conta de testes da Twilio:** a mensagem chega com o texto do modelo pré-aprovado da Twilio; o alerta completo (insumo, nível, diagnóstico) fica no app. Detalhes na seção 4.4.
 8. **Previsão simples:** a duração usa a média dos últimos 30 dias, sem considerar a cultura nem a época do ano. Os limites dos alertas são parâmetros da equipe (seção 5.1), ainda não calibrados com a Agronomia.
 9. **Sem importação de planilha:** os dados entram pelo app (cadastro e movimentações) ou pela carga de demonstração reproduzível.
-10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes, variação de preço entre compras e cadastros duplicados com nomes diferentes não são tratados.
+10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes e variação de preço entre compras não são tratados. Cadastros duplicados só são detectados quando o nome é o mesmo sem contar maiúsculas, acentos, espaços e símbolos; nomes parecidos, como "Ureia" e "Uréia granulada", não são comparados, e o app não junta os cadastros sozinho.
 11. **Sem retorno do público:** ver seção 7.1.
 
 ---

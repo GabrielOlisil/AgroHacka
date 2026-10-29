@@ -164,6 +164,20 @@ describe('paridade API × cliente na análise de estoque (tarefa 10.3)', () => {
     expect(api.alerts.some((a) => a.id === 'CRESCENTE:comeco')).toBe(false);
   });
 
+  it('cadastro duplicado: mesmo nome sem contar maiúsculas, acentos, espaços e símbolos (tarefa 12.23)', () => {
+    const api = compare(
+      [
+        { id: 'b', nome: 'uréia  46 %', unidadeMedida: 'kg' },
+        { id: 'a', nome: 'Ureia 46%' },
+        { id: 'c', nome: 'Ureia 45%' },
+        { id: 'x', nome: '-' },
+        { id: 'y', nome: '*' },
+      ],
+      [{ productId: 'a', tipo: 'ENTRADA', quantidade: 10, dataMovimento: at(-2) }],
+    );
+    expect(api.alerts.filter((a) => a.tipo === 'DUPLICADO').map((a) => a.id)).toEqual(['DUPLICADO:a']);
+  });
+
   it('poucas amostras levam o aviso de base limitada', () => {
     const api = compare(
       [{ id: 'p' }],

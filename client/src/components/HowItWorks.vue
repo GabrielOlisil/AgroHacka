@@ -8,6 +8,7 @@ const alerts = [
   ["Vencimento", "Vence em até 30 dias e deve sobrar produto", "Atenção", "Usar primeiro e não repetir a compra nesse volume"],
   ["Fora do padrão", "Uma retirada de 3 vezes ou mais a média das retiradas anteriores (com pelo menos 3 antes dela, nos últimos 30 dias)", "Atenção", "Conferir com quem retirou se a quantidade está certa"],
   ["Consumo crescente", "Uso por dia nos últimos 15 dias 50% maior que nos 15 dias anteriores (com pelo menos 2 retiradas em cada metade)", "Atenção", "Conferir se o aumento era esperado e antecipar a próxima compra"],
+  ["Cadastro duplicado", "Dois ou mais insumos com o mesmo nome, sem contar maiúsculas, acentos, espaços e símbolos", "Atenção", "Conferir os cadastros e registrar as próximas movimentações em um só"],
   ["Parado", "Há saldo, mas nenhuma retirada em 30 dias", "Informativo", "Não comprar mais até voltar a ter saída"],
   ["Excesso", "Estoque para mais de 90 dias", "Informativo", "Não comprar mais até o estoque baixar"],
 ];
