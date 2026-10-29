@@ -500,7 +500,7 @@ describe("tela Como funciona (tarefa 12.18)", () => {
       "Quais itens merecem atenção imediata?",
     ])
       expect(text).toContain(question);
-    for (const alert of ["Falta", "Vencimento", "Fora do padrão", "Consumo crescente", "Parado", "Excesso"])
+    for (const alert of ["Falta", "Vencimento", "Fora do padrão", "Consumo crescente", "Cadastro duplicado", "Parado", "Excesso"])
       expect(text).toContain(alert);
     expect(text).toContain("30 dias de uso");
     expect(text).toContain("50% maior");

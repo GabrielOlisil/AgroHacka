@@ -2,7 +2,7 @@
 
 **Equipe:** Oliveira & Oliveira | Gabriel de Oliveira Silva & Kauê Rian Silva Conceição Oliveira
 **Protocolo:** AGRO26-F009CD2F9F | ADS 6º Período — IFRO Campus Ariquemes
-**Versão demonstrada no vídeo de 28/10:** app 1.0.4, release [`android-build-22`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/android-build-22). A tag `v1.0.4-entrega`, citada antes neste roteiro, nunca foi criada. A versão avaliada na final é a `v1.1.2` (README, seção 10).
+**Versão demonstrada no vídeo de 28/10:** app 1.0.4, release [`android-build-22`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/android-build-22). A tag `v1.0.4-entrega`, citada antes neste roteiro, nunca foi criada. A versão avaliada na final é a `v1.1.3` (README, seção 10).
 **Meta de duração:** 5 a 7 minutos (o regulamento não fixa limite; a tarefa 8.1 previa 3 a 5)
 **Entrega:** YouTube como **Não listado** → link para a coordenação **até 27/10, 22h (horário de Ariquemes)** → link no README
 
