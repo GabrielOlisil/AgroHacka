@@ -8,6 +8,7 @@ import {
 import { Prisma, type Product } from '@prisma/client';
 import type { SyncIdentity } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { nameKey } from '../stock-engine/stock-engine';
 import {
   CreateProductDto,
   ProductResponseDto,
@@ -214,6 +215,7 @@ export class ProductsService {
             if (!same) throw conflict();
             return serialize(existing);
           }
+          await uniqueName(tx, identity.farmId, data.nome, data.id);
           return serialize(
             await tx.product.create({
               data: { ...data, farmId: identity.farmId },
@@ -255,6 +257,12 @@ export class ProductsService {
         throw new ConflictException(
           'Este insumo já tem movimentações; a unidade não pode mudar, para não alterar o sentido do histórico.',
         );
+      // Só confere quando o nome muda: um duplicado antigo ainda pode ser corrigido.
+      if (
+        typeof data.nome === 'string' &&
+        nameKey(data.nome) !== nameKey(existing.nome)
+      )
+        await uniqueName(tx, existing.farmId, data.nome, id);
       return serialize(await tx.product.update({ where: { id }, data }));
     });
   }
@@ -307,6 +315,29 @@ export class ProductsService {
 function manager(identity: SyncIdentity) {
   if (!identity || identity.role !== 'GESTOR' || !identity.farmId)
     throw new ForbiddenException('Somente gestores podem alterar insumos.');
+}
+
+// Mesma regra do alerta de cadastro duplicado; roda sob o lock da fazenda.
+async function uniqueName(
+  tx: Prisma.TransactionClient,
+  farmId: string,
+  nome: string,
+  id: string,
+) {
+  const key = nameKey(nome);
+  if (!key) return;
+  const same = (
+    await tx.product.findMany({
+      where: { farmId, excluidoEm: null },
+      select: { id: true, nome: true, unidadeMedida: true, ativo: true },
+    })
+  ).find((p) => p.id !== id && nameKey(p.nome) === key);
+  if (same)
+    throw new ConflictException(
+      same.ativo
+        ? `Já existe o insumo “${same.nome}” (${same.unidadeMedida}). Use o cadastro existente ou mude o nome.`
+        : `Já existe o insumo “${same.nome}” (${same.unidadeMedida}), desativado. Reative-o em Insumos desativados, no fim do Estoque, ou mude o nome.`,
+    );
 }
 
 function movementCount(tx: Prisma.TransactionClient, product: Product) {

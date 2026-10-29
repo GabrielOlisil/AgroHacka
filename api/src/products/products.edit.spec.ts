@@ -42,6 +42,9 @@ describe('ProductsService: editar, desativar e excluir insumo', () => {
     tx = {
       $queryRawUnsafe: vi.fn(async () => [{ id: identity.farmId }]),
       product: {
+        findMany: vi.fn(async ({ where }: any) =>
+          [...rows.values()].filter((row) => row.farmId === where.farmId),
+        ),
         findFirst: vi.fn(async ({ where }: any) => {
           const row = rows.get(where.id);
           return row?.farmId === where.farmId &&
@@ -186,6 +189,110 @@ describe('ProductsService: editar, desativar e excluir insumo', () => {
       message: expect.stringContaining('Desative'),
     });
     expect(tx.product.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProductsService: bloqueia cadastro duplicado', () => {
+  const novo = '22345678-1234-4234-9234-123456789abc';
+  let rows: Map<string, Product>;
+  let tx: any;
+  let service: ProductsService;
+  beforeEach(() => {
+    rows = new Map([[id, product({ nome: 'Ureia 46%' })]]);
+    tx = {
+      $queryRawUnsafe: vi.fn(async () => [{ id: identity.farmId }]),
+      product: {
+        findFirst: vi.fn(async ({ where }: any) => {
+          const row = rows.get(where.id);
+          return row?.farmId === where.farmId && !row.excluidoEm ? row : null;
+        }),
+        findMany: vi.fn(async ({ where }: any) =>
+          [...rows.values()].filter(
+            (row) => row.farmId === where.farmId && !row.excluidoEm,
+          ),
+        ),
+        create: vi.fn(async ({ data }: any) => ({
+          ...data,
+          ativo: true,
+          excluidoEm: null,
+          createdAt: date,
+          updatedAt: date,
+        })),
+        update: vi.fn(async ({ where, data }: any) => ({
+          ...rows.get(where.id)!,
+          ...data,
+        })),
+      },
+      stockMovement: { count: vi.fn(async () => 0) },
+    };
+    service = new ProductsService({
+      $transaction: vi.fn(async (work: any) => work(tx)),
+    } as any);
+  });
+  const create = (nome: string) =>
+    service.create(
+      { id: novo, nome, categoria: 'Adubos', unidadeMedida: 'sc', estoqueMinimo: 0 },
+      identity,
+    );
+
+  it.each(['uréia 46 %', 'UREIA 46%', ' Ureia-46% '])(
+    'recusa criar "%s" com o nome de um insumo existente',
+    async (nome) => {
+      await expect(create(nome)).rejects.toMatchObject({
+        status: 409,
+        message: expect.stringContaining('Já existe o insumo “Ureia 46%” (kg)'),
+      });
+      expect(tx.product.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('aceita nome só parecido e ignora outra fazenda e insumo excluído', async () => {
+    rows.set('b', product({ id: 'b', farmId: 'farm-b', nome: 'Calcário' }));
+    rows.set('c', product({ id: 'c', nome: 'Gesso', excluidoEm: date }));
+    await expect(create('Ureia 46% granulada')).resolves.toBeTruthy();
+    await expect(create('Calcário')).resolves.toBeTruthy();
+    await expect(create('Gesso')).resolves.toBeTruthy();
+  });
+
+  it('orienta reativar quando o existente está desativado', async () => {
+    rows.set(id, product({ nome: 'Ureia 46%', ativo: false }));
+    await expect(create('Ureia 46%')).rejects.toMatchObject({
+      status: 409,
+      message: expect.stringContaining('desativado'),
+    });
+  });
+
+  it('o reenvio do mesmo cadastro continua devolvendo o insumo já criado', async () => {
+    await expect(
+      service.create(
+        {
+          id,
+          nome: 'Ureia 46%',
+          categoria: 'Fertilizantes',
+          unidadeMedida: 'kg',
+          estoqueMinimo: 10,
+        },
+        identity,
+      ),
+    ).resolves.toMatchObject({ id });
+  });
+
+  it('recusa renomear para o nome de outro insumo', async () => {
+    rows.set(novo, product({ id: novo, nome: 'Calcário' }));
+    await expect(
+      service.update(novo, { nome: 'ureia 46%' }, identity),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('deixa editar um duplicado antigo sem mudar o nome, para poder corrigi-lo', async () => {
+    rows.set(novo, product({ id: novo, nome: 'Uréia 46 %' }));
+    await expect(
+      service.update(novo, { nome: 'Uréia 46 %', estoqueMinimo: 3 }, identity),
+    ).resolves.toMatchObject({ estoqueMinimo: 3 });
+    await expect(
+      service.update(novo, { nome: 'Ureia granulada' }, identity),
+    ).resolves.toMatchObject({ nome: 'Ureia granulada' });
   });
 });
 
