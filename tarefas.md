@@ -751,6 +751,10 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Cronometrar a apresentação completa com a demonstração ao vivo: no máximo 10 minutos, com folga.
   - Conferir os números citados (testes, alertas, valores da base) contra o app e o README.
   - Atualizar as respostas da sabatina e o Anki com o que mudou.
+- [x] **12.22. [DEV 1] Paginação das listas que crescem:** pedida pelo Kauê em 29/10. Histórico, Estoque e Operadores mostram 25 itens por página, com escolha de 10, 25, 50 ou 100, botões Anterior e Próxima, "Página X de Y" e "Mostrando 1–25 de N". A página volta para a 1 quando a busca, o filtro ou o tamanho da página mudam. Com até 10 itens, a barra não aparece.
+  - Fora da paginação: Cópias (no máximo 7) e Alertas (a lista é ordenada por gravidade; paginar poderia esconder um alerta urgente).
+  - A paginação é feita no app, sobre os dados que já estão no aparelho; a API não muda.
+  - Testes: `pagination.spec.ts`, `pagination-bar.spec.ts`, `app.spec.ts` e `operators-panel.spec.ts` (RED antes de cada parte). Cliente com 606 testes, checagem de tipos e build aprovados.
 
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 

@@ -179,6 +179,60 @@ describe("resumo no topo da Visão geral (tarefa 12.20)", () => {
     empty.unmount();
   });
 });
+describe("paginação do Histórico e do Estoque", () => {
+  const products = Array.from({ length: 30 }, (_, i) => ({
+    id: `p${i}`,
+    farmId: "f",
+    nome: `Insumo ${String(i).padStart(2, "0")}`,
+    categoria: i < 28 ? "Defensivo" : "Combustível",
+    unidadeMedida: "L",
+    estoqueMinimo: 0,
+    precoAquisicao: 1,
+    validade: null,
+  }));
+  const movements = products.map((p, i) => ({
+    id: `m${i}`,
+    productId: p.id,
+    farmId: "f",
+    tipo: "ENTRADA" as const,
+    quantidade: 10,
+    dataMovimento: "2026-10-01T12:00:00Z",
+    responsavel: "Ana",
+  }));
+  const mountFull = () => {
+    const state = controller("GESTOR");
+    state.analysis.value = analyzeInventory(products, movements, new Date("2026-10-16T12:00:00Z")) as never;
+    state.movements.value = movements as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("o Histórico mostra 25 registros por página e avança para os restantes", async () => {
+    const wrapper = mountFull();
+    await goToTab(wrapper, "Histórico");
+    const panel = () => wrapper.get(".history-panel");
+    expect(panel().findAll("tbody tr")).toHaveLength(25);
+    expect(panel().text()).toContain("Mostrando 1–25 de 30 registros");
+    await panel().get('[data-testid="page-next"]').trigger("click");
+    expect(panel().findAll("tbody tr")).toHaveLength(5);
+    await panel().get('[data-testid="page-size"]').setValue("50");
+    expect(panel().findAll("tbody tr")).toHaveLength(30);
+    wrapper.unmount();
+  });
+
+  it("o Estoque pagina os insumos filtrados e volta para a página 1 ao mudar o filtro", async () => {
+    const wrapper = mountFull();
+    await goToTab(wrapper, "Estoque");
+    const panel = () => wrapper.get(".stock-panel");
+    expect(panel().findAll("tbody tr")).toHaveLength(25);
+    await panel().get('[data-testid="page-next"]').trigger("click");
+    expect(panel().findAll("tbody tr")).toHaveLength(5);
+    await panel().get('select[aria-label="Filtrar categoria"]').setValue("Combustível");
+    expect(panel().findAll("tbody tr")).toHaveLength(2);
+    await panel().get('select[aria-label="Filtrar categoria"]').setValue("");
+    expect(panel().text()).toContain("Mostrando 1–25 de 30 insumos");
+    wrapper.unmount();
+  });
+});
 describe("destaque do “O que fazer” no alerta", () => {
   const mountWith = (justificativa: string) => {
     const state = controller("GESTOR");
