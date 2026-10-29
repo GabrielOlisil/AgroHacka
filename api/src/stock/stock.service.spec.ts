@@ -86,11 +86,12 @@ describe('StockService: análise pelo motor completo (tarefa 10.3)', () => {
     it('inclui estoque parado, excesso e anomalia, que o caminho antigo não via', async () => {
       const { alerts } = await stockService.analyzeStock(farmId, NOW);
       // Diesel: 48.870 L a 226 L/dia dá ~216 dias, acima da referência de 90.
+      // Tarefa 12.6: no mesmo nível, parado vem antes de excesso.
       expect(alerts.map((a) => a.id)).toEqual([
         'FALTA:p-ureia',
         'ANOMALIA:p-diesel',
-        'EXCESSO:p-diesel',
         'PARADO:p-map',
+        'EXCESSO:p-diesel',
       ]);
     });
 

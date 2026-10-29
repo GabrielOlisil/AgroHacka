@@ -14,9 +14,6 @@ vi.mock("@zxing/browser", () => ({
     decodeFromImageUrl = scanner.decodeImage;
   },
 }));
-vi.mock("../src/components/HelloWorld.vue", () => ({
-  default: { template: "<div>Template inicial</div>" },
-}));
 vi.mock("qrcode", () => ({
   default: {
     toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,dGVzdA=="),
@@ -83,7 +80,7 @@ describe("versão do aplicativo", () => {
       props: { controller: controller("OPERADOR") as never },
     });
     expect(wrapper.get(".page-footer").text()).toBe(
-      `AgroHacka · versão ${version}`,
+      `Paiol · versão ${version}`,
     );
     wrapper.unmount();
   });
@@ -92,6 +89,94 @@ describe("versão do aplicativo", () => {
     const wrapper = mount(App, { props: { controller: controller() as never } });
     expect(wrapper.get(".welcome").text()).toContain(`versão ${version}`);
     wrapper.unmount();
+  });
+});
+// Tarefa 12.19: o software se chama Paiol; "AgroHacka" fica só como nome do repositório.
+describe("nome do software (tarefa 12.19)", () => {
+  it("a tela de entrada e o menu mostram Paiol", () => {
+    const welcome = mount(App, { props: { controller: controller() as never } });
+    expect(welcome.get(".welcome .brand").text()).toBe("Paiol");
+    expect(welcome.get(".welcome").text()).not.toMatch(/AgroHacka/);
+    welcome.unmount();
+    const workspace = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(workspace.get(".sidebar .brand").text()).toBe("Paiol");
+    workspace.unmount();
+  });
+
+  it("o título da página e da janela também é Paiol", () => {
+    const html = readFileSync(resolve(process.cwd(), "index.html"), "utf-8");
+    expect(html).toContain("<title>Paiol · Gestão de insumos</title>");
+    const tauri = JSON.parse(readFileSync(resolve(process.cwd(), "src-tauri/tauri.conf.json"), "utf-8"));
+    expect(tauri.app.windows[0].title).toBe("Paiol");
+    // productName define a pasta de instalação no Windows: trocar faria a versão nova
+    // ser instalada ao lado da antiga. O identifier define onde ficam os dados.
+    expect(tauri.productName).toBe("agrohacka");
+    expect(tauri.identifier).toBe("com.agrohack.desktop");
+  });
+});
+// Tarefa 12.8: a fazenda carregada pela base de demonstração avisa, em toda tela,
+// que os dados são simulados. O nome é o da carga (api/src/stock/official-seed.data.ts).
+describe("aviso de dados simulados na fazenda de demonstração (tarefa 12.8)", () => {
+  const notice = '[data-testid="demo-notice"]';
+  const mountFarm = (role: "GESTOR" | "OPERADOR", farmNome: string) => {
+    const state = controller(role);
+    state.session.value = { role, farmId: "f", farmNome, nome: "Ana" } as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("aparece para o gestor e o operador da fazenda de demonstração, em todas as abas", async () => {
+    for (const role of ["GESTOR", "OPERADOR"] as const) {
+      const wrapper = mountFarm(role, "Fazenda Modelo AgroHack");
+      for (const tab of ["Visão geral", "Estoque", "Histórico"]) {
+        await goToTab(wrapper, tab);
+        expect(wrapper.get(notice).attributes("role")).toBe("note");
+        expect(wrapper.get(notice).text()).toBe(
+          "Dados simulados: esta fazenda de demonstração e seus números foram criados pela equipe, não são de uma propriedade real.",
+        );
+      }
+      wrapper.unmount();
+    }
+  });
+
+  it("reconhece o nome mesmo com espaços ou letras diferentes", () => {
+    const wrapper = mountFarm("GESTOR", "  fazenda modelo agrohack ");
+    expect(wrapper.find(notice).exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("não aparece numa fazenda real nem na tela de entrada", () => {
+    const real = mountFarm("GESTOR", "Boa Vista");
+    expect(real.find(notice).exists()).toBe(false);
+    real.unmount();
+    const welcome = mount(App, { props: { controller: controller() as never } });
+    expect(welcome.find(notice).exists()).toBe(false);
+    welcome.unmount();
+  });
+});
+describe("resumo no topo da Visão geral (tarefa 12.20)", () => {
+  const summary = '[data-testid="alert-summary"]';
+  const withAlerts = (role: "GESTOR" | "OPERADOR") => {
+    const state = controller(role);
+    state.analysis.value.products = [{ id: "p", nome: "Ureia", unidadeMedida: "sc", saldo: 5 }] as never;
+    state.analysis.value.alerts = [
+      { id: "FALTA:p", productId: "p", tipo: "FALTA", nivel: "URGENTE", titulo: "Ureia · Reposição", justificativa: "…" },
+    ] as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("o gestor vê a frase de resumo acima dos números", () => {
+    const wrapper = withAlerts("GESTOR");
+    expect(wrapper.get(summary).text()).toBe("Hoje: 1 compra urgente.");
+    wrapper.unmount();
+  });
+
+  it("o operador não vê o resumo; numa fazenda sem insumos, ninguém vê", () => {
+    const operator = withAlerts("OPERADOR");
+    expect(operator.find(summary).exists()).toBe(false);
+    operator.unmount();
+    const empty = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(empty.find(summary).exists()).toBe(false);
+    empty.unmount();
   });
 });
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
@@ -267,14 +352,14 @@ describe("navegação inferior no celular (tarefa 11.9)", () => {
   it("o gestor tem Mais, que abre Operadores e Cópias e fecha ao escolher", async () => {
     const wrapper = mount(App, { props: { controller: controller("GESTOR") as never } });
     const secondary = nav(wrapper).findAll("button.nav-secondary").map((b) => b.text());
-    expect(secondary).toEqual(["Operadores", "Cópias"]);
+    expect(secondary).toEqual(["Operadores", "Cópias", "Como funciona"]);
     const more = nav(wrapper).get('[data-testid="more-nav"]');
     expect(more.text()).toBe("Mais");
     expect(more.attributes("aria-expanded")).toBe("false");
     await more.trigger("click");
     expect(more.attributes("aria-expanded")).toBe("true");
     const menu = wrapper.get(".more-menu");
-    expect(menu.findAll("button").map((b) => b.text())).toEqual(["Operadores", "Cópias"]);
+    expect(menu.findAll("button").map((b) => b.text())).toEqual(["Operadores", "Cópias", "Como funciona"]);
     await menu.findAll("button")[1]!.trigger("click");
     expect(wrapper.find(".more-menu").exists()).toBe(false);
     expect(wrapper.text()).toContain("Cópias de segurança deste aparelho");
@@ -305,13 +390,50 @@ describe("navegação inferior no celular (tarefa 11.9)", () => {
   it("o operador já cabe em 4 abas: sem Mais, Cópias continua no menu", () => {
     const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
     expect(nav(wrapper).find('[data-testid="more-nav"]').exists()).toBe(false);
-    expect(nav(wrapper).findAll("button.nav-secondary")).toHaveLength(0);
-    expect(nav(wrapper).findAll("button").map((b) => b.text())).toEqual([
+    // "Como funciona" só aparece no computador; no celular o operador usa o link dos alertas.
+    expect(nav(wrapper).findAll("button.nav-secondary").map((b) => b.text())).toEqual(["Como funciona"]);
+    expect(nav(wrapper).findAll("button:not(.nav-secondary)").map((b) => b.text())).toEqual([
       "Visão geral",
       "Estoque",
       "Histórico",
       "Cópias",
     ]);
+    wrapper.unmount();
+  });
+});
+describe("tela Como funciona (tarefa 12.18)", () => {
+  const help = '[data-testid="how-it-works"]';
+  const nav = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.get('nav[aria-label="Navegação principal"]');
+
+  it("o gestor abre pelo menu e vê as regras, os alertas e as sete perguntas do desafio", async () => {
+    const wrapper = mount(App, { props: { controller: controller("GESTOR") as never } });
+    await goToTab(wrapper, "Como funciona");
+    expect(wrapper.get("h1").text()).toBe("Como funciona");
+    const text = wrapper.get(help).text();
+    for (const question of [
+      "O que está acabando e precisa ser comprado?",
+      "Quais produtos podem vencer antes do uso?",
+      "Quanto está sendo consumido de cada produto?",
+      "Existem consumos fora do padrão?",
+      "Por quanto tempo o estoque será suficiente?",
+      "Quais produtos representam maior valor financeiro?",
+      "Quais itens merecem atenção imediata?",
+    ])
+      expect(text).toContain(question);
+    for (const alert of ["Falta", "Vencimento", "Fora do padrão", "Consumo crescente", "Parado", "Excesso"])
+      expect(text).toContain(alert);
+    expect(text).toContain("30 dias de uso");
+    expect(text).toContain("50% maior");
+    expect(nav(wrapper).get('[data-testid="more-nav"]').classes()).toContain("active");
+    wrapper.unmount();
+  });
+
+  it("o operador abre pelo link do painel de alertas, que funciona também no celular", async () => {
+    const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
+    await wrapper.get('[data-testid="help-link"]').trigger("click");
+    expect(wrapper.get("h1").text()).toBe("Como funciona");
+    expect(wrapper.find(help).exists()).toBe(true);
     wrapper.unmount();
   });
 });
@@ -463,6 +585,37 @@ describe("formulário de movimentação da Visão geral", () => {
     await formSelect.setValue("p");
     expect((chartSelect.element as HTMLSelectElement).value).toBe("q");
     expect(wrapper.get(".chart").attributes("aria-label")).toContain("Ureia");
+    wrapper.unmount();
+  });
+
+  it("depois de salvar, mostra junto ao formulário o que mudou nos alertas (tarefa 12.17)", async () => {
+    const state = withDiesel(controller("GESTOR"));
+    state.analysis.value.alerts = [
+      { id: "PARADO:p", productId: "p", tipo: "PARADO", nivel: "INFORMATIVO", titulo: "Diesel · Estoque parado", justificativa: "…" },
+    ] as never;
+    state.record.mockImplementation(async () => {
+      state.analysis.value = {
+        ...state.analysis.value,
+        alerts: [
+          { id: "FALTA:p", productId: "p", tipo: "FALTA", nivel: "URGENTE", titulo: "Diesel · Reposição", justificativa: "…" },
+        ],
+      } as never;
+    });
+    const wrapper = await submitOverviewForm(state);
+    const changes = wrapper.get('.movement-panel [data-testid="alert-changes"]');
+    expect(changes.text()).toContain("O que mudou na análise");
+    expect(changes.findAll("li").map((li) => li.text())).toEqual([
+      "Novo alerta (urgente): Diesel · Reposição",
+      "Resolvido: Diesel · Estoque parado",
+    ]);
+    wrapper.unmount();
+  });
+
+  it("quando nenhum alerta muda, diz isso em vez de ficar calado (tarefa 12.17)", async () => {
+    const wrapper = await submitOverviewForm(withDiesel(controller("OPERADOR")));
+    expect(wrapper.get('.movement-panel [data-testid="alert-changes"]').text()).toContain(
+      "Nenhum alerta mudou com este registro.",
+    );
     wrapper.unmount();
   });
 

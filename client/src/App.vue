@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
+import { summarizeAlerts } from "./alert-summary";
+import { describeAlertChanges } from "./alert-changes";
+import HowItWorks from "./components/HowItWorks.vue";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
@@ -165,10 +168,13 @@ function localDateTime() {
     .toISOString()
     .slice(0, 16);
 }
+// What the last record changed in the alerts (tarefa 12.17); null when it does not apply.
+const alertChanges = ref<string[] | null>(null);
 async function act(action: () => Promise<unknown>, success = "") {
   busy.value = true;
   feedback.value = "";
   error.value = "";
+  alertChanges.value = null;
   try {
     await action();
     feedback.value = success;
@@ -200,6 +206,7 @@ async function authenticate() {
 }
 async function record() {
   await act(async () => {
+    const before = analysis.value.alerts;
     await workspace.record({
       productId: productId.value,
       tipo: kind.value,
@@ -210,6 +217,7 @@ async function record() {
       ).toISOString(),
       ...(destination.value ? { destino: destination.value } : {}),
     });
+    alertChanges.value = describeAlertChanges(before, analysis.value.alerts);
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
@@ -305,6 +313,7 @@ function productSaved() {
   search.value = "";
   category.value = "";
   stockStatus.value = "";
+  alertChanges.value = null;
   feedback.value =
     "Insumo cadastrado. Registre uma entrada para adicionar saldo.";
 }
@@ -381,7 +390,7 @@ function openOperators() {
 }
 // Tarefa 11.9: no celular, o gestor acessa Operadores e Cópias pelo "Mais".
 const showMore = ref(false);
-function chooseMore(next: "operators" | "backups") {
+function chooseMore(next: "operators" | "backups" | "help") {
   showMore.value = false;
   if (next === "operators") openOperators();
   else tab.value = next;
@@ -471,6 +480,12 @@ const isOnline = ref(navigator.onLine);
 const updateOnline = () => {
   isOnline.value = navigator.onLine;
 };
+// Farm created by the demo data load (api/src/stock/official-seed.data.ts): its
+// numbers are simulated, and every screen says so (tarefa 12.8).
+const isDemoFarm = computed(
+  () =>
+    session.value?.farmNome.trim().toLowerCase() === "fazenda modelo agrohack",
+);
 const syncLabel = computed(() => {
   if (syncing.value) return "Atualizando…";
   if (!isOnline.value)
@@ -532,7 +547,7 @@ onUnmounted(() => {
     <section class="welcome-story">
       <a class="brand" href="#"
         ><span class="brand-icon"><UiIcon name="tractor" :size="24" /></span>
-        AgroHacka</a
+        Paiol</a
       >
       <div>
         <span class="eyebrow">GESTÃO RURAL · DO CAMPO À DECISÃO</span>
@@ -691,7 +706,7 @@ onUnmounted(() => {
         </form>
       </div>
       <small
-        >AgroHack 2026 · Gestão inteligente de insumos rurais · versão
+        >Paiol · Gestão inteligente de insumos rurais · versão
         {{ APP_VERSION }}</small
       >
     </section>
@@ -700,7 +715,7 @@ onUnmounted(() => {
     <aside class="sidebar">
       <a class="brand" href="#" @click.prevent="tab = 'overview'"
         ><span class="brand-icon"><UiIcon name="tractor" :size="24" /></span>
-        AgroHacka</a
+        Paiol</a
       >
       <div class="farm-card">
         <span class="eyebrow">SUA PROPRIEDADE</span
@@ -747,10 +762,19 @@ onUnmounted(() => {
         >
           <UiIcon name="database-backup" :size="18" /><span>Cópias</span></button
         ><button
+          class="nav-secondary"
+          :class="{ active: tab === 'help' }"
+          :aria-current="tab === 'help' ? 'page' : undefined"
+          @click="tab = 'help'"
+        >
+          <UiIcon name="info" :size="18" /><span>Como funciona</span></button
+        ><button
           v-if="session.role === 'GESTOR'"
           data-testid="more-nav"
           class="nav-more"
-          :class="{ active: tab === 'operators' || tab === 'backups' }"
+          :class="{
+            active: tab === 'operators' || tab === 'backups' || tab === 'help',
+          }"
           :aria-expanded="showMore"
           aria-controls="more-menu"
           @click="showMore = !showMore"
@@ -762,7 +786,9 @@ onUnmounted(() => {
         <button @click="chooseMore('operators')">
           <UiIcon name="users" :size="18" />Operadores</button
         ><button @click="chooseMore('backups')">
-          <UiIcon name="database-backup" :size="18" />Cópias
+          <UiIcon name="database-backup" :size="18" />Cópias</button
+        ><button @click="chooseMore('help')">
+          <UiIcon name="info" :size="18" />Como funciona
         </button>
       </div>
       <div class="sidebar-bottom">
@@ -804,6 +830,15 @@ onUnmounted(() => {
           }}
         </button>
       </header>
+      <p
+        v-if="isDemoFarm"
+        class="demo-notice"
+        role="note"
+        data-testid="demo-notice"
+      >
+        <strong>Dados simulados:</strong> esta fazenda de demonstração e seus
+        números foram criados pela equipe, não são de uma propriedade real.
+      </p>
       <div class="page-heading">
         <div>
           <span class="eyebrow">{{
@@ -823,7 +858,9 @@ onUnmounted(() => {
                     ? "Histórico de movimentações"
                     : tab === "operators"
                       ? "Operadores da fazenda"
-                      : "Cópias de segurança"
+                      : tab === "help"
+                        ? "Como funciona"
+                        : "Cópias de segurança"
             }}
           </h1>
           <p v-if="lastSync" class="muted">
@@ -847,6 +884,18 @@ onUnmounted(() => {
       <p v-if="feedback" class="notice success" role="status">
         <UiIcon name="circle-check" /><span>{{ feedback }}</span>
       </p>
+      <div
+        v-if="feedback && alertChanges"
+        class="alert-changes"
+        data-testid="alert-changes"
+        aria-live="polite"
+      >
+        <strong>O que mudou na análise</strong>
+        <ul v-if="alertChanges.length">
+          <li v-for="(line, i) in alertChanges" :key="i">{{ line }}</li>
+        </ul>
+        <p v-else>Nenhum alerta mudou com este registro.</p>
+      </div>
       <section
         v-if="reviews.length"
         class="panel"
@@ -902,6 +951,13 @@ onUnmounted(() => {
         </p>
       </details>
       <template v-if="tab === 'overview'">
+        <p
+          v-if="session.role === 'GESTOR' && analysis.products.length"
+          class="alert-summary"
+          data-testid="alert-summary"
+        >
+          {{ summarizeAlerts(analysis.alerts) }}
+        </p>
         <section
           class="metrics"
           :class="{ two: session.role !== 'GESTOR' }"
@@ -941,6 +997,13 @@ onUnmounted(() => {
               <h2>Alertas prioritários</h2>
               <span class="badge">{{ analysis.alerts.length }} alertas</span>
             </div>
+            <button
+              class="text-button help-link"
+              data-testid="help-link"
+              @click="tab = 'help'"
+            >
+              <UiIcon name="info" /> Como os alertas são calculados
+            </button>
             <div v-if="!analysis.alerts.length" class="empty">
               <UiIcon name="circle-check" :size="24" />
               <h3>
@@ -1126,6 +1189,18 @@ onUnmounted(() => {
                 <p v-if="formFeedback" class="notice success" role="status">
                   <UiIcon name="circle-check" /><span>{{ formFeedback }}</span>
                 </p>
+                <div
+                  v-if="formFeedback && alertChanges"
+                  class="alert-changes"
+                  data-testid="alert-changes"
+                  aria-live="polite"
+                >
+                  <strong>O que mudou na análise</strong>
+                  <ul v-if="alertChanges.length">
+                    <li v-for="(line, i) in alertChanges" :key="i">{{ line }}</li>
+                  </ul>
+                  <p v-else>Nenhum alerta mudou com este registro.</p>
+                </div>
                 <p v-if="formError" class="notice error" role="alert">
                   <UiIcon name="circle-alert" /><span>{{ formError }}</span>
                 </p>
@@ -1456,6 +1531,7 @@ onUnmounted(() => {
         </div>
         <p v-if="!movements.length" class="empty">Nenhuma movimentação.</p>
       </section>
+      <HowItWorks v-if="tab === 'help'" />
       <section v-if="tab === 'backups'" class="panel">
         <div class="section-heading">
           <div>
@@ -1508,7 +1584,7 @@ onUnmounted(() => {
           }
         "
       />
-      <footer class="page-footer">AgroHacka · versão {{ APP_VERSION }}</footer>
+      <footer class="page-footer">Paiol · versão {{ APP_VERSION }}</footer>
     </main>
     <div
       v-if="productStarted && session.role === 'GESTOR'"

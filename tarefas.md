@@ -458,6 +458,302 @@ o novo APK debug e as novas telas ainda exigem validação em 5.8/10.5.
 
 ---
 
+### ETAPA 12: Final presencial (30/10/2026, 19h15, Auditório do CEI)
+*Origem: regras da final e parecer consolidado da seleção, ambos de 28/10/2026. A banca dá nota nova, de zero: C1 problema (20), C2 funcionamento e demonstração (20), C3 análises e apoio à decisão (20), C4 validação e testes (15), C5 código, documentação e IA (15), C6 clareza e respostas (10). O desempate usa C3, depois C2, depois C1. Na seleção, a equipe ficou em 4º (80,25); o C3 (14,75) foi o critério mais fraco.*
+
+*Comparação com as outras seis finalistas (parecer do Claude). O que as mais bem avaliadas têm e nós não temos:*
+- *ação recomendada concreta em cada alerta, incluindo quantidade e custo da compra (3 Hacketeers, BDCACO, Aridev, Tetrarreme);*
+- *pontuação de prioridade documentada dentro de cada nível e resumo para o gestor no topo (3 Hacketeers, Hype Stack);*
+- *reanálise que mostra o que mudou depois do registro: alertas novos, resolvidos e que mudaram de nível (3 Hacketeers, Hype Stack);*
+- *página "Como funciona" com os critérios e as sete perguntas do desafio (3 Hacketeers, Hype Stack);*
+- *teste-gabarito: cada problema plantado gera o alerta esperado e os produtos normais não geram nenhum (Hype Stack, Tetrarreme, 3 Hacketeers);*
+- *aviso fixo de dados simulados na tela (3 Hacketeers, Tetrarreme, Aridev);*
+- *importação de nova base (cinco das seis).*
+
+*Fraquezas comuns que podemos explorar:*
+- *quase ninguém tem retorno de produtor ou da Agronomia;*
+- *a revisão humana do código gerado por IA raramente está registrada;*
+- *nenhuma concorrente tem app de celular nativo com sincronização ativa e WhatsApp; a Tetrarreme funciona offline no navegador, mas não sincroniza.*
+
+*Prazo: melhorias até **30/10 às 14h**. Depois disso, o repositório fica congelado. Cada item de código segue TDD (RED → GREEN → refatoração). Mudanças no motor de análise valem nos dois motores, cliente e API, com o `parity.spec.ts` passando.*
+
+**Divisão para trabalhar em paralelo.** Cada um fica com um conjunto de arquivos, para que nenhum precise esperar o outro e os PRs não entrem em conflito.
+- **DEV 1 (Kauê) — motor de análise e API:** `api/src/**`, `client/src/offline/analysis.ts` e os testes deles, incluindo o `parity.spec.ts`.
+- **DEV 2 (Gabriel) — telas, documentação e entrega:** `client/src/App.vue`, `client/src/components/`, `client/src/style.css`, `client/src-tauri/tauri.conf.json`, `.github/workflows/` e `README.md`.
+
+| Ordem | DEV 1 (Kauê) | DEV 2 (Gabriel) |
+| --- | --- | --- |
+| 1 | 12.3 credenciais da demonstração e a parte de API da 12.2 | 12.19 nome (depois da escolha conjunta) e 12.12 restos de modelo |
+| 2 | 12.10 teste-gabarito, que serve de base para as regras novas | 12.8 aviso de dados simulados e 12.20 resumo no topo |
+| 3 | 12.5 ação recomendada | 12.17 o que mudou depois do registro |
+| 4 | 12.6 ordem por gravidade | 12.18 tela "Como funciona" |
+| 5 | 12.11 registro da falha da reanálise | 12.9 testes do cliente no CI |
+| 6 | 12.7, se der tempo | 12.13 README e 12.1 tag e release |
+
+**Por que ninguém espera ninguém:**
+- a ação recomendada (12.5) entra no próprio texto do alerta, que a tela já exibe; não precisa mudar a interface;
+- o resumo (12.20) e o "o que mudou" (12.17) usam o nível e o tipo dos alertas, que já existem hoje;
+- o DEV 2 escreve a tela "Como funciona" e o README com as regras atuais; o DEV 1 descreve, na descrição de cada PR, o texto das regras novas, e o DEV 2 só acrescenta no fim.
+
+**Marcos:**
+- **29/10 até 23h:** todo o código na `dev`;
+- **30/10 até 12h:** `dev` → `main`, release e tag (12.1);
+- **30/10 às 14h:** congelado.
+
+Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30; 12.21 por último (depois das outras tarefas ou no dia 30, o que acontecer primeiro).
+
+**Prioridade 1 — obrigatório para a final**
+- [ ] **12.1. [DEV 2] Versão final identificada e informada até 30/10 às 14h** (qualquer um dos dois pode mandar a mensagem à organização): criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
+  - Corrigir as divergências apontadas no parecer: o README cita `android-build-21` como versão de entrega, mas o link baixa a release mais recente; o roteiro do vídeo cita `v1.0.4-entrega`, que não existe.
+  - Preparado em 28/10 pelo DEV 1, só em commit local (branch `chore/versao-1-1-0`), para revisão do Kauê em 29/10:
+    - app na versão **1.1.0** (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock` e teste);
+    - README §10 com a tag `v1.1.0-final` e o que ela traz;
+    - roteiro do vídeo sem a tag inexistente (o vídeo de 28/10 é da 1.0.4, release `android-build-22`).
+  - Resultado: cliente com 590 testes, checagem de tipos e build aprovados; API com 385 testes e build aprovados.
+  - **Falta:**
+    1. push e PR para a `dev`;
+    2. merge da `dev` na `main`;
+    3. tag `v1.1.0-final` na `main`;
+    4. conferir a release com os instaladores;
+    5. informar a tag à organização.
+- [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
+  - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
+  - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
+  - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
+- [x] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
+  - Aceite: os tokens do repositório recebem 401 na API publicada.
+  - Em 28/10, a senha e os dois tokens do repositório funcionavam na API publicada (200). A senha do gestor de demonstração foi trocada direto no banco, com hash bcrypt gerado localmente; a senha nova não está no repositório. Os aparelhos `tok_tratorista_01` e `tok_almoxarife_02` foram desativados, sem apagar dados. No novo teste, a senha antiga e os dois tokens receberam 401. Sessões abertas e o celular pareado por QR Code continuam funcionando.
+  - `agro1234` continua valendo só para quem roda a carga localmente; o README deve dizer isso (12.13).
+- [ ] **12.4. [EM CONJUNTO] Logística da final:**
+  - os dois presentes no CEI antes das 19h15 (atraso ou ausência de qualquer integrante desclassifica a equipe);
+  - notebook carregado, com carregador e adaptador HDMI;
+  - cópia local dos slides, vídeos e dados;
+  - internet alternativa testada.
+
+- [ ] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+  - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
+  - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
+  - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
+  - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
+  - **Nome escolhido em 28/10: Paiol** (o depósito da fazenda onde se guardam grãos, sementes e insumos).
+  - Aplicado pelo DEV 1, a pedido da equipe: marca da tela de entrada e do menu, rodapé ("Paiol · versão …"), título da página (`index.html`) e título da janela (`tauri.conf.json`).
+  - **`productName` mantido como `agrohacka`, de propósito:** no Windows ele define a pasta de instalação, e trocá-lo faria a versão nova ser instalada ao lado da antiga, como outro programa. Por isso só o nome do arquivo do instalador continua `agrohacka_…`. O `identifier` não mudou.
+  - Testes em `app.spec.ts`: marca, rodapé, título, `productName` e `identifier`. Cliente com 583 testes, checagem de tipos e build aprovados.
+  - Falta: o README (12.13) e os slides (12.21).
+
+**Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
+- [x] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
+  - Falta: quanto comprar (o suficiente para 30 dias de uso, sem ficar abaixo do mínimo) e o custo estimado, quando houver preço.
+  - Vencimento: usar primeiro e não repetir a compra nesse volume.
+  - Fora do padrão: conferir a retirada.
+  - Parado e excesso: não comprar até girar.
+  - Testes: sem consumo, saldo zerado, saldo acima da meta, preço ausente, poucos dados e unidades diferentes.
+  - Feito em 28/10, nos dois motores (`analysis.ts` e `stock-engine.ts`). Todo alerta termina com "O que fazer: …", depois do aviso de poucos dados.
+  - **Regra da compra (para o README, 12.13):** quantidade = maior valor entre o mínimo e 30 dias do uso médio, menos o saldo (saldo negativo conta como zero), arredondada para cima.
+    - Mostra o custo quando o insumo tem preço.
+    - Diz "para 30 dias de uso" ou "para voltar ao mínimo", conforme o que pesou mais.
+    - Sem retiradas recentes, volta ao mínimo.
+    - Com o saldo exatamente no mínimo e sem uso, pede reposição antes da próxima retirada.
+    - Exemplo da base simulada: "comprar cerca de 127 sc (cerca de R$ 20320) para 30 dias de uso".
+  - **Textos dos outros alertas:**
+    - vencido: "separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar";
+    - perto de vencer: "usar este produto primeiro e não repetir a compra nesse volume";
+    - fora do padrão: "conferir com quem retirou se a quantidade está certa";
+    - parado: "não comprar mais até voltar a ter saída" (substitui "Avalie antes de comprar mais");
+    - excesso: "não comprar mais até o estoque baixar".
+  - Testes: `alert-language.spec.ts` (cliente: todos os tipos, custo, sem preço, saldo negativo, saldo no mínimo, mínimo maior que 30 dias de uso, ordem depois do aviso de poucos dados) e `official-seed.spec.ts` (API: todo alerta da base simulada termina com a ação; Ureia com 127 sc e R$ 20320). A paridade garante textos idênticos nos dois motores.
+  - Resultado: API com 382 testes e build aprovados; cliente com 542 testes e checagem de tipos aprovados. As 4 falhas de `build-packaging.spec.ts` já existiam na `dev` (o workflow mudou em `ed1ab38`/`fa9f0f2` sem atualizar o teste) e ficam para a 12.9.
+- [x] **12.6. [DEV 1] Ordem dentro de cada nível:** hoje, dentro de um mesmo nível, os alertas seguem o identificador.
+  - Ordenar pela gravidade: falta por menos dias restantes, vencimento por maior sobra, fora do padrão por maior múltiplo da média, desempatando pelo valor em jogo.
+  - Escrever o critério na descrição do PR, para o DEV 2 levar ao README (12.13).
+  - Feito em 28/10, nos dois motores.
+  - **Critério (para o README e a tela "Como funciona"):**
+    1. nível: urgente → atenção → informativo;
+    2. tipo, dentro do nível: falta → vencimento → fora do padrão → parado → excesso (a falta para a operação; o vencimento é perda certa);
+    3. gravidade, dentro do tipo:
+       - falta: menos dias restantes primeiro, e sem previsão por último;
+       - vencimento: maior valor da sobra em R$ (o vencido conta todo o saldo), e sem preço por último;
+       - fora do padrão: maior múltiplo da média;
+       - parado e excesso: maior valor em estoque;
+    4. desempate: maior valor em estoque, depois o identificador.
+  - O `prioritizeAlerts`, que só ordenava pelo identificador, deixou de ser usado e foi removido com seus 2 testes.
+  - Na base simulada, a ordem passa a ser:
+    1. Ureia;
+    2. vencimento do Trichoderma;
+    3. Diesel;
+    4. MAP (R$ 147.000), Respirador e Bicos;
+    5. excesso do Trichoderma.
+  - Testes:
+    - `client/tests/alert-order.spec.ts` (novo): ordem completa com os 5 tipos nos 3 níveis, empate pelo valor, sem previsão, sem preço, independência da ordem de entrada e lista vazia;
+    - gabarito da base simulada (`official-seed.spec.ts`) e `stock.service.spec.ts` atualizados para a nova ordem;
+    - a paridade garante a mesma ordem nos dois motores.
+  - Resultado:
+    - API: 380 testes e build aprovados (menos os 2 do `prioritizeAlerts`);
+    - cliente: 545 testes e checagem de tipos aprovados; continuam só as 4 falhas de empacotamento que já existiam (12.9).
+- [x] **12.20. [DEV 2] Resumo no topo da Visão geral:** uma frase para o gestor, por exemplo: "3 compras urgentes, 1 retirada para conferir". Usa o nível e o tipo dos alertas, que já existem.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - Exemplo: "Hoje: 2 compras urgentes, 1 produto vencido ou vencendo hoje, 1 retirada para conferir e 3 insumos parados ou sobrando."
+  - Ordem dos grupos (`client/src/alert-summary.ts`):
+    1. compras urgentes;
+    2. vencidos ou vencendo hoje;
+    3. compras para planejar;
+    4. perto de vencer;
+    5. retiradas para conferir;
+    6. consumo em alta;
+    7. parados ou sobrando.
+  - Sem alertas, a frase é "Hoje: nenhum alerta, estoque em dia.". Só o gestor vê o resumo, e ele não aparece numa fazenda sem insumos.
+  - Testes:
+    - `alert-summary.spec.ts` (novo): vazio, singular, ordem e conectivos, urgente × planejar, dois grupos;
+    - `app.spec.ts`: o gestor vê; o operador e a fazenda vazia, não.
+  - Resultado: cliente com 567 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
+- [x] **12.7. [DEV 1] Retirada fora do padrão na janela inteira e consumo crescente (se der tempo):**
+  - a regra atual olha só a última retirada; passar a avaliar todas as retiradas da janela de 30 dias;
+  - avaliar um alerta de consumo crescente, comparando os últimos 15 dias com os 15 anteriores, com limiar explicado.
+  - Feito em 28/10, nos dois motores. Responde à pergunta 23 do parecer.
+  - **Fora do padrão (para o README e a tela "Como funciona"):**
+    - cada retirada com ao menos 3 retiradas antes dela na janela de 30 dias é comparada com a média dessas anteriores;
+    - o alerta aponta a de maior múltiplo e agora diz a data, por exemplo "Retirada de 950 L em 18/10/2026, 15,8 vezes a média…".
+  - **Consumo crescente** (tipo novo, atenção, limiar escolhido pela equipe):
+    - compara o uso médio por dia dos últimos 15 dias com o dos 15 anteriores;
+    - a metade anterior conta a partir da primeira retirada, para não confundir início de uso com aumento;
+    - exige 2 ou mais retiradas em cada metade e avisa a partir de 50% a mais;
+    - texto: "O uso médio subiu de X por dia para Y por dia nos últimos 15 dias, Z% a mais que nos 15 dias anteriores…";
+    - O que fazer: "conferir se o aumento era esperado e antecipar a próxima compra se ele continuar".
+  - Ordem no mesmo nível: falta → vencimento → fora do padrão → consumo crescente → parado → excesso.
+  - O consumo crescente não é gravado na tabela de alertas da API (não está em `PERSISTED_TYPES`) e não vai para o WhatsApp, que só leva urgentes. Aparece na análise do app e na rota `/stock/analyze`.
+  - A base simulada não ganha alerta novo: a Ureia, que começou a ser usada há 17 dias, não é marcada como crescente.
+  - Testes:
+    - `client/tests/alert-trend.spec.ts` (novo): pico no meio da janela com data, dois picos, menos de 3 retiradas antes, abaixo de 3 vezes, crescente com a conta, exatamente 50%, abaixo de 50%, menos de 2 retiradas por metade, início de uso e ordem;
+    - `parity.spec.ts`: cenário novo;
+    - gabarito da API: nenhum crescente na base e um caso positivo;
+    - `alert-language.spec.ts`: o texto com data.
+  - Resultado:
+    - API: 385 testes e build aprovados;
+    - cliente: 555 testes e checagem de tipos aprovados, mais as 4 falhas de empacotamento que já existiam (12.9).
+- [x] **12.8. [DEV 2] Aviso fixo de dados simulados na fazenda de demonstração (C6):** o parecer apontou que só o README e os dados dizem isso.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe:
+    - na fazenda da carga de demonstração ("Fazenda Modelo AgroHack", sem diferenciar maiúsculas nem espaços), uma faixa fixa abaixo da barra superior diz: "Dados simulados: esta fazenda de demonstração e seus números foram criados pela equipe, não são de uma propriedade real.";
+    - vale para o gestor e o operador, em todas as abas, com `role="note"`;
+    - não aparece em outras fazendas nem na tela de entrada.
+  - Limitação: o app reconhece a fazenda pelo nome. Uma fazenda real com esse mesmo nome também mostraria o aviso.
+  - Testes em `app.spec.ts` (3 novos, RED antes da faixa). Cliente com 560 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
+- [x] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - Como funciona: antes de salvar, o app guarda os alertas; depois, compara com a análise nova (`client/src/alert-changes.ts`) e mostra "O que mudou na análise", em três partes:
+    - "Novo alerta (urgente): …";
+    - "Mudou de atenção para urgente: …";
+    - "Resolvido: …".
+  - Mudança só na conta, no mesmo alerta e nível, não conta. Sem mudança, aparece "Nenhum alerta mudou com este registro.".
+  - Onde aparece:
+    - junto ao formulário da Visão geral;
+    - no aviso do topo, quando o registro vem da janela da aba Estoque.
+  - O quadro some na próxima ação ou no cadastro de insumo.
+  - Testes:
+    - `alert-changes.spec.ts` (novo): ordem, mudança só de conta, listas vazias, primeira análise;
+    - `app.spec.ts`: formulário com mudança e sem mudança;
+    - `manager-stock.spec.ts`: entrada pela aba Estoque resolve a falta do Diesel.
+  - Resultado: cliente com 573 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
+- [x] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe, em `client/src/components/HowItWorks.vue`.
+  - Conteúdo:
+    - o que o app faz;
+    - tabela dos 8 alertas, com quando aparecem, prioridade e o que fazer;
+    - de onde vem a conta: uso médio, duração, quanto comprar, "Poucos dados", curva ABC, unidades e dados ausentes;
+    - em que ordem os alertas aparecem;
+    - os limites, escolhidos pela equipe e a ajustar com a Agronomia;
+    - as sete perguntas do desafio, com onde ver cada resposta no app.
+  - Acesso:
+    - no computador, item "Como funciona" no menu, para os dois perfis;
+    - no celular do gestor, pelo "Mais";
+    - para todos, inclusive o operador no celular, pelo link "Como os alertas são calculados" no painel de alertas.
+  - O teste de linguagem simples cobre a tela; "nuvem" foi trocada por "envia os registros".
+  - Testes em `app.spec.ts`: gestor pelo menu, operador pelo link, e os testes de navegação atualizados para o item novo.
+  - Resultado: cliente com 575 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
+
+**Prioridade 3 — testes, código e documentação (C4 e C5)**
+- [x] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - `ci.yml`:
+    - job novo `test-client`, com `npm ci`, `npm test` e `npm run check` do cliente. O `VITE_API_URL` só de teste fica no próprio job, porque o `.env.test` não é versionado e o fetch é simulado;
+    - o CI passa a rodar também nos pushes e PRs da `dev`, além da `main`.
+  - `build-packaging.spec.ts`: os 4 testes que falhavam descreviam o workflow antigo, só Android. Agora seguem o atual:
+    - Windows, Linux e Android, com publicação só se os três builds passarem;
+    - release como a mais recente, com `prerelease: false` e `make_latest`;
+    - GTK só no job Linux.
+  - 2 testes novos conferem o CI do cliente.
+  - Antes, corrigir as 4 falhas de `client/tests/build-packaging.spec.ts`: o teste ainda espera só o build Android, mas o workflow voltou a ter Windows e Linux (`ed1ab38`, `fa9f0f2`).
+- [x] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
+  - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
+  - Remover as funções antigas de `stock-engine.ts` usadas só em testes; uma delas trata preço ausente como zero.
+  - Feito em 28/10. O gabarito roda a base simulada com data fixa (20/10/2026) no `analyzeStockInventory`, o mesmo motor da API, e exige a lista exata de alertas na ordem de prioridade:
+    - falta urgente da Ureia;
+    - fora do padrão do Diesel (950 L, 15,8 vezes a média);
+    - vencimento do Trichoderma (atenção) e excesso (informativo);
+    - parado do MAP, dos Bicos e do Respirador.
+  - Calcário, Semente Milho e Mangueira de Gotejamento não geram alerta. O MAP é classe A, com R$ 147.000.
+  - O gabarito passou de primeira, porque o motor já acertava. Teste de mutação: com a regra de fora do padrão trocada de 3 para 30 vezes a média, 2 testes do gabarito falharam; a mudança foi desfeita.
+  - As funções antigas (`normalizeUnitAndName`, `calculateRunoutTime`, `checkExpiryRisk`, `detectConsumptionAnomalies`, `checkStagnantAndExcess` e `calculateAbcCurve`) e seus 22 testes foram removidos. A ABC antiga tratava preço ausente como zero.
+  - API: 380 testes e build aprovados (eram 400: menos 22 testes antigos, mais 2 do gabarito).
+- [x] **12.11. [DEV 1] Registrar a falha da reanálise:** em `sync.service.ts`, a falha é descartada em silêncio; passar a registrá-la no log, sem derrubar a sincronização.
+  - Feito em 28/10:
+    - a falha agora vai para o log de erro do NestJS (`Logger`), com a fazenda, o motivo e a pilha;
+    - a sincronização continua sendo concluída e os recibos são devolvidos normalmente;
+    - o log aparece no Coolify.
+  - Testes em `sync.service.spec.ts`:
+    - a reanálise falha, o sync conclui e o erro é registrado com a fazenda e o motivo;
+    - sem movimentações aceitas, não há reanálise nem log.
+  - Resultado: API com 382 testes e build aprovados.
+- [x] **12.12. [DEV 2] Remover restos de modelo:** `HelloWorld.vue` e o README padrão do NestJS em `api/`.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe:
+    - `HelloWorld.vue` removido, junto com os dois `vi.mock` que o simulavam nos testes (o app nunca o usava);
+    - `api/README.md` reescrito: o que a API faz, os comandos reais do `package.json`, onde está cada parte e links para as seções do README principal.
+  - Teste: `client/tests/template-leftovers.spec.ts` falhava com os restos (RED) e passou depois da remoção.
+  - Resultado: cliente com 557 testes, checagem de tipos e build aprovados (mais as 4 falhas de empacotamento que já existiam, da 12.9).
+- [x] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe. Mudanças:
+    - nome Paiol no título;
+    - instruções locais completas: `.env`, PostgreSQL por Docker, `prisma migrate deploy` antes da carga e a senha `agro1234` só para o banco local;
+    - regras novas (fora do padrão na janela, consumo crescente, o que fazer, quanto comprar, ordem dos alertas e "o que mudou");
+    - origem dos limites: parâmetros da equipe, sem referência publicada, a calibrar com a Agronomia;
+    - saíram "sazonalidade", "Detecção Estatística", "anomalia grave" e o "desvio estatístico" do roteiro;
+    - correção de "desapercebidos" e da frase herdada da IA ("O usuário confirmou…");
+    - testes atualizados (API 385, app 589, CI), teste-gabarito, uso em aparelho real e a falta de retorno do público;
+    - novas limitações: previsão, importação, lote/preço por produto e retorno do público;
+    - tabela de revisão humana do uso de IA;
+    - data e local da final.
+  - A seção 10 (versão de entrega) fica para a 12.1, junto com a tag.
+  - Teste: `client/tests/readme.spec.ts` (6 testes, RED antes das correções).
+  - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
+  - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
+  - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
+  - corrigir "desapercebidos" e a frase herdada da IA ("O usuário confirmou…");
+  - tabela de revisão humana do uso de IA: que parte, quem revisou e o que foi conferido;
+  - registrar o retorno da 12.14.
+- [ ] **12.14. [EM CONJUNTO] Retorno do público (C4):** mostrar o app a pelo menos uma pessoa do público, como produtor, estudante ou professor de Agronomia, e registrar o retorno sem dados pessoais.
+
+**Prioridade 4 — apresentação e sabatina**
+- [ ] **12.15. [EM CONJUNTO] Apresentação de até 10 minutos:**
+  - montar a demonstração ao vivo da 12.2 dentro da apresentação;
+  - atualizar os slides com a versão final e as melhorias da Etapa 12;
+  - ensaiar com cronômetro: até 10 minutos, mais 3 de perguntas.
+- [ ] **12.16. [EM CONJUNTO] Sabatina:** preparar respostas para as perguntas 21 a 25 do parecer e para os limites que não serão resolvidos a tempo:
+  - importação de nova base;
+  - preço, validade e lote por entrada, não por produto;
+  - cadastros duplicados;
+  - variação de preço.
+
+  A banca pode perguntar a qualquer integrante, então os dois estudam tudo. Atualizar o baralho do Anki.
+- [ ] **12.21. [EM CONJUNTO] Revisão final da apresentação (por último):** fazer depois de todas as outras tarefas ou no dia 30/10, o que acontecer primeiro.
+  - Conferir se os slides, as falas e os vídeos refletem a versão final: nome do software (12.19), ações recomendadas (12.5), ordem por gravidade (12.6), resumo no topo (12.20), "o que mudou" (12.17), tela "Como funciona" (12.18) e a tag da versão (12.1).
+  - Regravar os vídeos que mostram telas que mudaram.
+  - Cronometrar a apresentação completa com a demonstração ao vivo: no máximo 10 minutos, com folga.
+  - Conferir os números citados (testes, alertas, valores da base) contra o app e o README.
+  - Atualizar as respostas da sabatina e o Anki com o que mudou.
+
+**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
+
+---
+
 ## Roadmap detalhado de finalização
 
 Atualizado em 27/10/2026, com base na revisão do regulamento e da `dev` em

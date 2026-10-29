@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-      # - dev
-      # - 'feat/**'
-      # - 'feature/**'
+      - dev
   pull_request:
     branches:
       - main
-      # - dev
+      - dev
 
 jobs:
   test-api:
@@ -46,3 +44,34 @@ jobs:
       - name: Executar Testes com Vitest
         working-directory: api
         run: npm test
+
+  # Tarefa 12.9: os testes do app (cliente) também rodam a cada push e PR.
+  test-client:
+    name: Testes Automatizados (App Vue + Tauri)
+    runs-on: ubuntu-latest
+    # .env.test não é versionado; o fetch é simulado, então a URL nunca é chamada.
+    env:
+      VITE_API_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Instalar Dependências do Cliente
+        working-directory: client
+        run: npm ci
+
+      - name: Executar Testes com Vitest
+        working-directory: client
+        run: npm test
+
+      - name: Checar Tipos (TypeScript e Vue)
+        working-directory: client
+        run: npm run check

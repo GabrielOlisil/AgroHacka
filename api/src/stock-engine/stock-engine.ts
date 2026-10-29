@@ -1,65 +1,3 @@
-export interface NormalizedProduct {
-  nome: string;
-  unidadeMedida: string;
-}
-
-export interface RunoutResult {
-  diasRestantes: number | null;
-  consumoMedioDiario: number;
-  diasAmostra?: number;
-  status: 'CRITICO' | 'ATENCAO' | 'NORMAL';
-  justificativa: string;
-  confiabilidade: 'ALTA' | 'MEDIA' | 'BAIXA';
-}
-
-export interface ExpiryResult {
-  temRisco: boolean;
-  diasAteVencimento: number | null;
-  sobraEstimada: number;
-  jaVenceu: boolean;
-  justificativa: string;
-}
-
-export interface AnomalyResult {
-  isAnomaly: boolean;
-  mediaHistorica: number;
-  multiplicador: number;
-  justificativa: string;
-}
-
-export interface StagnantExcessResult {
-  isStagnant: boolean;
-  isExcess: boolean;
-  justificativaParado?: string;
-  justificativaExcesso?: string;
-}
-
-export interface AbcProductInput {
-  id: string;
-  nome: string;
-  saldo: number;
-  preco: number | null;
-}
-
-export interface AbcProductOutput extends AbcProductInput {
-  valorTotal: number;
-  percentual: number;
-  percentualAcumulado: number;
-  classe: 'A' | 'B' | 'C';
-}
-
-export interface AbcResult {
-  totalEstoqueFinanceiro: number;
-  produtos: AbcProductOutput[];
-}
-
-export interface AlertInput {
-  id: string;
-  nivel: 'URGENTE' | 'ATENCAO' | 'INFORMATIVO';
-  titulo: string;
-  justificativa?: string;
-}
-
 export interface StockInventoryProduct {
   id: string;
   farmId: string;
@@ -97,7 +35,7 @@ export interface AnalyzedProductOutput extends StockInventoryProduct {
 export interface StockInventoryAlert {
   id: string;
   productId: string;
-  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'PARADO' | 'EXCESSO';
+  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'CRESCENTE' | 'PARADO' | 'EXCESSO';
   nivel: 'URGENTE' | 'ATENCAO' | 'INFORMATIVO';
   titulo: string;
   justificativa: string;
@@ -113,344 +51,6 @@ export interface StockInventoryAnalysis {
 }
 
 const DAY = 86_400_000;
-const SIGLAS_AGRO = ['NPK', 'MAP', 'KCL', 'FTE', 'EPI', 'PVC', 'S10', 'DAP'];
-
-/**
- * 1. Normalização de dados (Nomes e unidades)
- */
-export function normalizeUnitAndName(nome: string, unidade: string): NormalizedProduct {
-  let cleanName = (nome || '').trim().replace(/\s+/g, ' ');
-
-  // Padroniza siglas agrícolas em maiúsculas
-  for (const sigla of SIGLAS_AGRO) {
-    const regex = new RegExp(`\\b${sigla}\\b`, 'gi');
-    cleanName = cleanName.replace(regex, sigla);
-  }
-
-  let cleanUnit = (unidade || '').trim().toLowerCase();
-  if (!cleanUnit) {
-    cleanUnit = 'un';
-  }
-
-  return {
-    nome: cleanName,
-    unidadeMedida: cleanUnit,
-  };
-}
-
-/**
- * 2. Cálculo de Runout Time (Autonomia e Risco de Falta por dias de calendário)
- */
-export function calculateRunoutTime(
-  saldoAtual: number,
-  estoqueMinimo: number,
-  saidas: { quantidade: number; data: Date | string }[],
-  now: Date = new Date(),
-): RunoutResult {
-  const safeSaldo = Math.max(0, saldoAtual);
-
-  if (safeSaldo === 0) {
-    return {
-      diasRestantes: 0,
-      consumoMedioDiario: 0,
-      diasAmostra: 0,
-      status: 'CRITICO',
-      justificativa: 'Estoque zerado! Ação imediata de compra recomendada.',
-      confiabilidade: 'ALTA',
-    };
-  }
-
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-
-  // Janela recente de 30 dias de calendário UTC
-  const safeSaidas = (saidas || [])
-    .map((s) => ({
-      quantidade: s.quantidade,
-      time: typeof s.data === 'string' ? Date.parse(s.data) : s.data.getTime(),
-      dateStr: typeof s.data === 'string' ? s.data : s.data.toISOString(),
-    }))
-    .filter((s) => Number.isFinite(s.time) && s.time <= now.getTime() && s.time >= today - 29 * DAY)
-    .sort((a, b) => a.time - b.time);
-
-  if (safeSaidas.length === 0) {
-    return {
-      diasRestantes: null,
-      consumoMedioDiario: 0,
-      diasAmostra: 0,
-      status: safeSaldo <= estoqueMinimo ? 'CRITICO' : 'NORMAL',
-      justificativa: 'Sem histórico de consumo recente para projetar autonomia.',
-      confiabilidade: 'BAIXA',
-    };
-  }
-
-  const firstDate = new Date(safeSaidas[0].time);
-  const firstDay = Date.UTC(
-    firstDate.getUTCFullYear(),
-    firstDate.getUTCMonth(),
-    firstDate.getUTCDate(),
-  );
-
-  const days = Math.max(1, Math.floor((today - firstDay) / DAY) + 1);
-  const totalConsumido = safeSaidas.reduce((acc, s) => acc + s.quantidade, 0);
-  const consumoMedioDiario = totalConsumido / days;
-
-  if (consumoMedioDiario <= 0) {
-    return {
-      diasRestantes: null,
-      consumoMedioDiario: 0,
-      diasAmostra: days,
-      status: safeSaldo <= estoqueMinimo ? 'CRITICO' : 'NORMAL',
-      justificativa: 'Consumo recente nulo ou não registrado.',
-      confiabilidade: 'BAIXA',
-    };
-  }
-
-  const diasRestantes = Math.round(safeSaldo / consumoMedioDiario);
-  const confiabilidade = safeSaidas.length >= 5 ? 'ALTA' : safeSaidas.length >= 3 ? 'MEDIA' : 'BAIXA';
-  const status =
-    diasRestantes <= 7 || safeSaldo <= estoqueMinimo
-      ? 'CRITICO'
-      : diasRestantes <= 15
-        ? 'ATENCAO'
-        : 'NORMAL';
-
-  return {
-    diasRestantes,
-    consumoMedioDiario,
-    diasAmostra: days,
-    status,
-    justificativa: `Mantendo o consumo médio recente de ${consumoMedioDiario.toFixed(1)}/dia (últimos ${days} dias de calendário), o saldo atual será suficiente por aproximadamente ${diasRestantes} dias.`,
-    confiabilidade,
-  };
-}
-
-/**
- * 3. Risco de Vencimento vs. Ritmo de Uso
- */
-export function checkExpiryRisk(
-  saldoAtual: number,
-  consumoMedioDiario: number,
-  dataValidade: Date | string | null,
-  now: Date = new Date(),
-): ExpiryResult {
-  if (!dataValidade) {
-    return {
-      temRisco: false,
-      diasAteVencimento: null,
-      sobraEstimada: 0,
-      jaVenceu: false,
-      justificativa: 'Produto sem data de validade informada.',
-    };
-  }
-
-  const safeSaldo = Math.max(0, saldoAtual);
-  if (safeSaldo <= 0) {
-    return {
-      temRisco: false,
-      diasAteVencimento: null,
-      sobraEstimada: 0,
-      jaVenceu: false,
-      justificativa: 'Produto com saldo zerado, sem risco de perda por vencimento.',
-    };
-  }
-
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const validadeDate = typeof dataValidade === 'string' ? new Date(dataValidade) : dataValidade;
-  const validadeUtc = Date.UTC(
-    validadeDate.getUTCFullYear(),
-    validadeDate.getUTCMonth(),
-    validadeDate.getUTCDate(),
-  );
-
-  const diasAteVencimento = Math.round((validadeUtc - today) / DAY);
-
-  if (diasAteVencimento < 0) {
-    return {
-      temRisco: true,
-      diasAteVencimento,
-      sobraEstimada: safeSaldo,
-      jaVenceu: true,
-      justificativa: `Produto já se encontra vencido há ${Math.abs(diasAteVencimento)} dias! Não aplicar no campo sem laudo técnico.`,
-    };
-  }
-
-  const consumoAteVencimento = diasAteVencimento * Math.max(0, consumoMedioDiario);
-  const sobraEstimada = Math.max(0, safeSaldo - consumoAteVencimento);
-
-  if (diasAteVencimento === 0) {
-    return {
-      temRisco: true,
-      diasAteVencimento: 0,
-      sobraEstimada,
-      jaVenceu: false,
-      justificativa: `Produto vence hoje! Sobra estimada de ${sobraEstimada.toFixed(0)} unidades.`,
-    };
-  }
-
-  if (diasAteVencimento <= 30 && sobraEstimada > 0) {
-    return {
-      temRisco: true,
-      diasAteVencimento,
-      sobraEstimada,
-      jaVenceu: false,
-      justificativa: `Atenção: no ritmo atual de consumo (${consumoMedioDiario.toFixed(1)}/dia), cerca de ${sobraEstimada.toFixed(0)} unidades irão vencer antes de serem utilizadas (vencimento em ${diasAteVencimento} dias).`,
-    };
-  }
-
-  return {
-    temRisco: false,
-    diasAteVencimento,
-    sobraEstimada: 0,
-    jaVenceu: false,
-    justificativa: 'Estoque projetado para ser consumido antes do vencimento.',
-  };
-}
-
-/**
- * 4. Detecção de Anomalias de Consumo
- */
-export function detectConsumptionAnomalies(
-  saidaAtual: number,
-  historico: number[],
-): AnomalyResult {
-  if (!historico || historico.length < 3) {
-    return {
-      isAnomaly: false,
-      mediaHistorica: historico.length > 0 ? historico[0] : 0,
-      multiplicador: 1,
-      justificativa: 'Amostras insuficientes para detecção estatística de anomalia.',
-    };
-  }
-
-  const media = historico.reduce((acc, v) => acc + v, 0) / historico.length;
-  if (media <= 0) {
-    return {
-      isAnomaly: saidaAtual > 0,
-      mediaHistorica: 0,
-      multiplicador: 0,
-      justificativa: 'Retirada em item sem histórico anterior de consumo.',
-    };
-  }
-
-  const multiplicador = saidaAtual / media;
-  const isAnomaly = multiplicador >= 3;
-
-  return {
-    isAnomaly,
-    mediaHistorica: media,
-    multiplicador,
-    justificativa: isAnomaly
-      ? `Retirada atípica detectada: quantidade ${saidaAtual} é ${multiplicador.toFixed(1)}x superior à média histórica recente (${media.toFixed(1)}).`
-      : 'Consumo dentro do desvio padrão esperado.',
-  };
-}
-
-/**
- * 5. Detecção de Estoque Parado e Excesso
- */
-export function checkStagnantAndExcess(
-  saldoAtual: number,
-  diasRestantes: number | null,
-  ultimaSaida: Date | string | null,
-  primeiraEntrada: Date | string | null,
-  now: Date = new Date(),
-): StagnantExcessResult {
-  const safeSaldo = Math.max(0, saldoAtual);
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-
-  let isStagnant = false;
-  let justificativaParado: string | undefined;
-
-  if (safeSaldo > 0 && (ultimaSaida || primeiraEntrada)) {
-    const ref = ultimaSaida || primeiraEntrada;
-    const refParsed = typeof ref === 'string' ? Date.parse(ref.slice(0, 10)) : Date.UTC(ref!.getUTCFullYear(), ref!.getUTCMonth(), ref!.getUTCDate());
-    if (today - refParsed >= 30 * DAY) {
-      isStagnant = true;
-      justificativaParado = 'Saldo positivo sem saídas há pelo menos 30 dias. Verifique a necessidade de novas compras.';
-    }
-  }
-
-  let isExcess = false;
-  let justificativaExcesso: string | undefined;
-
-  if (diasRestantes !== null && diasRestantes > 90) {
-    isExcess = true;
-    justificativaExcesso = `Estoque para aproximadamente ${diasRestantes.toFixed(0)} dias no ritmo recente. Referência de acompanhamento: acima de 90 dias; considerar sazonalidade antes de decidir.`;
-  }
-
-  return {
-    isStagnant,
-    isExcess,
-    justificativaParado,
-    justificativaExcesso,
-  };
-}
-
-/**
- * 6. Curva ABC e Capital Imobilizado
- */
-export function calculateAbcCurve(produtos: AbcProductInput[]): AbcResult {
-  if (!produtos || produtos.length === 0) {
-    return { totalEstoqueFinanceiro: 0, produtos: [] };
-  }
-
-  const comValor = produtos.map((p) => {
-    const precoValido = p.preco && p.preco > 0 ? p.preco : 0;
-    const saldoValido = Math.max(0, p.saldo);
-    const valorTotal = saldoValido * precoValido;
-    return {
-      ...p,
-      valorTotal,
-    };
-  });
-
-  comValor.sort((a, b) => b.valorTotal - a.valorTotal || a.id.localeCompare(b.id));
-
-  const totalEstoqueFinanceiro = comValor.reduce((acc, p) => acc + p.valorTotal, 0);
-
-  let acumulado = 0;
-  const produtosOutput: AbcProductOutput[] = comValor.map((p) => {
-    const percentual = totalEstoqueFinanceiro > 0 ? (p.valorTotal / totalEstoqueFinanceiro) * 100 : 0;
-    const classe: 'A' | 'B' | 'C' =
-      p.valorTotal <= 0
-        ? 'C'
-        : acumulado < 80
-          ? 'A'
-          : acumulado < 95
-            ? 'B'
-            : 'C';
-    acumulado += percentual;
-
-    return {
-      ...p,
-      percentual,
-      percentualAcumulado: acumulado,
-      classe,
-    };
-  });
-
-  return {
-    totalEstoqueFinanceiro,
-    produtos: produtosOutput,
-  };
-}
-
-/**
- * 7. Priorização de Alertas
- */
-export function prioritizeAlerts<T extends { nivel: 'URGENTE' | 'ATENCAO' | 'INFORMATIVO'; id?: string }>(alertas: T[]): T[] {
-  if (!alertas || alertas.length === 0) return [];
-
-  const pesos = {
-    URGENTE: 0,
-    ATENCAO: 1,
-    INFORMATIVO: 2,
-  };
-
-  return [...alertas].sort(
-    (a, b) => (pesos[a.nivel] ?? 2) - (pesos[b.nivel] ?? 2) || (a.id && b.id ? a.id.localeCompare(b.id) : 0),
-  );
-}
 
 const iso = (value: string | Date) => (typeof value === 'string' ? new Date(value) : value).toISOString();
 // Alert texts are read by farmers: Brazilian decimals, no thousands dots.
@@ -458,6 +58,9 @@ const iso = (value: string | Date) => (typeof value === 'string' ? new Date(valu
 const num = (value: number, digits = 2) =>
   value.toLocaleString('pt-BR', { maximumFractionDigits: digits, useGrouping: false });
 const brDate = (isoDate: string) => isoDate.slice(0, 10).split('-').reverse().join('/');
+// Within a level: shortage stops the work first, expiry is a certain loss (tarefa 12.6).
+const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, CRESCENTE: 3, PARADO: 4, EXCESSO: 5 };
+const LEVEL_ORDER = { URGENTE: 0, ATENCAO: 1, INFORMATIVO: 2 };
 
 /**
  * 8. Análise Integrada de Estoque.
@@ -484,6 +87,8 @@ export function analyzeStockInventory(
 
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const alerts: StockInventoryAlert[] = [];
+  // Sort keys per alert id, lower first: [type, severity, -stock value].
+  const severity = new Map<string, number[]>();
   const balancesByUnit: Record<string, number> = {};
 
   const result = safeProducts.map((p): AnalyzedProductOutput => {
@@ -501,56 +106,108 @@ export function analyzeStockInventory(
         ? ` Previsão com poucos dados: ${out.length} retirada(s) em ${days} dia(s); pode mudar.`
         : '';
 
-    const add = (tipo: StockInventoryAlert['tipo'], nivel: StockInventoryAlert['nivel'], justificativa: string) =>
+    const value = p.precoAquisicao === null ? null : Math.max(0, saldo) * p.precoAquisicao;
+    const add = (
+      tipo: StockInventoryAlert['tipo'],
+      nivel: StockInventoryAlert['nivel'],
+      justificativa: string,
+      acao: string,
+      gravidade = 0,
+    ) => {
+      severity.set(`${tipo}:${p.id}`, [TYPE_ORDER[tipo], gravidade, -(value ?? -1)]);
       alerts.push({
         id: `${tipo}:${p.id}`,
         productId: p.id,
         tipo,
         nivel,
-        titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
+        titulo: `${p.nome} · ${tipo === 'FALTA' ? 'Reposição' : tipo === 'VENCIMENTO' ? 'Validade' : tipo === 'ANOMALIA' ? 'Consumo fora do padrão' : tipo === 'CRESCENTE' ? 'Consumo crescente' : tipo === 'PARADO' ? 'Estoque parado' : 'Excesso'}`,
         justificativa:
-          justificativa + (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : ''),
+          justificativa +
+          (tipo === 'FALTA' || tipo === 'VENCIMENTO' || tipo === 'EXCESSO' ? limitedEvidence : '') +
+          ` O que fazer: ${acao}`,
       });
+    };
+    // Buy enough for 30 days of use, never below the minimum (tarefa 12.5).
+    const restock = () => {
+      const amount = Math.ceil(Math.max(p.estoqueMinimo, rate * 30) - Math.max(0, saldo) - 1e-9);
+      if (amount <= 0) return 'repor antes da próxima retirada, porque o saldo está no mínimo.';
+      const cost = p.precoAquisicao === null ? '' : ` (cerca de R$ ${num(amount * p.precoAquisicao)})`;
+      return `comprar cerca de ${num(amount)} ${p.unidadeMedida}${cost} para ${rate > 0 && rate * 30 >= p.estoqueMinimo ? '30 dias de uso' : 'voltar ao mínimo'}.`;
+    };
 
     if (saldo <= p.estoqueMinimo)
       add(
         'FALTA',
         'URGENTE',
         `${saldo <= 0 ? `Estoque zerado: restam ${num(saldo)} ${p.unidadeMedida}` : `Restam ${num(saldo)} ${p.unidadeMedida}, no mínimo ou abaixo do mínimo de ${num(p.estoqueMinimo)} ${p.unidadeMedida}`}. ${rate === 0 ? 'Sem retiradas recentes para calcular quanto tempo dura.' : `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias), dura cerca de ${num(daysLeft ?? 0, 1)} dia(s).`}`,
+        restock(),
+        daysLeft ?? Infinity,
       );
     else if (daysLeft !== null && daysLeft <= 15)
       add(
         'FALTA',
         daysLeft <= 7 ? 'URGENTE' : 'ATENCAO',
         `Com o uso médio de ${num(rate)} ${p.unidadeMedida} por dia (últimos ${days} dias, contando os dias sem retirada), o estoque dura cerca de ${num(daysLeft, 1)} dia(s).`,
+        restock(),
+        daysLeft,
       );
 
     if (p.validade && saldo > 0) {
       const remaining = Math.round((Date.parse(p.validade.slice(0, 10)) - today) / DAY);
       const surplus = Math.max(0, saldo - Math.max(0, remaining) * rate);
+      // Larger value left over first; unknown price after the priced ones.
+      const loss = (quantity: number) => (p.precoAquisicao === null ? 1 : -quantity * p.precoAquisicao);
       if (remaining < 0)
         add(
           'VENCIMENTO',
           'URGENTE',
           `Venceu em ${brDate(p.validade)}, há ${Math.abs(remaining)} dia(s). Ainda há ${num(saldo)} ${p.unidadeMedida} em estoque.`,
+          'separar o produto vencido e confirmar com o responsável técnico antes de usar ou descartar.',
+          loss(saldo),
         );
       else if (remaining <= 30 && surplus > 0)
         add(
           'VENCIMENTO',
           remaining === 0 ? 'URGENTE' : 'ATENCAO',
           `Vence ${remaining === 0 ? 'hoje' : `em ${remaining} dia(s)`}; no ritmo de uso atual (${num(rate)} ${p.unidadeMedida} por dia), devem sobrar cerca de ${num(surplus)} ${p.unidadeMedida} sem uso.${rate === 0 ? ' Não houve retiradas recentes, então a previsão é incerta.' : ''}`,
+          'usar este produto primeiro e não repetir a compra nesse volume.',
+          loss(surplus),
         );
     }
 
-    if (out.length >= 4) {
-      const previous = out.slice(0, -1);
-      const mean = previous.reduce((sum, m) => sum + m.quantidade, 0) / previous.length;
-      const last = out[out.length - 1];
-      if (mean > 0 && last.quantidade >= mean * 3)
+    // Every withdrawal with at least 3 before it in the window, against the mean of
+    // those before it; the alert points to the largest multiple (tarefa 12.7).
+    let peak: { quantity: number; date: string; mean: number; count: number } | undefined;
+    for (let i = 3; i < out.length; i++) {
+      const mean = out.slice(0, i).reduce((sum, m) => sum + m.quantidade, 0) / i;
+      const quantity = out[i].quantidade;
+      if (mean > 0 && quantity >= mean * 3 && (!peak || quantity / mean >= peak.quantity / peak.mean))
+        peak = { quantity, date: out[i].dataMovimento, mean, count: i };
+    }
+    if (peak)
+      add(
+        'ANOMALIA',
+        'ATENCAO',
+        `Retirada de ${num(peak.quantity)} ${p.unidadeMedida} em ${brDate(peak.date)}, ${num(peak.quantity / peak.mean, 1)} vezes a média das ${peak.count} retiradas anteriores (${num(peak.mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
+        'conferir com quem retirou se a quantidade está certa.',
+        -peak.quantity / peak.mean,
+      );
+    // Growing use: last 15 days against the 15 before, per day. The earlier half
+    // counts from its first withdrawal, so a product that just started is not "growing".
+    const split = today - 14 * DAY;
+    const recentOut = out.filter((m) => Date.parse(m.dataMovimento.slice(0, 10)) >= split);
+    const earlierOut = out.filter((m) => Date.parse(m.dataMovimento.slice(0, 10)) < split);
+    if (earlierOut.length >= 2 && recentOut.length >= 2) {
+      const earlierDays = Math.round((split - Date.parse(earlierOut[0].dataMovimento.slice(0, 10))) / DAY);
+      const earlierRate = earlierOut.reduce((sum, m) => sum + m.quantidade, 0) / earlierDays;
+      const recentRate = recentOut.reduce((sum, m) => sum + m.quantidade, 0) / 15;
+      if (earlierRate > 0 && recentRate >= earlierRate * 1.5)
         add(
-          'ANOMALIA',
+          'CRESCENTE',
           'ATENCAO',
-          `Retirada de ${num(last.quantidade)} ${p.unidadeMedida}, ${num(last.quantidade / mean, 1)} vezes a média das ${previous.length} retiradas anteriores (${num(mean)} ${p.unidadeMedida}). Consideramos fora do padrão a partir de 3 vezes a média.`,
+          `O uso médio subiu de ${num(earlierRate)} ${p.unidadeMedida} por dia para ${num(recentRate)} ${p.unidadeMedida} por dia nos últimos 15 dias, ${num(Math.round((recentRate / earlierRate - 1) * 100), 0)}% a mais que nos 15 dias anteriores. Consideramos crescente a partir de 50% a mais.`,
+          'conferir se o aumento era esperado e antecipar a próxima compra se ele continuar.',
+          -recentRate / earlierRate,
         );
     }
 
@@ -560,7 +217,8 @@ export function analyzeStockInventory(
       add(
         'PARADO',
         'INFORMATIVO',
-        'Há saldo, mas nenhuma retirada nos últimos 30 dias. Avalie antes de comprar mais.',
+        'Há saldo, mas nenhuma retirada nos últimos 30 dias.',
+        'não comprar mais até voltar a ter saída.',
       );
 
     if (daysLeft !== null && daysLeft > 90)
@@ -568,6 +226,7 @@ export function analyzeStockInventory(
         'EXCESSO',
         'INFORMATIVO',
         `Há estoque para cerca de ${num(daysLeft, 0)} dias no ritmo atual, mais de 90 dias. Considere a época do ano antes de decidir.`,
+        'não comprar mais até o estoque baixar.',
       );
 
     balancesByUnit[p.unidadeMedida] = (balancesByUnit[p.unidadeMedida] ?? 0) + saldo;
@@ -604,9 +263,21 @@ export function analyzeStockInventory(
     cumulative += p.percentualValor;
   }
 
+  const bySeverity = (a: StockInventoryAlert, b: StockInventoryAlert) => {
+    const ka = severity.get(a.id)!;
+    const kb = severity.get(b.id)!;
+    for (let i = 0; i < ka.length; i++) {
+      // Infinity - Infinity is NaN: treat as a tie.
+      const diff = ka[i] - kb[i];
+      if (diff) return diff;
+    }
+    return 0;
+  };
+  alerts.sort((a, b) => LEVEL_ORDER[a.nivel] - LEVEL_ORDER[b.nivel] || bySeverity(a, b) || a.id.localeCompare(b.id));
+
   return {
     products: result,
-    alerts: prioritizeAlerts(alerts),
+    alerts,
     totalValue,
     pricedProductCount,
     unpricedProductCount,

@@ -1,36 +1,43 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { getOfficialSeedDataset, validateOfficialDataset } from './official-seed.data';
-import {
-  calculateRunoutTime,
-  checkExpiryRisk,
-  detectConsumptionAnomalies,
-  calculateAbcCurve,
-} from '../stock-engine/stock-engine';
+import { analyzeStockInventory } from '../stock-engine/stock-engine';
+
+// The demo dataset builds its dates from "now"; freeze it so the answer key is stable.
+const NOW = new Date('2026-10-20T15:00:00.000Z');
 
 describe('Carga da Base Oficial do AgroHack (Tarefa 6.1)', () => {
-  const dataset = getOfficialSeedDataset();
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+  });
+  afterAll(() => vi.useRealTimers());
+
+  const dataset = () => getOfficialSeedDataset();
 
   it('deve conter estrutura válida de fazenda e gestor oficial', () => {
-    expect(dataset.farm.nome).toContain('AgroHack');
-    expect(dataset.farm).not.toHaveProperty('localIp');
-    expect(dataset.farm).not.toHaveProperty('localPort');
-    expect(dataset.gestor.email).toBe('gestor@agrohack.com');
-    expect(dataset.gestor.role).toBe('GESTOR');
-    expect(dataset.gestor.telefone).toBeDefined();
-    expect(dataset.gestor.telefone).toMatch(/^\+55\d{10,11}$/);
+    const { farm, gestor } = dataset();
+    expect(farm.nome).toContain('AgroHack');
+    expect(farm).not.toHaveProperty('localIp');
+    expect(farm).not.toHaveProperty('localPort');
+    expect(gestor.email).toBe('gestor@agrohack.com');
+    expect(gestor.role).toBe('GESTOR');
+    expect(gestor.telefone).toBeDefined();
+    expect(gestor.telefone).toMatch(/^\+55\d{10,11}$/);
   });
 
   it('deve conter pelo menos 2 dispositivos de operadores com códigos de pareamento rápidos', () => {
-    expect(dataset.devices.length).toBeGreaterThanOrEqual(2);
-    const codes = dataset.devices.map((d) => d.pairingCode);
-    expect(new Set(codes).size).toBe(dataset.devices.length);
+    const { devices } = dataset();
+    expect(devices.length).toBeGreaterThanOrEqual(2);
+    const codes = devices.map((d) => d.pairingCode);
+    expect(new Set(codes).size).toBe(devices.length);
     expect(codes).toContain('AGRO-01');
     expect(codes).toContain('AGRO-02');
   });
 
   it('deve se identificar como base simulada enquanto a base oficial não for comprovada', () => {
-    expect(dataset.origem.tipo).toBe('SIMULADO');
-    expect(dataset.origem.descricao).toMatch(/simulad/i);
+    const { origem } = dataset();
+    expect(origem.tipo).toBe('SIMULADO');
+    expect(origem.descricao).toMatch(/simulad/i);
   });
 
   it('deve cobrir as 8 categorias do Anexo III do regulamento', () => {
@@ -45,78 +52,130 @@ describe('Carga da Base Oficial do AgroHack (Tarefa 6.1)', () => {
       'EPI e materiais diversos',
     ];
 
-    const categoriasNaBase = dataset.products.map((p) => p.categoria);
+    const categoriasNaBase = dataset().products.map((p) => p.categoria);
     for (const cat of categoriasObrigatorias) {
       expect(categoriasNaBase).toContain(cat);
     }
   });
 
-  it('Cenário 1 (Risco de Falta): Ureia deve atingir status CRÍTICO de Runout Time (< 5 dias)', () => {
-    const ureia = dataset.products.find((p) => p.nome.includes('Ureia'))!;
-    const ureiaMovements = dataset.movements.filter((m) => m.productRef === ureia.ref);
-
-    const saldo = ureiaMovements.reduce((acc, m) => (m.tipo === 'ENTRADA' ? acc + m.quantidade : acc - m.quantidade), 0);
-    expect(saldo).toBe(15); // saldo restante de 15 sacos
-
-    const saídas = ureiaMovements
-      .filter((m) => m.tipo === 'SAIDA')
-      .map((m) => ({ data: m.dataMovimento, quantidade: m.quantidade }));
-
-    const runout = calculateRunoutTime(saldo, ureia.estoqueMinimo, saídas);
-    expect(runout.status).toBe('CRITICO');
-    expect(runout.diasRestantes).not.toBeNull();
-    expect(runout.diasRestantes!).toBeLessThanOrEqual(5);
-  });
-
-  it('Cenário 2 (Risco de Vencimento): Trichoderma deve disparar risco antes do consumo total', () => {
-    const trichoderma = dataset.products.find((p) => p.nome.includes('Trichoderma'))!;
-    const movements = dataset.movements.filter((m) => m.productRef === trichoderma.ref);
-
-    const saldo = movements.reduce((acc, m) => (m.tipo === 'ENTRADA' ? acc + m.quantidade : acc - m.quantidade), 0);
-    const saídas = movements
-      .filter((m) => m.tipo === 'SAIDA')
-      .map((m) => ({ data: m.dataMovimento, quantidade: m.quantidade }));
-
-    const runout = calculateRunoutTime(saldo, trichoderma.estoqueMinimo, saídas);
-    const expiry = checkExpiryRisk(saldo, runout.consumoMedioDiario, trichoderma.validade!);
-    expect(expiry.temRisco).toBe(true);
-    expect(expiry.sobraEstimada).toBeGreaterThan(0);
-  });
-
-  it('Cenário 3 (Anomalia de Consumo): Diesel S10 deve detectar pico desproporcional de 950L', () => {
-    const diesel = dataset.products.find((p) => p.nome.includes('Diesel'))!;
-    const dieselMovements = dataset.movements.filter((m) => m.productRef === diesel.ref && m.tipo === 'SAIDA');
-
-    const historico = dieselMovements.slice(0, -1).map((m) => m.quantidade);
-    const ultimaRetirada = dieselMovements[dieselMovements.length - 1].quantidade;
-
-    expect(ultimaRetirada).toBe(950);
-    const anomaly = detectConsumptionAnomalies(ultimaRetirada, historico);
-    expect(anomaly.isAnomaly).toBe(true);
-  });
-
-  it('Cenário 4 (Curva ABC): Adubo Fosfatado MAP deve ser classificado como Classe A (maior imobilização)', () => {
-    const produtosComSaldo = dataset.products.map((p) => {
-      const movs = dataset.movements.filter((m) => m.productRef === p.ref);
-      const saldo = movs.reduce((acc, m) => (m.tipo === 'ENTRADA' ? acc + m.quantidade : acc - m.quantidade), 0);
-      return {
-        id: p.ref,
-        nome: p.nome,
-        saldo,
-        preco: p.precoAquisicao ?? 0,
-      };
-    });
-
-    const abc = calculateAbcCurve(produtosComSaldo);
-    const mapItem = abc.produtos.find((item) => item.nome.includes('MAP'))!;
-    expect(mapItem).toBeDefined();
-    expect(mapItem.classe).toBe('A');
-    expect(mapItem.valorTotal).toBeGreaterThan(100000); // R$ 147.000,00 imobilizados
-  });
-
   it('deve validar integridade de referências em todas as movimentações do dataset', () => {
-    const validation = validateOfficialDataset(dataset);
+    const validation = validateOfficialDataset(dataset());
     expect(validation.valido).toBe(true);
     expect(validation.erros).toHaveLength(0);
+  });
+});
+
+// Answer key (tarefa 12.10): the production engine, the same one the API runs,
+// must find every planted problem and stay silent on the normal products.
+describe('Gabarito da base simulada no motor de produção (Tarefa 12.10)', () => {
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+  });
+  afterAll(() => vi.useRealTimers());
+
+  const analyze = () => {
+    const { products, movements } = getOfficialSeedDataset();
+    return analyzeStockInventory(
+      products.map((p) => ({
+        id: p.ref,
+        farmId: 'demo',
+        nome: p.nome,
+        categoria: p.categoria,
+        unidadeMedida: p.unidadeMedida,
+        estoqueMinimo: p.estoqueMinimo,
+        precoAquisicao: p.precoAquisicao,
+        validade: p.validade,
+      })),
+      movements.map((m, i) => ({
+        id: `m${i}`,
+        farmId: 'demo',
+        productId: m.productRef,
+        tipo: m.tipo,
+        quantidade: m.quantidade,
+        dataMovimento: m.dataMovimento,
+      })),
+      NOW,
+    );
+  };
+
+  it('gera exatamente os alertas planejados, na ordem de prioridade', () => {
+    // Tarefa 12.6: no mesmo nível, vencimento antes de fora do padrão e parado antes de
+    // excesso; parados pelo valor parado (MAP R$ 147.000, respirador R$ 1.950, bicos R$ 1.750).
+    expect(analyze().alerts.map((a) => `${a.nivel} ${a.tipo} ${a.productId}`)).toEqual([
+      'URGENTE FALTA ureia',
+      'ATENCAO VENCIMENTO trichoderma',
+      'ATENCAO ANOMALIA diesel',
+      'INFORMATIVO PARADO map',
+      'INFORMATIVO PARADO respirador',
+      'INFORMATIVO PARADO bicos',
+      'INFORMATIVO EXCESSO trichoderma',
+    ]);
+  });
+
+  it('não gera nenhum alerta para os insumos normais', () => {
+    const normais = ['calcario', 'semente_milho', 'gotejamento'];
+    expect(analyze().alerts.filter((a) => normais.includes(a.productId))).toEqual([]);
+  });
+
+  it('Falta: a ureia fica abaixo do mínimo e o alerta mostra a conta', () => {
+    const { alerts, products } = analyze();
+    expect(products.find((p) => p.id === 'ureia')?.saldo).toBe(15);
+    expect(alerts.find((a) => a.id === 'FALTA:ureia')?.justificativa).toContain(
+      'Restam 15 sc, no mínimo ou abaixo do mínimo de 40 sc',
+    );
+  });
+
+  it('Vencimento: o Trichoderma vence em 12 dias com sobra estimada', () => {
+    expect(analyze().alerts.find((a) => a.id === 'VENCIMENTO:trichoderma')?.justificativa).toMatch(
+      /^Vence em 12 dia\(s\); .*devem sobrar cerca de .* L sem uso\./,
+    );
+  });
+
+  it('Fora do padrão: a retirada de 950 L de diesel é 15,8 vezes a média', () => {
+    expect(analyze().alerts.find((a) => a.id === 'ANOMALIA:diesel')?.justificativa).toContain(
+      'Retirada de 950 L em 18/10/2026, 15,8 vezes a média das 13 retiradas anteriores (60 L).',
+    );
+  });
+
+  it('Consumo crescente (tarefa 12.7): nenhum insumo da base é marcado, nem a ureia, que começou a ser usada há 17 dias', () => {
+    expect(analyze().alerts.filter((a) => a.tipo === 'CRESCENTE')).toEqual([]);
+  });
+
+  it('Consumo crescente (tarefa 12.7): o motor da API avisa quando o uso por dia sobe 50% ou mais', () => {
+    const day = (d: number) => new Date(NOW.getTime() + d * 86_400_000);
+    const items: [number, number][] = [
+      [5, -28], [5, -24], [5, -20], [5, -16], [10, -12], [10, -10], [10, -8], [10, -6], [10, -4], [10, -2],
+    ];
+    const { alerts } = analyzeStockInventory(
+      [{ id: 'p', farmId: 'f', nome: 'p', categoria: 'Teste', unidadeMedida: 'un', estoqueMinimo: 0, precoAquisicao: 10 }],
+      [
+        { id: 'e', farmId: 'f', productId: 'p', tipo: 'ENTRADA', quantidade: 10_000, dataMovimento: day(-40) },
+        ...items.map(([q, d], i) => ({ id: `s${i}`, farmId: 'f', productId: 'p', tipo: 'SAIDA' as const, quantidade: q, dataMovimento: day(d) })),
+      ],
+      NOW,
+    );
+    expect(alerts.find((a) => a.tipo === 'CRESCENTE')).toMatchObject({
+      nivel: 'ATENCAO',
+      titulo: 'p · Consumo crescente',
+      justificativa: expect.stringContaining('subiu de 1,43 un por dia para 4 un por dia nos últimos 15 dias, 180% a mais'),
+    });
+  });
+
+  it('todo alerta termina com o que fazer (tarefa 12.5)', () => {
+    for (const alert of analyze().alerts) expect(alert.justificativa).toMatch(/ O que fazer: [^.]+\.$/);
+  });
+
+  it('Falta: sugere comprar a ureia para 30 dias de uso, com o custo (tarefa 12.5)', () => {
+    // 85 sc em 18 dias = 4,72 sc/dia; 30 dias = 141,7 sc; menos 15 em estoque = 126,7, arredonda para 127.
+    expect(analyze().alerts.find((a) => a.id === 'FALTA:ureia')?.justificativa).toMatch(
+      /O que fazer: comprar cerca de 127 sc \(cerca de R\$ 20320\) para 30 dias de uso\.$/,
+    );
+  });
+
+  it('Capital parado: o MAP é classe A, com R$ 147.000 imobilizados', () => {
+    const map = analyze().products.find((p) => p.id === 'map');
+    expect(map?.classeAbc).toBe('A');
+    expect(map?.valorEstoque).toBe(147_000);
   });
 });

@@ -22,9 +22,10 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     );
     const cargo = readFileSync(resolve(root, "src-tauri/Cargo.toml"), "utf-8");
     const lock = readFileSync(resolve(root, "src-tauri/Cargo.lock"), "utf-8");
-    expect(config.version).toBe("1.0.4");
-    expect(cargo).toMatch(/^version = "1\.0\.4"$/m);
-    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.0\.4"/);
+    // Tarefa 12.1: versão da final presencial (tag v1.1.0-final).
+    expect(config.version).toBe("1.1.0");
+    expect(cargo).toMatch(/^version = "1\.1\.0"$/m);
+    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.1\.0"/);
   });
 
   it("sincronização cloud não exige script para abrir porta no firewall", () => {
@@ -94,37 +95,52 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(existsSync(resolve(root, "ANDROID_RELEASE.md"))).toBe(false);
   });
 
-  it("publica Android na main e em tags, sem depender do job Windows comentado", () => {
+  // Tarefa 12.9: o workflow voltou a compilar Windows e Linux (ed1ab38, fa9f0f2) e
+  // publica a release oficial como a mais recente; os testes abaixo seguem esse fluxo.
+  it("publica Windows, Android e Linux na main e em tags, só se os três builds passarem", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
     );
     const release = workflow.split("  create-release:")[1]!;
-    expect(release).toContain("needs: [build-mobile-android]");
-    expect(release).toContain("needs.build-mobile-android.result == 'success'");
+    expect(release).toContain("needs: [build-desktop-windows, build-mobile-android, build-desktop-linux]");
+    for (const job of ["build-desktop-windows", "build-desktop-linux", "build-mobile-android"])
+      expect(release).toContain(`needs.${job}.result == 'success'`);
     expect(release).toContain("github.ref == 'refs/heads/main'");
     expect(release).toContain("startsWith(github.ref, 'refs/tags/v')");
-    expect(release).not.toContain("needs.build-desktop-windows");
-    expect(release).not.toContain("release-assets/windows");
     expect(release).toContain("fail_on_unmatched_files: true");
-    expect(release).toContain("release-assets/android/**/*.apk");
+    for (const files of [
+      "release-assets/android/**/*.apk",
+      "release-assets/windows/**/*.exe",
+      "release-assets/windows/**/*.msi",
+      "release-assets/linux/**/*.AppImage",
+    ])
+      expect(release).toContain(files);
     expect(release).not.toContain("v1.0.0-entrega");
   });
 
-  it("vincula a pré-release da main ao commit compilado e usa tag exclusiva por execução", () => {
+  it("vincula a release ao commit compilado, usa tag exclusiva por execução e a marca como a mais recente", () => {
     const workflow = readFileSync(resolve(repoRoot, ".github/workflows/build-release.yml"), "utf-8");
     const release = workflow.split("  create-release:")[1]!;
     expect(release).toContain("tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('android-build-{0}', github.run_number) }}");
     expect(release).toContain("target_commitish: ${{ github.sha }}");
-    expect(release).toContain("prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}");
+    expect(release).toContain("prerelease: false");
+    expect(release).toContain("make_latest: true");
   });
 
-  it("job Android não instala bibliotecas GTK/GLib do host: eram paliativo do `tauri dev` indevido (Tarefa 5.3)", () => {
+  it("job Android não instala bibliotecas GTK/GLib do host: eram paliativo do `tauri dev` indevido (Tarefa 5.3); só o job Linux precisa delas", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
       "utf-8",
     );
-    expect(workflow).not.toMatch(/libglib2\.0-dev|libgtk|libwebkit2gtk/);
+    const android = workflow
+      .split("  build-mobile-android:")[1]!
+      .split("  create-release:")[0]!;
+    const linux = workflow
+      .split("  build-desktop-linux:")[1]!
+      .split("  build-mobile-android:")[0]!;
+    expect(android).not.toMatch(/libglib2\.0-dev|libgtk|libwebkit2gtk/);
+    expect(linux).toContain("libwebkit2gtk-4.1-dev");
     expect(workflow).not.toContain("PKG_CONFIG_PATH");
   });
 
@@ -140,7 +156,7 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(workflow).not.toMatch(/VITE_API_URL:.*localhost/);
   });
 
-  it("workflow dispara na main ou tags e mantém somente o build Android ativo", () => {
+  it("workflow dispara na main ou tags e compila Windows, Linux e Android", () => {
     const workflowPath = resolve(
       repoRoot,
       ".github/workflows/build-release.yml",
@@ -151,8 +167,33 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     // Restrição solicitada pelo usuário: rodar na main
     expect(workflowContent).toMatch(/branches:\s*(\n\s*-\s*main)/);
     expect(workflowContent).toContain("workflow_dispatch");
-    expect(workflowContent).toMatch(/^  # build-desktop-windows:/m);
-    expect(workflowContent).not.toMatch(/^  build-desktop-windows:/m);
+    expect(workflowContent).toMatch(/^  build-desktop-windows:/m);
+    expect(workflowContent).toMatch(/^  build-desktop-linux:/m);
     expect(workflowContent).toMatch(/^  build-mobile-android:/m);
+  });
+});
+
+describe("integração contínua dos testes (tarefa 12.9)", () => {
+  const ci = () => readFileSync(resolve(repoRoot, ".github/workflows/ci.yml"), "utf-8");
+
+  it("roda os testes e a checagem de tipos do cliente, não só os da API", () => {
+    const client = ci().split("  test-client:")[1];
+    expect(client, "job test-client").toBeDefined();
+    expect(client).toContain("working-directory: client");
+    expect(client).toContain("run: npm ci");
+    expect(client).toContain("run: npm test");
+    expect(client).toContain("run: npm run check");
+    // .env.test não é versionado: o job dá a URL só para os testes (o fetch é simulado).
+    expect(client).toMatch(/VITE_API_URL: http:\/\/localhost:3000/);
+  });
+
+  it("roda nos PRs e pushes da dev, para onde vão todas as mudanças, além da main", () => {
+    const header = ci().slice(0, ci().indexOf("\njobs:"));
+    const push = header.split("pull_request:")[0]!;
+    const pr = header.split("pull_request:")[1]!;
+    for (const section of [push, pr]) {
+      expect(section).toMatch(/^\s+- main$/m);
+      expect(section).toMatch(/^\s+- dev$/m);
+    }
   });
 });

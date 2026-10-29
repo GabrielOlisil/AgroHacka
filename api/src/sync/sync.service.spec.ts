@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import { SyncService } from './sync.service';
 import type { SyncIdentity } from '../auth/auth.service';
 
@@ -100,6 +101,38 @@ describe('SyncService - authenticated sync', () => {
     expect(result.results[0].id).toBe(item.id);
     expect(result.protocolVersion).toBe(2);
     expect(mockStockService.reanalyzeAndPersistAlerts).toHaveBeenCalledWith(identity.farmId);
+  });
+
+  it('logs a failed reanalysis without failing the sync (tarefa 12.11)', async () => {
+    const failure = new Error('banco indisponível');
+    mockStockService.reanalyzeAndPersistAlerts.mockRejectedValue(failure);
+    const logError = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const item = {
+      id: 'm-2',
+      farmId: identity.farmId,
+      productId: product.id,
+      tipo: 'SAIDA' as const,
+      quantidade: 1,
+      dataMovimento: '2026-10-01T12:00:00Z',
+      responsavel: 'Ana',
+    };
+
+    const result = await service.syncData({ farmId: identity.farmId, pendingMovements: [item] }, identity);
+
+    expect(result.syncedCount).toBe(1);
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining(`Falha na reanálise dos alertas da fazenda ${identity.farmId}: banco indisponível`),
+      failure.stack,
+    );
+    logError.mockRestore();
+  });
+
+  it('does not log anything when there is nothing to reanalyze', async () => {
+    const logError = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    await service.syncData({ farmId: identity.farmId, pendingMovements: [] }, identity);
+    expect(mockStockService.reanalyzeAndPersistAlerts).not.toHaveBeenCalled();
+    expect(logError).not.toHaveBeenCalled();
+    logError.mockRestore();
   });
 
   it('downloads the full catalog for an empty batch even if a legacy timestamp is supplied', async () => {
