@@ -1048,7 +1048,13 @@ onUnmounted(() => {
                 }}</span
               >
               <h3>{{ alert.titulo }}</h3>
-              <p>{{ alert.justificativa }}</p>
+              <p>
+                {{ alert.justificativa.split(" O que fazer: ")[0]
+                }}<template v-if="alert.justificativa.includes(' O que fazer: ')"
+                  ><br /><strong>O que fazer:</strong>
+                  {{ alert.justificativa.split(" O que fazer: ")[1] }}</template
+                >
+              </p>
             </article>
           </section>
           <div class="action-row">

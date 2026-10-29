@@ -510,12 +510,13 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - README §10 com a tag `v1.1.0-final` e o que ela traz;
     - roteiro do vídeo sem a tag inexistente (o vídeo de 28/10 é da 1.0.4, release `android-build-22`).
   - Resultado: cliente com 590 testes, checagem de tipos e build aprovados; API com 385 testes e build aprovados.
-  - **Falta:**
-    1. push e PR para a `dev`;
-    2. merge da `dev` na `main`;
-    3. tag `v1.1.0-final` na `main`;
-    4. conferir a release com os instaladores;
-    5. informar a tag à organização.
+  - Feito em 29/10:
+    1. PR #129 para a `dev`;
+    2. PR #130, da `dev` para a `main`;
+    3. tag `v1.1.0-final` no commit `fcd6266` da `main`;
+    4. release conferida, com `.exe`, `.msi`, `app-portable.exe`, `.apk` e `.AppImage` da versão 1.1.0.
+  - Em 29/10, a pedido do Kauê, o "O que fazer" passou para linha própria, em negrito (PR #133). Para entrar na versão avaliada: app **1.1.1** e tag nova `v1.1.1-final`; a `v1.1.0-final` fica como versão anterior.
+  - **Falta:** informar a tag `v1.1.1-final` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
@@ -530,7 +531,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - cópia local dos slides, vídeos e dados;
   - internet alternativa testada.
 
-- [ ] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
+- [x] **12.19. [EM CONJUNTO escolhe · DEV 2 aplica] Dar um nome ao software:** "AgroHacka" é o nome do repositório, não do produto. Todas as outras finalistas têm nome próprio.
   - O nome não pode repetir nem imitar o de outro participante: AgroSentinela, AgroMind, Monitora, AgroAlerta, CampoCerto, AgroZica, AGROGADO, AgroInsight, Arvô, CultivaStock, AgroGestão Intelligence e AgroSense. Também não pode ser o nome do evento (AgroHack).
   - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
   - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
@@ -539,7 +540,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Aplicado pelo DEV 1, a pedido da equipe: marca da tela de entrada e do menu, rodapé ("Paiol · versão …"), título da página (`index.html`) e título da janela (`tauri.conf.json`).
   - **`productName` mantido como `agrohacka`, de propósito:** no Windows ele define a pasta de instalação, e trocá-lo faria a versão nova ser instalada ao lado da antiga, como outro programa. Por isso só o nome do arquivo do instalador continua `agrohacka_…`. O `identifier` não mudou.
   - Testes em `app.spec.ts`: marca, rodapé, título, `productName` e `identifier`. Cliente com 583 testes, checagem de tipos e build aprovados.
-  - Falta: o README (12.13) e os slides (12.21).
+  - README aplicado no PR #128 (12.13); slides com o nome Paiol na capa desde 28/10.
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
 - [x] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
