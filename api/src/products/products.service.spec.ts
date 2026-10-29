@@ -28,6 +28,9 @@ describe('ProductsService: create-only catalog', () => {
     tx = {
       $queryRawUnsafe: vi.fn(async () => [{ id: identity.farmId }]),
       product: {
+        findMany: vi.fn(async ({ where }: any) =>
+          [...rows.values()].filter((row) => row.farmId === where.farmId),
+        ),
         findFirst: vi.fn(async ({ where }: any) => {
           const row = rows.get(where.id);
           return row?.farmId === where.farmId ? row : null;

@@ -520,7 +520,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Ainda em 29/10, a paginação (12.22, PR #138) entrou na versão avaliada: app **1.1.2** e tag `v1.1.2`. A `v1.1.1` fica como anterior.
   - Ainda em 29/10, o alerta de cadastro duplicado (12.23, PR #141) entrou na versão avaliada: app **1.1.3** e tag `v1.1.3`. A `v1.1.2` fica como anterior.
   - Ainda em 29/10, editar, desativar e excluir insumo (12.24) entrou na versão avaliada: app **1.1.4** e tag `v1.1.4`. A `v1.1.3` fica como anterior.
-  - **Falta:** informar a tag `v1.1.4` à organização.
+  - Ainda em 29/10, o bloqueio do nome repetido no cadastro (12.25) entrou na versão avaliada: app **1.1.5** e tag `v1.1.5`. A `v1.1.4` fica como anterior.
+  - **Falta:** informar a tag `v1.1.5` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
@@ -771,6 +772,10 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - O sync leva `ativo` e `excluidoEm` aos celulares. O celular apaga a cópia local do excluído, a não ser que ainda tenha movimentação local dele; nesse caso a cópia fica marcada e escondida. Retirada de insumo excluído, enviada por um celular offline, vai para revisão; a de insumo desativado é aceita, porque o fato aconteceu.
   - Campos novos no banco (`ativo`, `excluidoEm`), aplicados pelo `prisma db push` na subida da API.
   - Testes: `products.edit.spec.ts`, `sync.service.spec.ts` e `stock.service.spec.ts` na API; `product-edit.spec.ts` e `product-edit-ui.spec.ts` no app (RED antes de cada parte). API com 407 testes e app com 637, checagem de tipos aprovada.
+- [x] **12.25. [DEV 1] Bloquear nome repetido no cadastro:** pedida pelo Kauê em 29/10, para evitar o duplicado em vez de excluí-lo depois. Ao salvar um insumo novo, ou ao renomear um, o app recusa o nome de outro insumo da fazenda, inclusive desativado, pela mesma regra do alerta (sem contar maiúsculas, acentos, espaços e símbolos). A mensagem diz qual insumo já existe e a unidade dele; se estiver desativado, orienta reativar.
+  - A API também recusa (409), sob o lock da fazenda, para o caso de catálogo desatualizado ou de dois aparelhos ao mesmo tempo.
+  - Editar um duplicado antigo sem mudar o nome continua permitido, para poder corrigi-lo. Nomes só parecidos continuam aceitos.
+  - Testes: `products.edit.spec.ts` na API e `product-duplicate-form.spec.ts` no app (RED antes de cada parte). API com 415 testes e app com 645.
 
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
