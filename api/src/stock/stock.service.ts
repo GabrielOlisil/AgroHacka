@@ -22,7 +22,7 @@ export class StockService {
 
   async analyzeStock(farmId: string, now: Date = new Date()) {
     const products = await this.prisma.product.findMany({
-      where: { farmId },
+      where: { farmId, ativo: true, excluidoEm: null },
       include: { movements: true },
     });
 

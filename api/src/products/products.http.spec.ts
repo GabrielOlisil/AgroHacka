@@ -53,6 +53,8 @@ describe('POST /products HTTP: real authentication and product service', () => {
             });
           const row = {
             ...data,
+            ativo: true,
+            excluidoEm: null,
             createdAt: new Date('2026-10-27T12:00:00Z'),
             updatedAt: new Date('2026-10-27T12:00:00Z'),
           };
@@ -156,6 +158,8 @@ describe('POST /products HTTP: real authentication and product service', () => {
       validade: null,
       lote: null,
       fornecedor: null,
+      ativo: true,
+      excluidoEm: null,
       createdAt: '2026-10-27T12:00:00.000Z',
       updatedAt: '2026-10-27T12:00:00.000Z',
     });

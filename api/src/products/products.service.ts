@@ -3,11 +3,16 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma, type Product } from '@prisma/client';
 import type { SyncIdentity } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductDto, ProductResponseDto } from './dto/products.dto';
+import {
+  CreateProductDto,
+  ProductResponseDto,
+  UpdateProductDto,
+} from './dto/products.dto';
 
 const fields = new Set([
   'id',
@@ -71,40 +76,80 @@ function canonical(dto: CreateProductDto) {
     )
   )
     throw new BadRequestException('id deve ser um UUID válido.');
-  let validade: Date | null = null;
-  if (dto.validade != null) {
-    if (
-      typeof dto.validade !== 'string' ||
-      !/^(?!0000)\d{4}-\d{2}-\d{2}$/.test(dto.validade)
-    )
-      throw new BadRequestException(
-        'validade deve ser uma data válida em YYYY-MM-DD.',
-      );
-    validade = new Date(`${dto.validade}T00:00:00.000Z`);
-    if (
-      !Number.isFinite(validade.getTime()) ||
-      validade.toISOString().slice(0, 10) !== dto.validade
-    )
-      throw new BadRequestException(
-        'validade deve ser uma data válida em YYYY-MM-DD.',
-      );
-  }
-  const unit = text(dto.unidadeMedida, 'unidadeMedida');
   return {
     id: dto.id.toLowerCase(),
     nome: text(dto.nome, 'nome'),
     categoria: text(dto.categoria, 'categoria'),
-    unidadeMedida: unitAliases.get(unit.toLowerCase()) ?? unit,
+    unidadeMedida: unit(dto.unidadeMedida),
     estoqueMinimo: nonNegative(dto.estoqueMinimo, 'estoqueMinimo'),
     precoAquisicao:
       dto.precoAquisicao == null
         ? null
         : nonNegative(dto.precoAquisicao, 'precoAquisicao'),
-    validade,
+    validade: calendar(dto.validade),
     lote: dto.lote == null ? null : text(dto.lote, 'lote'),
     fornecedor:
       dto.fornecedor == null ? null : text(dto.fornecedor, 'fornecedor'),
   };
+}
+
+function unit(value: unknown): string {
+  const result = text(value, 'unidadeMedida');
+  return unitAliases.get(result.toLowerCase()) ?? result;
+}
+
+function calendar(value: unknown): Date | null {
+  if (value == null) return null;
+  if (typeof value !== 'string' || !/^(?!0000)\d{4}-\d{2}-\d{2}$/.test(value))
+    throw new BadRequestException(
+      'validade deve ser uma data válida em YYYY-MM-DD.',
+    );
+  const result = new Date(`${value}T00:00:00.000Z`);
+  if (
+    !Number.isFinite(result.getTime()) ||
+    result.toISOString().slice(0, 10) !== value
+  )
+    throw new BadRequestException(
+      'validade deve ser uma data válida em YYYY-MM-DD.',
+    );
+  return result;
+}
+
+const editable = new Set([...fields, 'ativo'].filter((key) => key !== 'id'));
+
+/** Só os campos enviados mudam; id, fazenda e exclusão nunca vêm do corpo. */
+function canonicalPatch(dto: UpdateProductDto) {
+  if (
+    !dto ||
+    typeof dto !== 'object' ||
+    Array.isArray(dto) ||
+    !Object.keys(dto).length ||
+    Object.keys(dto).some((key) => !editable.has(key))
+  )
+    throw new BadRequestException('Campos de produto inválidos.');
+  if (dto.ativo !== undefined && typeof dto.ativo !== 'boolean')
+    throw new BadRequestException('ativo deve ser verdadeiro ou falso.');
+  const data: Prisma.ProductUpdateInput = {};
+  if (dto.nome !== undefined) data.nome = text(dto.nome, 'nome');
+  if (dto.categoria !== undefined)
+    data.categoria = text(dto.categoria, 'categoria');
+  if (dto.unidadeMedida !== undefined)
+    data.unidadeMedida = unit(dto.unidadeMedida);
+  if (dto.estoqueMinimo !== undefined)
+    data.estoqueMinimo = nonNegative(dto.estoqueMinimo, 'estoqueMinimo');
+  if (dto.precoAquisicao !== undefined)
+    data.precoAquisicao =
+      dto.precoAquisicao === null
+        ? null
+        : nonNegative(dto.precoAquisicao, 'precoAquisicao');
+  if (dto.validade !== undefined) data.validade = calendar(dto.validade);
+  if (dto.lote !== undefined)
+    data.lote = dto.lote === null ? null : text(dto.lote, 'lote');
+  if (dto.fornecedor !== undefined)
+    data.fornecedor =
+      dto.fornecedor === null ? null : text(dto.fornecedor, 'fornecedor');
+  if (dto.ativo !== undefined) data.ativo = dto.ativo;
+  return data;
 }
 
 function serialize(p: Product): ProductResponseDto {
@@ -119,6 +164,8 @@ function serialize(p: Product): ProductResponseDto {
     validade: p.validade?.toISOString() ?? null,
     lote: p.lote,
     fornecedor: p.fornecedor,
+    ativo: p.ativo,
+    excluidoEm: p.excluidoEm?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   };
@@ -190,4 +237,80 @@ export class ProductsService {
       throw error;
     }
   }
+
+  async update(
+    id: string,
+    dto: UpdateProductDto,
+    identity: SyncIdentity,
+  ): Promise<ProductResponseDto> {
+    manager(identity);
+    const data = canonicalPatch(dto);
+    return this.inFarm(identity, id, async (tx, existing) => {
+      // Trocar a unidade mudaria o sentido das quantidades já registradas.
+      if (
+        data.unidadeMedida !== undefined &&
+        data.unidadeMedida !== existing.unidadeMedida &&
+        (await movementCount(tx, existing))
+      )
+        throw new ConflictException(
+          'Este insumo já tem movimentações; a unidade não pode mudar, para não alterar o sentido do histórico.',
+        );
+      return serialize(await tx.product.update({ where: { id }, data }));
+    });
+  }
+
+  async remove(id: string, identity: SyncIdentity): Promise<ProductResponseDto> {
+    manager(identity);
+    return this.inFarm(identity, id, async (tx, existing) => {
+      if (await movementCount(tx, existing))
+        throw new ConflictException(
+          'Este insumo tem movimentações no histórico e não pode ser excluído. Desative o insumo para tirá-lo da lista sem perder o histórico.',
+        );
+      // Exclusão lógica: o próximo sync leva a exclusão aos celulares.
+      return serialize(
+        await tx.product.update({
+          where: { id },
+          data: { excluidoEm: new Date() },
+        }),
+      );
+    });
+  }
+
+  private inFarm<T>(
+    identity: SyncIdentity,
+    id: string,
+    work: (tx: Prisma.TransactionClient, existing: Product) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Mesmo lock do sync: uma retirada não entra no meio da exclusão.
+        const farms = await tx.$queryRawUnsafe<{ id: string }[]>(
+          'SELECT id FROM farms WHERE id = $1 FOR UPDATE',
+          identity.farmId,
+        );
+        if (!farms.length) throw new ForbiddenException();
+        const existing = await tx.product.findFirst({
+          where: { id, farmId: identity.farmId, excluidoEm: null },
+        });
+        if (!existing) throw new NotFoundException('Insumo não encontrado.');
+        return work(tx, existing);
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
+  }
+}
+
+function manager(identity: SyncIdentity) {
+  if (!identity || identity.role !== 'GESTOR' || !identity.farmId)
+    throw new ForbiddenException('Somente gestores podem alterar insumos.');
+}
+
+function movementCount(tx: Prisma.TransactionClient, product: Product) {
+  return tx.stockMovement.count({
+    where: { productId: product.id, farmId: product.farmId },
+  });
 }

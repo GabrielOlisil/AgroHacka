@@ -15,6 +15,8 @@ describe('SyncService - authenticated sync', () => {
   const receipt = vi.fn();
   const log = vi.fn();
   const lock = vi.fn();
+  const findProduct = vi.fn();
+  const catalog = vi.fn();
   const product = {
     id: 'prod-1',
     farmId: identity.farmId,
@@ -34,13 +36,15 @@ describe('SyncService - authenticated sync', () => {
 
     vi.resetAllMocks();
     lock.mockResolvedValue([{ id: identity.farmId }]);
+    findProduct.mockResolvedValue(product);
+    catalog.mockResolvedValue([product]);
     create.mockImplementation(async ({ data }) => ({
       ...data,
       updatedAt: new Date('2026-10-01T12:00:00Z'),
     }));
     const tx = {
       $queryRawUnsafe: lock,
-      product: { findFirst: vi.fn().mockResolvedValue(product) },
+      product: { findFirst: findProduct },
       stockMovement: { findUnique: vi.fn().mockResolvedValue(null), create },
       syncReceipt: {
         findUnique: vi.fn().mockResolvedValue(null),
@@ -53,7 +57,7 @@ describe('SyncService - authenticated sync', () => {
       $transaction: vi.fn(async (work) =>
         typeof work === 'function' ? work(tx) : Promise.all(work),
       ),
-      product: { findMany: vi.fn().mockResolvedValue([product]) },
+      product: { findMany: catalog },
       stockMovement: { findMany: vi.fn().mockResolvedValue([]) },
     };
     mockStockService = {
@@ -133,6 +137,49 @@ describe('SyncService - authenticated sync', () => {
     expect(mockStockService.reanalyzeAndPersistAlerts).not.toHaveBeenCalled();
     expect(logError).not.toHaveBeenCalled();
     logError.mockRestore();
+  });
+
+  it('só aceita movimentação de insumo não excluído; desativado ainda recebe o fato', async () => {
+    const item = {
+      id: 'm-3',
+      farmId: identity.farmId,
+      productId: product.id,
+      tipo: 'SAIDA' as const,
+      quantidade: 1,
+      dataMovimento: '2026-10-01T12:00:00Z',
+      responsavel: 'Ana',
+    };
+    await service.syncData(
+      { farmId: identity.farmId, pendingMovements: [item] },
+      identity,
+    );
+    expect(findProduct).toHaveBeenCalledWith({
+      where: {
+        id: product.id,
+        farmId: identity.farmId,
+        excluidoEm: null,
+      },
+    });
+  });
+
+  it('leva ativo e excluidoEm do catálogo aos celulares', async () => {
+    const excluidoEm = new Date('2026-10-29T18:00:00Z');
+    catalog.mockResolvedValue([
+      { ...product, ativo: false, excluidoEm: null },
+      { ...product, id: 'prod-2', ativo: true, excluidoEm },
+    ]);
+    const result = await service.syncData(
+      { farmId: identity.farmId, pendingMovements: [] },
+      identity,
+    );
+    expect(result.newProducts).toEqual([
+      expect.objectContaining({ id: 'prod-1', ativo: false, excluidoEm: null }),
+      expect.objectContaining({
+        id: 'prod-2',
+        ativo: true,
+        excluidoEm: '2026-10-29T18:00:00.000Z',
+      }),
+    ]);
   });
 
   it('downloads the full catalog for an empty batch even if a legacy timestamp is supplied', async () => {
