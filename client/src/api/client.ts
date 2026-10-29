@@ -16,6 +16,7 @@ import {
   type PairingResponse,
   type Product,
   type ProductInput,
+  type UpdateProductInput,
   type RegisterInput,
   type Session,
   type SyncPayload,
@@ -89,6 +90,27 @@ export function createApi(
         "Alteração de operador não confirmada para esta fazenda.",
       );
   }
+  async function changeProduct(
+    session: Session,
+    id: string,
+    request: (authorization: string) => Promise<{
+      response: Response;
+      data?: unknown;
+      error?: unknown;
+    }>,
+  ): Promise<Product> {
+    if (session.role !== "GESTOR")
+      throw new Error("Somente o gestor pode alterar insumos.");
+    const product = parseProduct(
+      await unpack(
+        await request(`Bearer ${text(session.accessToken, "token do gestor")}`),
+      ),
+      session.farmId,
+    );
+    if (product.id !== id)
+      throw new Error("Resposta de outro identificador de produto.");
+    return product;
+  }
   function auth(value: unknown): Session {
     const response = object(value);
     const user = object(response.user);
@@ -158,6 +180,29 @@ export function createApi(
       if (product.id !== body.id)
         throw new Error("Resposta de outro identificador de produto.");
       return product;
+    },
+    async updateProduct(
+      session: Session,
+      id: string,
+      patch: UpdateProductInput,
+    ): Promise<Product> {
+      return changeProduct(session, id, (authorization) =>
+        client.PATCH("/products/{id}", {
+          params: { path: { id } },
+          headers: { authorization },
+          body: patch,
+          signal: signal(),
+        }),
+      );
+    },
+    async deleteProduct(session: Session, id: string): Promise<Product> {
+      return changeProduct(session, id, (authorization) =>
+        client.DELETE("/products/{id}", {
+          params: { path: { id } },
+          headers: { authorization },
+          signal: signal(),
+        }),
+      );
     },
     async testWhatsApp(
       session: Session,

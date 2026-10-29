@@ -207,6 +207,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ProductsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["ProductsController_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -300,6 +316,10 @@ export interface components {
             validade: string | null;
             lote: string | null;
             fornecedor: string | null;
+            /** @description false: desativado; some da lista, das retiradas e dos alertas. */
+            ativo: boolean;
+            /** @description Preenchido quando o insumo foi excluído; o celular apaga a cópia local. */
+            excluidoEm: string | null;
             updatedAt: string;
         };
         SyncDivergenceDto: {
@@ -335,6 +355,19 @@ export interface components {
             lote?: string | null;
             fornecedor?: string | null;
         };
+        UpdateProductDto: {
+            nome?: string;
+            categoria?: string;
+            unidadeMedida?: string;
+            estoqueMinimo?: number;
+            precoAquisicao?: number | null;
+            /** @description Data de calendário válida em YYYY-MM-DD; null apaga a validade. */
+            validade?: string | null;
+            lote?: string | null;
+            fornecedor?: string | null;
+            /** @description false desativa: o insumo some da lista, das retiradas e dos alertas. */
+            ativo?: boolean;
+        };
         ProductResponseDto: {
             id: string;
             farmId: string;
@@ -347,6 +380,9 @@ export interface components {
             validade: string | null;
             lote: string | null;
             fornecedor: string | null;
+            ativo: boolean;
+            /** @description Preenchido quando o insumo foi excluído (exclusão lógica). */
+            excluidoEm: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -682,6 +718,52 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductResponseDto"];
+                };
+            };
+        };
+    };
+    ProductsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductResponseDto"];
+                };
+            };
+        };
+    };
+    ProductsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

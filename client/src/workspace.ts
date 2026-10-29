@@ -24,6 +24,7 @@ import {
   type Product,
   type ProductInput,
   type UpdateOperatorInput,
+  type UpdateProductInput,
 } from "./offline/types";
 
 interface WorkspaceDependencies {
@@ -59,6 +60,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
   const ready = ref(false);
   const session = ref<Session | null>(null);
   const analysis = ref<InventoryAnalysis>(analyzeInventory([], []));
+  const inactiveProducts = ref<Product[]>([]);
   const movements = ref<Movement[]>([]);
   const pendingCount = ref(0);
   const pendingIds = ref<string[]>([]);
@@ -141,6 +143,35 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       if (operatorMutationVersion === version) changingOperator = false;
     }
   }
+  // Editar, desativar e excluir precisam de internet, como o cadastro.
+  async function changeProduct(call: (current: Session) => Promise<Product>) {
+    if (disposed || restoring || changingSession)
+      throw new Error("Aguarde a restauração ou abra novamente a sessão.");
+    const current = session.value;
+    if (current?.role !== "GESTOR")
+      throw new Error("Somente o gestor pode alterar insumos.");
+    const db = requireStore();
+    const version = catalogVersion;
+    const isCurrent = () =>
+      !disposed &&
+      !restoring &&
+      catalogVersion === version &&
+      session.value === current;
+    const product = await call(current);
+    if (!isCurrent())
+      throw new Error(
+        "Sessão alterada durante a alteração; sincronize o catálogo ao retornar.",
+      );
+    const writing = db.upsertProducts(current.farmId, [product], isCurrent);
+    catalogWrites.add(writing);
+    try {
+      await writing;
+    } finally {
+      catalogWrites.delete(writing);
+    }
+    await refresh();
+    return product;
+  }
   const requireStore = () => {
     if (!store)
       throw new Error(
@@ -165,10 +196,16 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
       session.value?.farmId !== current.farmId
     )
       return;
-    analysis.value = analyzeInventory(snapshot.products, snapshot.movements);
+    const products = snapshot.products.filter(
+      (p) => p.ativo !== false && !p.excluidoEm,
+    );
+    inactiveProducts.value = snapshot.products.filter(
+      (p) => p.ativo === false && !p.excluidoEm,
+    );
+    analysis.value = analyzeInventory(products, snapshot.movements);
     const pendingSet = new Set(pending.map((m) => m.id));
     const confirmed = analyzeInventory(
-      snapshot.products,
+      products,
       snapshot.movements.filter((m) => !pendingSet.has(m.id)),
     );
     confirmedBalances.value = Object.fromEntries(
@@ -284,6 +321,11 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
     refresh,
     sync,
     maintainBackups,
+    inactiveProducts,
+    updateProduct: (id: string, patch: UpdateProductInput) =>
+      changeProduct((current) => api.updateProduct(current, id, patch)),
+    deleteProduct: (id: string) =>
+      changeProduct((current) => api.deleteProduct(current, id)),
     async createProduct(input: ProductInput): Promise<Product> {
       if (disposed)
         throw new Error("Workspace encerrado; abra uma sessão novamente.");
@@ -377,6 +419,7 @@ export function createWorkspace(dependencies: WorkspaceDependencies = {}) {
         session.value = null;
         analysis.value = analyzeInventory([], []);
         movements.value = [];
+        inactiveProducts.value = [];
         pendingCount.value = 0;
         pendingIds.value = [];
         reviews.value = [];
