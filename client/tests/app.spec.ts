@@ -80,7 +80,7 @@ describe("versão do aplicativo", () => {
       props: { controller: controller("OPERADOR") as never },
     });
     expect(wrapper.get(".page-footer").text()).toBe(
-      `AgroHacka · versão ${version}`,
+      `Paiol · versão ${version}`,
     );
     wrapper.unmount();
   });
@@ -89,6 +89,29 @@ describe("versão do aplicativo", () => {
     const wrapper = mount(App, { props: { controller: controller() as never } });
     expect(wrapper.get(".welcome").text()).toContain(`versão ${version}`);
     wrapper.unmount();
+  });
+});
+// Tarefa 12.19: o software se chama Paiol; "AgroHacka" fica só como nome do repositório.
+describe("nome do software (tarefa 12.19)", () => {
+  it("a tela de entrada e o menu mostram Paiol", () => {
+    const welcome = mount(App, { props: { controller: controller() as never } });
+    expect(welcome.get(".welcome .brand").text()).toBe("Paiol");
+    expect(welcome.get(".welcome").text()).not.toMatch(/AgroHacka/);
+    welcome.unmount();
+    const workspace = mount(App, { props: { controller: controller("GESTOR") as never } });
+    expect(workspace.get(".sidebar .brand").text()).toBe("Paiol");
+    workspace.unmount();
+  });
+
+  it("o título da página e da janela também é Paiol", () => {
+    const html = readFileSync(resolve(process.cwd(), "index.html"), "utf-8");
+    expect(html).toContain("<title>Paiol · Gestão de insumos</title>");
+    const tauri = JSON.parse(readFileSync(resolve(process.cwd(), "src-tauri/tauri.conf.json"), "utf-8"));
+    expect(tauri.app.windows[0].title).toBe("Paiol");
+    // productName define a pasta de instalação no Windows: trocar faria a versão nova
+    // ser instalada ao lado da antiga. O identifier define onde ficam os dados.
+    expect(tauri.productName).toBe("agrohacka");
+    expect(tauri.identifier).toBe("com.agrohack.desktop");
   });
 });
 // Tarefa 12.8: a fazenda carregada pela base de demonstração avisa, em toda tela,

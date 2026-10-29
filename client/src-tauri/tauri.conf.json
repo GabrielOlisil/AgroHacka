@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "agrohacka",
+        "title": "Paiol",
         "width": 800,
         "height": 600,
         "resizable": true,
