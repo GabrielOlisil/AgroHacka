@@ -655,7 +655,16 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Resultado: cliente com 575 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**
-- [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+- [x] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - `ci.yml`:
+    - job novo `test-client`, com `npm ci`, `npm test` e `npm run check` do cliente. O `VITE_API_URL` só de teste fica no próprio job, porque o `.env.test` não é versionado e o fetch é simulado;
+    - o CI passa a rodar também nos pushes e PRs da `dev`, além da `main`.
+  - `build-packaging.spec.ts`: os 4 testes que falhavam descreviam o workflow antigo, só Android. Agora seguem o atual:
+    - Windows, Linux e Android, com publicação só se os três builds passarem;
+    - release como a mais recente, com `prerelease: false` e `make_latest`;
+    - GTK só no job Linux.
+  - 2 testes novos conferem o CI do cliente.
   - Antes, corrigir as 4 falhas de `client/tests/build-packaging.spec.ts`: o teste ainda espera só o build Android, mas o workflow voltou a ter Windows e Linux (`ed1ab38`, `fa9f0f2`).
 - [x] **12.10. [DEV 1] Teste-gabarito da base simulada com o motor de produção:** `official-seed.spec.ts` deve usar `analyzeStockInventory`.
   - Cada problema plantado gera exatamente o alerta esperado, e os produtos normais não geram nenhum alerta extra.
