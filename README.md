@@ -339,19 +339,20 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada na final:** **1.1.1**, tag [`v1.1.1`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.1), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
+- **Versão avaliada na final:** **1.1.2**, tag [`v1.1.2`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.2), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
   - Traz as melhorias da Etapa 12 (final presencial):
     - todo alerta diz o que fazer, incluindo quanto comprar para 30 dias e o custo; no app, o "O que fazer" aparece em linha própria, em negrito (1.1.1);
     - alertas do mais grave para o menos grave e resumo no topo para o gestor;
     - fora do padrão em toda a janela de 30 dias e alerta de consumo crescente;
     - "o que mudou" depois de cada registro;
     - tela Como funciona;
+    - paginação no Histórico, no Estoque e nos Operadores, com escolha de 10, 25, 50 ou 100 itens por página (1.1.2);
     - aviso de dados simulados na fazenda de demonstração;
     - nome Paiol;
     - testes do app no CI.
 - **Versão do vídeo de 28/10:** app 1.0.4, release `android-build-22` (a primeira com Windows, Android e Linux juntos), com as melhorias de uso no celular da Etapa 11. O roteiro antigo citava a tag `v1.0.4-entrega`, que nunca foi criada.
-- **Versões anteriores:** `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
-- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.1`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
+- **Versões anteriores:** `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
+- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.2`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
 - **Vídeo final da entrega:** [demonstração no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 - **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
