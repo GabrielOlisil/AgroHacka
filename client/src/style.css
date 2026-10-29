@@ -1530,3 +1530,23 @@ td small {
     scroll-behavior: auto !important;
   }
 }
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.pagination label {
+  flex-direction: row;
+  align-items: center;
+}
+.pagination select {
+  width: auto;
+}
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

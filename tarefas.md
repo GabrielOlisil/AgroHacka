@@ -517,7 +517,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     4. release conferida, com `.exe`, `.msi`, `app-portable.exe`, `.apk` e `.AppImage` da versão 1.1.0.
   - Em 29/10, a pedido do Kauê, o "O que fazer" passou para linha própria, em negrito (PR #133). Para entrar na versão avaliada: app **1.1.1** e tag nova `v1.1.1-final`; a `v1.1.0-final` fica como versão anterior.
   - Ainda em 29/10, o Kauê pediu tags só com a versão, sem `-final`: a versão avaliada passou a ser a tag `v1.1.1`. As tags `v1.1.0-final` e `v1.1.1-final` ficam como anteriores.
-  - **Falta:** informar a tag `v1.1.1` à organização.
+  - Ainda em 29/10, a paginação (12.22, PR #138) entrou na versão avaliada: app **1.1.2** e tag `v1.1.2`. A `v1.1.1` fica como anterior.
+  - **Falta:** informar a tag `v1.1.2` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
@@ -751,6 +752,10 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Cronometrar a apresentação completa com a demonstração ao vivo: no máximo 10 minutos, com folga.
   - Conferir os números citados (testes, alertas, valores da base) contra o app e o README.
   - Atualizar as respostas da sabatina e o Anki com o que mudou.
+- [x] **12.22. [DEV 1] Paginação das listas que crescem:** pedida pelo Kauê em 29/10. Histórico, Estoque e Operadores mostram 25 itens por página, com escolha de 10, 25, 50 ou 100, botões Anterior e Próxima, "Página X de Y" e "Mostrando 1–25 de N". A página volta para a 1 quando a busca, o filtro ou o tamanho da página mudam. Com até 10 itens, a barra não aparece.
+  - Fora da paginação: Cópias (no máximo 7) e Alertas (a lista é ordenada por gravidade; paginar poderia esconder um alerta urgente).
+  - A paginação é feita no app, sobre os dados que já estão no aparelho; a API não muda.
+  - Testes: `pagination.spec.ts`, `pagination-bar.spec.ts`, `app.spec.ts` e `operators-panel.spec.ts` (RED antes de cada parte). Cliente com 606 testes, checagem de tipos e build aprovados.
 
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 

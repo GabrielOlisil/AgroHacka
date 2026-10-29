@@ -82,6 +82,23 @@ describe("paired operators and code recovery", () => {
     expect(wrapper.text()).toContain("Consultando operadores");
     wrapper.unmount();
   });
+  it("pagina os operadores e volta para a página 1 ao buscar", async () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({
+      ...paired,
+      id: `op${i}`,
+      nomeOperador: `Operador ${String(i).padStart(2, "0")}`,
+    }));
+    const { wrapper } = setup(many);
+    const rows = () => wrapper.findAll(".operator-list > li");
+    expect(rows()).toHaveLength(25);
+    expect(wrapper.text()).toContain("Mostrando 1–25 de 30 operadores");
+    await wrapper.get('[data-testid="page-next"]').trigger("click");
+    expect(rows()).toHaveLength(5);
+    await wrapper.get('[aria-label="Buscar operadores"]').setValue("Operador 0");
+    expect(rows()).toHaveLength(10);
+    expect(wrapper.find('[data-testid="pagination"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
   it("hides a revealed code when the list refreshes or access changes", async () => {
     const { wrapper } = setup();
     await wrapper.get('[data-testid="reveal-ana"]').trigger("click");
