@@ -621,7 +621,22 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - não aparece em outras fazendas nem na tela de entrada.
   - Limitação: o app reconhece a fazenda pelo nome. Uma fazenda real com esse mesmo nome também mostraria o aviso.
   - Testes em `app.spec.ts` (3 novos, RED antes da faixa). Cliente com 560 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
-- [ ] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
+- [x] **12.17. [DEV 2] Mostrar o que mudou depois do registro (C2 e C3):** depois de salvar uma movimentação, a tela informa os alertas novos, os resolvidos e os que mudaram de nível. É a reanálise que a banca precisa ver na demonstração ao vivo.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe.
+  - Como funciona: antes de salvar, o app guarda os alertas; depois, compara com a análise nova (`client/src/alert-changes.ts`) e mostra "O que mudou na análise", em três partes:
+    - "Novo alerta (urgente): …";
+    - "Mudou de atenção para urgente: …";
+    - "Resolvido: …".
+  - Mudança só na conta, no mesmo alerta e nível, não conta. Sem mudança, aparece "Nenhum alerta mudou com este registro.".
+  - Onde aparece:
+    - junto ao formulário da Visão geral;
+    - no aviso do topo, quando o registro vem da janela da aba Estoque.
+  - O quadro some na próxima ação ou no cadastro de insumo.
+  - Testes:
+    - `alert-changes.spec.ts` (novo): ordem, mudança só de conta, listas vazias, primeira análise;
+    - `app.spec.ts`: formulário com mudança e sem mudança;
+    - `manager-stock.spec.ts`: entrada pela aba Estoque resolve a falta do Diesel.
+  - Resultado: cliente com 573 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
 - [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**

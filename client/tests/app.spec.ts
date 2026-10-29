@@ -528,6 +528,37 @@ describe("formulário de movimentação da Visão geral", () => {
     wrapper.unmount();
   });
 
+  it("depois de salvar, mostra junto ao formulário o que mudou nos alertas (tarefa 12.17)", async () => {
+    const state = withDiesel(controller("GESTOR"));
+    state.analysis.value.alerts = [
+      { id: "PARADO:p", productId: "p", tipo: "PARADO", nivel: "INFORMATIVO", titulo: "Diesel · Estoque parado", justificativa: "…" },
+    ] as never;
+    state.record.mockImplementation(async () => {
+      state.analysis.value = {
+        ...state.analysis.value,
+        alerts: [
+          { id: "FALTA:p", productId: "p", tipo: "FALTA", nivel: "URGENTE", titulo: "Diesel · Reposição", justificativa: "…" },
+        ],
+      } as never;
+    });
+    const wrapper = await submitOverviewForm(state);
+    const changes = wrapper.get('.movement-panel [data-testid="alert-changes"]');
+    expect(changes.text()).toContain("O que mudou na análise");
+    expect(changes.findAll("li").map((li) => li.text())).toEqual([
+      "Novo alerta (urgente): Diesel · Reposição",
+      "Resolvido: Diesel · Estoque parado",
+    ]);
+    wrapper.unmount();
+  });
+
+  it("quando nenhum alerta muda, diz isso em vez de ficar calado (tarefa 12.17)", async () => {
+    const wrapper = await submitOverviewForm(withDiesel(controller("OPERADOR")));
+    expect(wrapper.get('.movement-panel [data-testid="alert-changes"]').text()).toContain(
+      "Nenhum alerta mudou com este registro.",
+    );
+    wrapper.unmount();
+  });
+
   it("mostra o erro do salvamento junto ao formulário", async () => {
     const state = withDiesel(controller("OPERADOR"));
     state.record.mockRejectedValueOnce(new Error("Quantidade inválida."));

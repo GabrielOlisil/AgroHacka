@@ -69,6 +69,37 @@ async function stock(wrapper: ReturnType<typeof mount>) {
     .find((b) => b.text() === "Estoque")!
     .trigger("click");
 }
+describe("o que mudou depois de registrar pela aba Estoque (tarefa 12.17)", () => {
+  it("a entrada que tira o Diesel do mínimo aparece como alerta resolvido", async () => {
+    const state = controller();
+    expect(state.analysis.value.alerts.map((a) => a.id)).toContain("FALTA:diesel");
+    state.record.mockImplementation(async (input: { quantidade: number }) => {
+      const movements = [
+        ...state.movements.value,
+        {
+          id: "novo",
+          farmId: "f",
+          productId: "diesel",
+          tipo: "ENTRADA" as const,
+          quantidade: input.quantidade,
+          responsavel: "Ana",
+          dataMovimento: "2026-10-27T13:00:00Z",
+        },
+      ];
+      state.movements.value = movements;
+      state.analysis.value = analyzeInventory(products, movements);
+    });
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await stock(wrapper);
+    await wrapper.get('[data-testid="entrada-diesel"]').trigger("click");
+    await wrapper.get('[role="dialog"] input[type="number"]').setValue(20);
+    await wrapper.get('[role="dialog"] form').trigger("submit");
+    await flushPromises();
+    expect(wrapper.get('[data-testid="alert-changes"]').text()).toContain("Resolvido: Diesel · Reposição");
+    wrapper.unmount();
+  });
+});
+
 describe("controle de estoque do gestor", () => {
   it("preserva rascunho e identidade ao fechar e reabrir cadastro com resposta perdida", async () => {
     const state = controller();
