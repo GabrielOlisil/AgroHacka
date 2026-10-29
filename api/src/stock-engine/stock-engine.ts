@@ -35,7 +35,7 @@ export interface AnalyzedProductOutput extends StockInventoryProduct {
 export interface StockInventoryAlert {
   id: string;
   productId: string;
-  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'CRESCENTE' | 'PARADO' | 'EXCESSO';
+  tipo: 'FALTA' | 'VENCIMENTO' | 'ANOMALIA' | 'CRESCENTE' | 'DUPLICADO' | 'PARADO' | 'EXCESSO';
   nivel: 'URGENTE' | 'ATENCAO' | 'INFORMATIVO';
   titulo: string;
   justificativa: string;
@@ -59,7 +59,10 @@ const num = (value: number, digits = 2) =>
   value.toLocaleString('pt-BR', { maximumFractionDigits: digits, useGrouping: false });
 const brDate = (isoDate: string) => isoDate.slice(0, 10).split('-').reverse().join('/');
 // Within a level: shortage stops the work first, expiry is a certain loss (tarefa 12.6).
-const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, CRESCENTE: 3, PARADO: 4, EXCESSO: 5 };
+const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, CRESCENTE: 3, DUPLICADO: 4, PARADO: 5, EXCESSO: 6 };
+// Name without case, accents, spaces and symbols (tarefa 12.23).
+const nameKey = (nome: string) =>
+  nome.normalize('NFD').toLocaleLowerCase('pt-BR').replace(/[^\p{L}\p{N}]/gu, '');
 const LEVEL_ORDER = { URGENTE: 0, ATENCAO: 1, INFORMATIVO: 2 };
 
 /**
@@ -261,6 +264,27 @@ export function analyzeStockInventory(
     p.percentualValor = totalValue > 0 ? (p.valorEstoque / totalValue) * 100 : 0;
     p.classeAbc = p.valorEstoque <= 0 ? 'C' : cumulative < 80 ? 'A' : cumulative < 95 ? 'B' : 'C';
     cumulative += p.percentualValor;
+  }
+
+  // The same input registered twice splits its balance and use (tarefa 12.23).
+  const sameName = new Map<string, typeof safeProducts>();
+  for (const p of [...safeProducts].sort((a, b) => a.id.localeCompare(b.id))) {
+    const key = nameKey(p.nome);
+    if (key) sameName.set(`${p.farmId}|${key}`, [...(sameName.get(`${p.farmId}|${key}`) ?? []), p]);
+  }
+  for (const group of sameName.values()) {
+    if (group.length < 2) continue;
+    const names = group.map((p) => `“${p.nome}” (${p.unidadeMedida})`);
+    const id = `DUPLICADO:${group[0].id}`;
+    severity.set(id, [TYPE_ORDER.DUPLICADO, 0, 0]);
+    alerts.push({
+      id,
+      productId: group[0].id,
+      tipo: 'DUPLICADO',
+      nivel: 'ATENCAO',
+      titulo: `${group[0].nome} · Possível cadastro duplicado`,
+      justificativa: `Os cadastros ${names.slice(0, -1).join(', ')} e ${names.at(-1)} parecem o mesmo insumo: os nomes só mudam em maiúsculas, acentos, espaços ou símbolos. Com cadastros separados, o saldo e o consumo ficam divididos e os alertas de cada um ficam incompletos. O que fazer: conferir os cadastros e registrar as próximas movimentações em um só.`,
+    });
   }
 
   const bySeverity = (a: StockInventoryAlert, b: StockInventoryAlert) => {

@@ -18,6 +18,7 @@ const GROUPS: [(a: SummaryAlert) => boolean, string, string][] = [
   ],
   [(a) => a.tipo === "ANOMALIA", "retirada para conferir", "retiradas para conferir"],
   [(a) => a.tipo === "CRESCENTE", "insumo com consumo em alta", "insumos com consumo em alta"],
+  [(a) => a.tipo === "DUPLICADO", "cadastro para conferir", "cadastros para conferir"],
   [
     (a) => a.tipo === "PARADO" || a.tipo === "EXCESSO",
     "insumo parado ou sobrando",

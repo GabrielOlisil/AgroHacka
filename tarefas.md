@@ -756,8 +756,13 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Fora da paginação: Cópias (no máximo 7) e Alertas (a lista é ordenada por gravidade; paginar poderia esconder um alerta urgente).
   - A paginação é feita no app, sobre os dados que já estão no aparelho; a API não muda.
   - Testes: `pagination.spec.ts`, `pagination-bar.spec.ts`, `app.spec.ts` e `operators-panel.spec.ts` (RED antes de cada parte). Cliente com 606 testes, checagem de tipos e build aprovados.
+- [x] **12.23. [DEV 1] Alerta de cadastro duplicado (C3):** pedida pelo Kauê em 29/10, depois da análise das notas: 3 Hacketeers, Hype Stack e Commitou, Brotou detectam duplicados. Dois ou mais insumos da mesma fazenda com o mesmo nome, sem contar maiúsculas, acentos, espaços e símbolos, geram um alerta de **atenção** ("Possível cadastro duplicado"), com os nomes e as unidades. O que fazer: conferir os cadastros e registrar as próximas movimentações em um só.
+  - Nos dois motores, com caso no teste de paridade. Fica depois do consumo crescente na ordem, conta no resumo do topo ("cadastro para conferir") e aparece na tela Como funciona e no README.
+  - Não é gravado no banco nem enviado ao WhatsApp, como o consumo crescente; o tipo de alerta do banco não muda.
+  - Limite: nomes parecidos, mas diferentes, não são comparados, e o app não junta os cadastros.
+  - Testes: `alert-duplicate.spec.ts`, `parity.spec.ts` e `app.spec.ts` (RED antes de cada parte).
 
-**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, detecção de duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
+**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
 ---
 
