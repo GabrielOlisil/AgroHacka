@@ -22,10 +22,10 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     );
     const cargo = readFileSync(resolve(root, "src-tauri/Cargo.toml"), "utf-8");
     const lock = readFileSync(resolve(root, "src-tauri/Cargo.lock"), "utf-8");
-    // Tarefa 12.1: versão da final presencial (tag v1.1.3).
-    expect(config.version).toBe("1.1.3");
-    expect(cargo).toMatch(/^version = "1\.1\.3"$/m);
-    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.1\.3"/);
+    // Tarefa 12.1: versão da final presencial (tag v1.1.4).
+    expect(config.version).toBe("1.1.4");
+    expect(cargo).toMatch(/^version = "1\.1\.4"$/m);
+    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.1\.4"/);
   });
 
   it("sincronização cloud não exige script para abrir porta no firewall", () => {
