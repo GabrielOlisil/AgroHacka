@@ -734,6 +734,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - tabela de revisão humana do uso de IA: que parte, quem revisou e o que foi conferido;
   - registrar o retorno da 12.14.
 - [ ] **12.14. [EM CONJUNTO] Retorno do público (C4):** mostrar o app a pelo menos uma pessoa do público, como produtor, estudante ou professor de Agronomia, e registrar o retorno sem dados pessoais.
+  - **Não feita, por decisão da equipe (29/10).** As regras da final não exigem; no C4, contam a "validação apresentada" e o "reconhecimento de falhas e limites". Nenhuma finalista tinha retorno de quem usou o app.
+  - O README já diz que não houve retorno do público. Na sabatina: a validação foi técnica (teste-gabarito, paridade entre app e nuvem, offline num celular real); os limites dos alertas são parâmetros da equipe, e calibrá-los com a Agronomia é o primeiro próximo passo.
 
 **Prioridade 4 — apresentação e sabatina**
 - [ ] **12.15. [EM CONJUNTO] Apresentação de até 10 minutos:**
