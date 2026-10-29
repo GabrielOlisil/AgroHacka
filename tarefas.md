@@ -637,7 +637,22 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - `app.spec.ts`: formulário com mudança e sem mudança;
     - `manager-stock.spec.ts`: entrada pela aba Estoque resolve a falta do Diesel.
   - Resultado: cliente com 573 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
-- [ ] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
+- [x] **12.18. [DEV 2] Tela "Como funciona" (C1, C3 e C6):** explica em linguagem simples cada alerta, o limiar usado, de onde vem a conta e quais das sete perguntas do desafio cada tela responde. O conteúdo é estático e não muda a API.
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe, em `client/src/components/HowItWorks.vue`.
+  - Conteúdo:
+    - o que o app faz;
+    - tabela dos 8 alertas, com quando aparecem, prioridade e o que fazer;
+    - de onde vem a conta: uso médio, duração, quanto comprar, "Poucos dados", curva ABC, unidades e dados ausentes;
+    - em que ordem os alertas aparecem;
+    - os limites, escolhidos pela equipe e a ajustar com a Agronomia;
+    - as sete perguntas do desafio, com onde ver cada resposta no app.
+  - Acesso:
+    - no computador, item "Como funciona" no menu, para os dois perfis;
+    - no celular do gestor, pelo "Mais";
+    - para todos, inclusive o operador no celular, pelo link "Como os alertas são calculados" no painel de alertas.
+  - O teste de linguagem simples cobre a tela; "nuvem" foi trocada por "envia os registros".
+  - Testes em `app.spec.ts`: gestor pelo menu, operador pelo link, e os testes de navegação atualizados para o item novo.
+  - Resultado: cliente com 575 testes, checagem de tipos e build aprovados, mais as 4 falhas de empacotamento que já existiam.
 
 **Prioridade 3 — testes, código e documentação (C4 e C5)**
 - [ ] **12.9. [DEV 2] Testes do cliente na integração contínua:** hoje só a API roda testes no GitHub Actions.

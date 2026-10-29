@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
 import { summarizeAlerts } from "./alert-summary";
 import { describeAlertChanges } from "./alert-changes";
+import HowItWorks from "./components/HowItWorks.vue";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
@@ -389,7 +390,7 @@ function openOperators() {
 }
 // Tarefa 11.9: no celular, o gestor acessa Operadores e Cópias pelo "Mais".
 const showMore = ref(false);
-function chooseMore(next: "operators" | "backups") {
+function chooseMore(next: "operators" | "backups" | "help") {
   showMore.value = false;
   if (next === "operators") openOperators();
   else tab.value = next;
@@ -761,10 +762,19 @@ onUnmounted(() => {
         >
           <UiIcon name="database-backup" :size="18" /><span>Cópias</span></button
         ><button
+          class="nav-secondary"
+          :class="{ active: tab === 'help' }"
+          :aria-current="tab === 'help' ? 'page' : undefined"
+          @click="tab = 'help'"
+        >
+          <UiIcon name="info" :size="18" /><span>Como funciona</span></button
+        ><button
           v-if="session.role === 'GESTOR'"
           data-testid="more-nav"
           class="nav-more"
-          :class="{ active: tab === 'operators' || tab === 'backups' }"
+          :class="{
+            active: tab === 'operators' || tab === 'backups' || tab === 'help',
+          }"
           :aria-expanded="showMore"
           aria-controls="more-menu"
           @click="showMore = !showMore"
@@ -776,7 +786,9 @@ onUnmounted(() => {
         <button @click="chooseMore('operators')">
           <UiIcon name="users" :size="18" />Operadores</button
         ><button @click="chooseMore('backups')">
-          <UiIcon name="database-backup" :size="18" />Cópias
+          <UiIcon name="database-backup" :size="18" />Cópias</button
+        ><button @click="chooseMore('help')">
+          <UiIcon name="info" :size="18" />Como funciona
         </button>
       </div>
       <div class="sidebar-bottom">
@@ -846,7 +858,9 @@ onUnmounted(() => {
                     ? "Histórico de movimentações"
                     : tab === "operators"
                       ? "Operadores da fazenda"
-                      : "Cópias de segurança"
+                      : tab === "help"
+                        ? "Como funciona"
+                        : "Cópias de segurança"
             }}
           </h1>
           <p v-if="lastSync" class="muted">
@@ -983,6 +997,13 @@ onUnmounted(() => {
               <h2>Alertas prioritários</h2>
               <span class="badge">{{ analysis.alerts.length }} alertas</span>
             </div>
+            <button
+              class="text-button help-link"
+              data-testid="help-link"
+              @click="tab = 'help'"
+            >
+              <UiIcon name="info" /> Como os alertas são calculados
+            </button>
             <div v-if="!analysis.alerts.length" class="empty">
               <UiIcon name="circle-check" :size="24" />
               <h3>
@@ -1510,6 +1531,7 @@ onUnmounted(() => {
         </div>
         <p v-if="!movements.length" class="empty">Nenhuma movimentação.</p>
       </section>
+      <HowItWorks v-if="tab === 'help'" />
       <section v-if="tab === 'backups'" class="panel">
         <div class="section-heading">
           <div>
