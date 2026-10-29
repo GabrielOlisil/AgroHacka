@@ -61,7 +61,8 @@ const brDate = (isoDate: string) => isoDate.slice(0, 10).split('-').reverse().jo
 // Within a level: shortage stops the work first, expiry is a certain loss (tarefa 12.6).
 const TYPE_ORDER = { FALTA: 0, VENCIMENTO: 1, ANOMALIA: 2, CRESCENTE: 3, DUPLICADO: 4, PARADO: 5, EXCESSO: 6 };
 // Name without case, accents, spaces and symbols (tarefa 12.23).
-const nameKey = (nome: string) =>
+/** Nome sem maiúsculas, acentos, espaços e símbolos: compara cadastros duplicados. */
+export const nameKey = (nome: string) =>
   nome.normalize('NFD').toLocaleLowerCase('pt-BR').replace(/[^\p{L}\p{N}]/gu, '');
 const LEVEL_ORDER = { URGENTE: 0, ATENCAO: 1, INFORMATIVO: 2 };
 

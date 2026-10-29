@@ -41,6 +41,8 @@ describe('POST /products HTTP: real authentication and product service', () => {
     work({
       $queryRawUnsafe: async () => [{ id: 'farm' }],
       product: {
+        findMany: async ({ where }: any) =>
+          [...rows.values()].filter((row) => row.farmId === where.farmId),
         findFirst: async ({ where }: any) => {
           const row = rows.get(where.id);
           return row?.farmId === where.farmId ? row : null;
