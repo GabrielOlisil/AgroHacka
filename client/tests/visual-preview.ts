@@ -121,6 +121,14 @@ const operators = ref<PairedOperator[]>([
     createdAt: date(-5),
   },
 ]);
+const inactiveProducts = ref<Product[]>([]);
+function publishCatalog() {
+  analysis.value = analyzeInventory(
+    products.filter((p) => p.ativo !== false),
+    movements.value,
+  );
+  inactiveProducts.value = products.filter((p) => p.ativo === false);
+}
 const controller: Workspace = {
   operators,
   operatorsLoading: ref(false),
@@ -174,6 +182,28 @@ const controller: Workspace = {
     products.push(product);
     analysis.value = analyzeInventory(products, movements.value);
     return product;
+  },
+  inactiveProducts,
+  async updateProduct(id, patch) {
+    const index = products.findIndex((p) => p.id === id);
+    const changed: Product = {
+      ...products[index]!,
+      ...patch,
+      validade:
+        patch.validade === undefined
+          ? products[index]!.validade
+          : patch.validade && new Date(patch.validade).toISOString(),
+    } as Product;
+    products[index] = changed;
+    publishCatalog();
+    return changed;
+  },
+  async deleteProduct(id) {
+    const index = products.findIndex((p) => p.id === id);
+    const removed = { ...products[index]!, excluidoEm: date(0) };
+    products.splice(index, 1);
+    publishCatalog();
+    return removed;
   },
   async login() {
     session.value = gestor;

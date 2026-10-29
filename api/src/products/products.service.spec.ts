@@ -38,7 +38,13 @@ describe('ProductsService: create-only catalog', () => {
               code: 'P2002',
               clientVersion: '6',
             });
-          const row = { ...data, createdAt: date, updatedAt: date };
+          const row = {
+            ...data,
+            ativo: true,
+            excluidoEm: null,
+            createdAt: date,
+            updatedAt: date,
+          };
           rows.set(row.id, row);
           return row;
         }),
@@ -75,6 +81,8 @@ describe('ProductsService: create-only catalog', () => {
       validade: null,
       lote: null,
       fornecedor: null,
+      ativo: true,
+      excluidoEm: null,
       createdAt: date.toISOString(),
       updatedAt: date.toISOString(),
     });

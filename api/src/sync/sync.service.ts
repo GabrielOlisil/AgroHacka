@@ -167,7 +167,12 @@ export class SyncService {
           const product =
             movement &&
             (await tx.product.findFirst({
-              where: { id: movement.productId, farmId: identity.farmId },
+              // Insumo excluído recusa; desativado ainda recebe o fato.
+              where: {
+                id: movement.productId,
+                farmId: identity.farmId,
+                excluidoEm: null,
+              },
             }));
           let result: SyncReceiptDto;
           if (!movement || !product) {
@@ -289,6 +294,7 @@ export class SyncService {
       newProducts: products.map((p) => ({
         ...p,
         validade: p.validade?.toISOString() ?? null,
+        excluidoEm: p.excluidoEm?.toISOString() ?? null,
         updatedAt: p.updatedAt.toISOString(),
       })),
       divergences: [...balances]

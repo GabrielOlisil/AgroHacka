@@ -4,7 +4,11 @@ import { createWorkspace, type Workspace } from "./workspace";
 import { summarizeAlerts } from "./alert-summary";
 import { describeAlertChanges } from "./alert-changes";
 import HowItWorks from "./components/HowItWorks.vue";
-import type { PairingResponse } from "./offline/types";
+import type {
+  PairingResponse,
+  Product,
+  ProductInput,
+} from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
 import ProductForm from "./components/ProductForm.vue";
@@ -321,6 +325,52 @@ async function recordFromStock() {
   await record();
   if (feedback.value) showMovement.value = false;
   else movementError.value = error.value;
+}
+const inactiveProducts = computed(
+  () => workspace.inactiveProducts?.value ?? [],
+);
+const productName = (id: string) =>
+  [...analysis.value.products, ...inactiveProducts.value].find(
+    (p) => p.id === id,
+  )?.nome ?? id;
+const editingProduct = ref<Product | null>(null);
+const confirmingDelete = ref(false);
+const productError = ref("");
+// Com histórico, a unidade fica travada e o insumo só pode ser desativado.
+const editingHasMovements = computed(
+  () =>
+    !!editingProduct.value &&
+    movements.value.some((m) => m.productId === editingProduct.value!.id),
+);
+function openEdit(product: Product) {
+  editingProduct.value = product;
+  confirmingDelete.value = false;
+  productError.value = "";
+}
+function closeEdit() {
+  if (!busy.value) editingProduct.value = null;
+}
+async function saveProductEdit({ id: _id, ...patch }: ProductInput) {
+  await workspace.updateProduct(editingProduct.value!.id, patch);
+}
+function productEdited() {
+  editingProduct.value = null;
+  alertChanges.value = null;
+  feedback.value = "Insumo atualizado.";
+}
+async function changeProduct(action: () => Promise<unknown>, success: string) {
+  busy.value = true;
+  productError.value = "";
+  try {
+    await action();
+    editingProduct.value = null;
+    alertChanges.value = null;
+    feedback.value = success;
+  } catch (cause) {
+    productError.value = cause instanceof Error ? cause.message : String(cause);
+  } finally {
+    busy.value = false;
+  }
 }
 function productSaved() {
   showProduct.value = false;
@@ -1484,6 +1534,16 @@ onUnmounted(() => {
                     >
                       <UiIcon name="arrow-up-right" />Saída
                     </button>
+                    <button
+                      v-if="session.role === 'GESTOR'"
+                      class="secondary"
+                      :data-testid="`editar-${p.id}`"
+                      :aria-label="`Editar ${p.nome}`"
+                      :disabled="busy"
+                      @click="openEdit(p)"
+                    >
+                      <UiIcon name="pencil" />Editar
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -1499,6 +1559,42 @@ onUnmounted(() => {
           :pagination="stockPagination"
           label="insumos"
         />
+        <section
+          v-if="session.role === 'GESTOR' && inactiveProducts.length"
+          class="inactive-products"
+          data-testid="inactive-products"
+          aria-labelledby="inactive-title"
+        >
+          <h3 id="inactive-title">
+            Insumos desativados ({{ inactiveProducts.length }})
+          </h3>
+          <p class="helper">
+            Ficam fora da lista, das retiradas e dos alertas. O histórico
+            continua guardado.
+          </p>
+          <ul>
+            <li v-for="p in inactiveProducts" :key="p.id">
+              <span
+                ><strong>{{ p.nome }}</strong
+                ><small>{{ p.categoria }}</small></span
+              >
+              <button
+                class="secondary"
+                :data-testid="`reativar-${p.id}`"
+                :aria-label="`Reativar ${p.nome}`"
+                :disabled="busy"
+                @click="
+                  act(
+                    () => workspace.updateProduct(p.id, { ativo: true }),
+                    'Insumo reativado.',
+                  )
+                "
+              >
+                Reativar
+              </button>
+            </li>
+          </ul>
+        </section>
       </section>
       <section v-if="tab === 'history'" class="panel history-panel">
         <div class="section-heading">
@@ -1522,10 +1618,7 @@ onUnmounted(() => {
               <tr v-for="m in historyPagination.items" :key="m.id">
                 <td>{{ formatDate(m.dataMovimento) }}</td>
                 <td data-label="Insumo">
-                  {{
-                    analysis.products.find((p) => p.id === m.productId)?.nome ??
-                    m.productId
-                  }}
+                  {{ productName(m.productId) }}
                 </td>
                 <td data-label="Movimento">
                   <span
@@ -1651,6 +1744,107 @@ onUnmounted(() => {
           :save="workspace.createProduct"
           @saved="productSaved"
         />
+      </section>
+    </div>
+    <div
+      v-if="editingProduct && session.role === 'GESTOR'"
+      class="modal-backdrop"
+      @click.self="closeEdit"
+      @keydown.esc="closeEdit"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-product-title"
+        class="modal product-modal"
+      >
+        <button
+          class="modal-close"
+          aria-label="Fechar edição"
+          :disabled="busy"
+          @click="closeEdit"
+        >
+          <UiIcon name="x" />
+        </button>
+        <h2 id="edit-product-title">Editar insumo</h2>
+        <p class="muted">Precisa de internet para salvar.</p>
+        <ProductForm
+          :key="editingProduct.id"
+          :categories="categories"
+          :product="editingProduct"
+          :lock-unit="editingHasMovements"
+          :save="saveProductEdit"
+          @saved="productEdited"
+        />
+        <div class="product-danger">
+          <p v-if="productError" class="notice error" role="alert">
+            {{ productError }}
+          </p>
+          <template v-if="editingHasMovements">
+            <p class="helper">
+              Tem movimentações no histórico, então não pode ser excluído.
+              Desativado, sai da lista, das retiradas e dos alertas, e pode ser
+              reativado depois.
+            </p>
+            <button
+              class="secondary"
+              data-testid="deactivate-product"
+              :disabled="busy"
+              @click="
+                changeProduct(
+                  () =>
+                    workspace.updateProduct(editingProduct!.id, {
+                      ativo: false,
+                    }),
+                  'Insumo desativado. Ele fica em Insumos desativados, no fim do Estoque.',
+                )
+              "
+            >
+              Desativar insumo
+            </button>
+          </template>
+          <template v-else-if="!confirmingDelete">
+            <p class="helper">
+              Sem movimentações, pode ser excluído, como um cadastro duplicado.
+            </p>
+            <button
+              class="secondary"
+              data-testid="delete-product"
+              :disabled="busy"
+              @click="confirmingDelete = true"
+            >
+              Excluir insumo
+            </button>
+          </template>
+          <template v-else>
+            <p>
+              <strong>Excluir {{ editingProduct.nome }}?</strong> Não dá para
+              desfazer.
+            </p>
+            <div class="stock-actions">
+              <button
+                class="secondary"
+                :disabled="busy"
+                @click="confirmingDelete = false"
+              >
+                Cancelar
+              </button>
+              <button
+                class="primary"
+                data-testid="confirm-delete-product"
+                :disabled="busy"
+                @click="
+                  changeProduct(
+                    () => workspace.deleteProduct(editingProduct!.id),
+                    'Insumo excluído.',
+                  )
+                "
+              >
+                {{ busy ? "Excluindo…" : "Excluir insumo" }}
+              </button>
+            </div>
+          </template>
+        </div>
       </section>
     </div>
     <div

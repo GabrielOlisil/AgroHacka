@@ -1550,3 +1550,38 @@ td small {
   align-items: center;
   gap: var(--space-2);
 }
+
+/* Edição de insumo: zona de desativar/excluir e lista de desativados. */
+.product-danger {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.inactive-products {
+  margin-top: var(--space-6);
+}
+.inactive-products ul {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+.inactive-products li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+.inactive-products li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.inactive-products small {
+  display: block;
+  color: var(--text-secondary);
+}

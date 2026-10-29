@@ -1,46 +1,62 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { parseProductInput, type ProductInput } from "../offline/types";
+import {
+  parseProductInput,
+  type Product,
+  type ProductInput,
+} from "../offline/types";
 import UiIcon from "./UiIcon.vue";
 import { openPicker } from "../open-picker";
 
 const props = defineProps<{
   categories: string[];
   save: (input: ProductInput) => Promise<unknown>;
+  /** Com produto, o formulário edita esse cadastro em vez de criar outro. */
+  product?: Product;
+  lockUnit?: boolean;
 }>();
 const emit = defineEmits<{ saved: [] }>();
-const nome = ref("");
-const categoria = ref("");
-const unidadeMedida = ref("kg");
-const estoqueMinimo = ref<number | "">(0);
-const precoAquisicao = ref<number | "">("");
-const validade = ref("");
-const lote = ref("");
-const fornecedor = ref("");
+const editing = props.product;
+const nome = ref(editing?.nome ?? "");
+const categoria = ref(editing?.categoria ?? "");
+const unidadeMedida = ref(editing?.unidadeMedida ?? "kg");
+const estoqueMinimo = ref<number | "">(editing?.estoqueMinimo ?? 0);
+const precoAquisicao = ref<number | "">(editing?.precoAquisicao ?? "");
+const validade = ref(editing?.validade?.slice(0, 10) ?? "");
+const lote = ref(editing?.lote ?? "");
+const fornecedor = ref(editing?.fornecedor ?? "");
 const saving = ref(false);
 const error = ref("");
 const submitted = ref(false);
-const id = crypto.randomUUID();
+const id = editing?.id ?? crypto.randomUUID();
 let pending: ProductInput | undefined;
 async function submit() {
   if (saving.value) return;
   error.value = "";
   try {
-    pending ??= parseProductInput({
-      id,
-      nome: nome.value,
-      categoria: categoria.value,
-      unidadeMedida: unidadeMedida.value,
-      estoqueMinimo: estoqueMinimo.value,
-      precoAquisicao: precoAquisicao.value === "" ? null : precoAquisicao.value,
-      validade: validade.value || null,
-      ...(lote.value.trim() ? { lote: lote.value.trim() } : {}),
-      ...(fornecedor.value.trim()
-        ? { fornecedor: fornecedor.value.trim() }
-        : {}),
-    });
+    const input = () =>
+      parseProductInput({
+        id,
+        nome: nome.value,
+        categoria: categoria.value,
+        unidadeMedida: unidadeMedida.value,
+        estoqueMinimo: estoqueMinimo.value,
+        precoAquisicao:
+          precoAquisicao.value === "" ? null : precoAquisicao.value,
+        validade: validade.value || null,
+        // Na edição, campo apagado vira null para apagar no servidor.
+        ...(lote.value.trim() || editing
+          ? { lote: lote.value.trim() || null }
+          : {}),
+        ...(fornecedor.value.trim() || editing
+          ? { fornecedor: fornecedor.value.trim() || null }
+          : {}),
+      });
+    // O cadastro novo repete o mesmo conteúdo na nova tentativa; a edição não.
+    if (editing) pending = input();
+    else pending ??= input();
     saving.value = true;
-    submitted.value = true;
+    submitted.value = !editing;
     await props.save(pending);
     emit("saved");
   } catch (cause) {
@@ -87,7 +103,11 @@ async function submit() {
             list="product-units"
             required
             maxlength="20"
-        /></label>
+            :disabled="lockUnit"
+          /><small v-if="lockUnit" class="helper"
+            >A unidade não muda depois da primeira movimentação.</small
+          ></label
+        >
         <datalist id="product-units">
           <option
             v-for="unit in ['kg', 'L', 'un', 'saca', 'm', 'm²', 'm³']"
@@ -149,7 +169,9 @@ async function submit() {
           ? "Salvando…"
           : error && submitted
             ? "Tentar novamente"
-            : "Cadastrar insumo"
+            : editing
+              ? "Salvar alterações"
+              : "Cadastrar insumo"
       }}
     </button>
   </form>

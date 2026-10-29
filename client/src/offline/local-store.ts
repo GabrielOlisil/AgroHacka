@@ -20,6 +20,15 @@ const upsertProduct = (p: Product): Statement => ({
   sql: "INSERT INTO products(id, farm_id, payload) VALUES (?, ?, ?) ON CONFLICT(farm_id, id) DO UPDATE SET payload=excluded.payload",
   values: [p.id, p.farmId, JSON.stringify(p)],
 });
+// Vai no fim da transação: só apaga o excluído que nenhuma movimentação local
+// ainda referencia; senão a cópia fica com a marca e a tela a ignora.
+const removeDeleted = (products: Product[]): Statement[] =>
+  products
+    .filter((p) => p.excluidoEm)
+    .map((p) => ({
+      sql: "DELETE FROM products WHERE farm_id=? AND id=? AND NOT EXISTS (SELECT 1 FROM movements WHERE farm_id=? AND product_id=?)",
+      values: [p.farmId, p.id, p.farmId, p.id],
+    }));
 const upsertMovement = (m: Movement): Statement => ({
   sql: "INSERT INTO movements(id, farm_id, product_id, payload) VALUES (?, ?, ?, ?) ON CONFLICT(farm_id, id) DO UPDATE SET payload=excluded.payload",
   values: [m.id, m.farmId, m.productId, JSON.stringify(m)],
@@ -115,7 +124,10 @@ export class LocalStore {
     return this.write(async () => {
       // A sessão pode mudar enquanto a operação aguarda outra escrita local.
       if (!isCurrent()) throw new Error("Sessão alterada durante o cadastro.");
-      await this.database.transaction(safeProducts.map(upsertProduct));
+      await this.database.transaction([
+        ...safeProducts.map(upsertProduct),
+        ...removeDeleted(safeProducts),
+      ]);
     });
   }
   async recordMovement(
@@ -248,6 +260,7 @@ export class LocalStore {
           sql: "INSERT INTO app_config(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
           values: [key!, value!],
         });
+      statements.push(...removeDeleted(response.newProducts));
       await this.database.transaction(statements);
     });
   }
@@ -271,6 +284,7 @@ export class LocalStore {
           sql: "DELETE FROM sync_outbox WHERE farm_id=? AND id=?",
           values: [farmId, id],
         });
+      statements.push(...removeDeleted(safeProducts));
       await this.database.transaction(statements);
     });
   }
