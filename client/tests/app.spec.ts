@@ -179,6 +179,31 @@ describe("resumo no topo da Visão geral (tarefa 12.20)", () => {
     empty.unmount();
   });
 });
+describe("destaque do “O que fazer” no alerta", () => {
+  const mountWith = (justificativa: string) => {
+    const state = controller("GESTOR");
+    state.analysis.value.products = [{ id: "p", nome: "Ureia", unidadeMedida: "sc", saldo: 5 }] as never;
+    state.analysis.value.alerts = [
+      { id: "FALTA:p", productId: "p", tipo: "FALTA", nivel: "URGENTE", titulo: "Ureia · Reposição", justificativa },
+    ] as never;
+    return mount(App, { props: { controller: state as never } });
+  };
+
+  it("quebra a linha antes do “O que fazer:” e o deixa em negrito", () => {
+    const wrapper = mountWith("Restam 5 sc. O que fazer: comprar cerca de 83 sc para 30 dias de uso.");
+    const text = wrapper.get(".alert-card p");
+    expect(text.html()).toContain("Restam 5 sc.<br><strong>O que fazer:</strong> comprar cerca de 83 sc para 30 dias de uso.");
+    wrapper.unmount();
+  });
+
+  it("sem “O que fazer:”, o texto aparece como antes", () => {
+    const wrapper = mountWith("Restam 5 sc.");
+    const text = wrapper.get(".alert-card p");
+    expect(text.text()).toBe("Restam 5 sc.");
+    expect(text.find("strong").exists()).toBe(false);
+    wrapper.unmount();
+  });
+});
 function withDiesel(state: ReturnType<typeof controller>, saldo = 10) {
   state.analysis.value.products = [
     { id: "p", nome: "Diesel", unidadeMedida: "L", saldo },
