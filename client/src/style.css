@@ -684,6 +684,34 @@ nav button.active {
 .alert-changes p {
   margin: var(--space-2) 0 0;
 }
+/* "Como funciona" screen and its link from the alerts panel (tarefa 12.18). */
+.how-it-works {
+  display: grid;
+  gap: var(--space-4);
+}
+.how-it-works h2 {
+  margin-top: 0;
+}
+.how-it-works li + li {
+  margin-top: var(--space-2);
+}
+.how-it-works .table-scroll {
+  overflow-x: auto;
+}
+.how-it-works table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.how-it-works th,
+.how-it-works td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.help-link {
+  margin-bottom: var(--space-3);
+}
 /* One-sentence summary for the manager (tarefa 12.20). */
 .alert-summary {
   margin: 0 0 var(--space-4);
