@@ -37,6 +37,13 @@ describe("README da versão final (tarefa 12.13)", () => {
     expect(readme).toMatch(/Retorno do público/);
   });
 
+  it("identifica a versão avaliada pela tag da final (tarefa 12.1)", () => {
+    const version = readme.slice(readme.indexOf("## 10."));
+    expect(version).toContain("**1.1.0**");
+    expect(version).toContain("releases/tag/v1.1.0-final");
+    expect(version).not.toContain("android-build-21");
+  });
+
   it("aponta a data e o local certos da final", () => {
     expect(readme).toContain("30 de outubro de 2026");
     expect(readme).not.toContain("29 de outubro de 2026");
