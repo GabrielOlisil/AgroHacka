@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { createWorkspace, type Workspace } from "./workspace";
 import { summarizeAlerts } from "./alert-summary";
+import { describeAlertChanges } from "./alert-changes";
 import type { PairingResponse } from "./offline/types";
 import UiIcon from "./components/UiIcon.vue";
 import OperatorsPanel from "./components/OperatorsPanel.vue";
@@ -166,10 +167,13 @@ function localDateTime() {
     .toISOString()
     .slice(0, 16);
 }
+// What the last record changed in the alerts (tarefa 12.17); null when it does not apply.
+const alertChanges = ref<string[] | null>(null);
 async function act(action: () => Promise<unknown>, success = "") {
   busy.value = true;
   feedback.value = "";
   error.value = "";
+  alertChanges.value = null;
   try {
     await action();
     feedback.value = success;
@@ -201,6 +205,7 @@ async function authenticate() {
 }
 async function record() {
   await act(async () => {
+    const before = analysis.value.alerts;
     await workspace.record({
       productId: productId.value,
       tipo: kind.value,
@@ -211,6 +216,7 @@ async function record() {
       ).toISOString(),
       ...(destination.value ? { destino: destination.value } : {}),
     });
+    alertChanges.value = describeAlertChanges(before, analysis.value.alerts);
     quantity.value = "";
     destination.value = "";
     movementDate.value = localDateTime();
@@ -306,6 +312,7 @@ function productSaved() {
   search.value = "";
   category.value = "";
   stockStatus.value = "";
+  alertChanges.value = null;
   feedback.value =
     "Insumo cadastrado. Registre uma entrada para adicionar saldo.";
 }
@@ -863,6 +870,18 @@ onUnmounted(() => {
       <p v-if="feedback" class="notice success" role="status">
         <UiIcon name="circle-check" /><span>{{ feedback }}</span>
       </p>
+      <div
+        v-if="feedback && alertChanges"
+        class="alert-changes"
+        data-testid="alert-changes"
+        aria-live="polite"
+      >
+        <strong>O que mudou na análise</strong>
+        <ul v-if="alertChanges.length">
+          <li v-for="(line, i) in alertChanges" :key="i">{{ line }}</li>
+        </ul>
+        <p v-else>Nenhum alerta mudou com este registro.</p>
+      </div>
       <section
         v-if="reviews.length"
         class="panel"
@@ -1149,6 +1168,18 @@ onUnmounted(() => {
                 <p v-if="formFeedback" class="notice success" role="status">
                   <UiIcon name="circle-check" /><span>{{ formFeedback }}</span>
                 </p>
+                <div
+                  v-if="formFeedback && alertChanges"
+                  class="alert-changes"
+                  data-testid="alert-changes"
+                  aria-live="polite"
+                >
+                  <strong>O que mudou na análise</strong>
+                  <ul v-if="alertChanges.length">
+                    <li v-for="(line, i) in alertChanges" :key="i">{{ line }}</li>
+                  </ul>
+                  <p v-else>Nenhum alerta mudou com este registro.</p>
+                </div>
                 <p v-if="formError" class="notice error" role="alert">
                   <UiIcon name="circle-alert" /><span>{{ formError }}</span>
                 </p>
