@@ -75,9 +75,14 @@ export interface Product {
   validade: string | null;
   lote?: string | null;
   fornecedor?: string | null;
+  /** false: desativado; fica fora da lista, das retiradas e dos alertas. */
+  ativo?: boolean;
+  /** Excluído pelo gestor; a cópia local é apagada quando possível. */
+  excluidoEm?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
+export type UpdateProductInput = components["schemas"]["UpdateProductDto"];
 /** UUID pertence ao modal e permanece estável em todas as tentativas. */
 type CreateProductDto = components["schemas"]["CreateProductDto"];
 export type ProductInput = Omit<
@@ -387,6 +392,12 @@ export function parseProduct(value: unknown, farmId?: string): Product {
   for (const key of ["lote", "fornecedor"] as const)
     if (p[key] !== undefined)
       result[key] = p[key] === null ? null : String(p[key]);
+  if (p.ativo !== undefined) {
+    if (typeof p.ativo !== "boolean") throw new Error("Situação inválida.");
+    result.ativo = p.ativo;
+  }
+  if (p.excluidoEm !== undefined)
+    result.excluidoEm = p.excluidoEm === null ? null : date(p.excluidoEm);
   if (p.updatedAt !== undefined) result.updatedAt = date(p.updatedAt);
   if (p.createdAt !== undefined) result.createdAt = date(p.createdAt);
   return result;

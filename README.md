@@ -85,7 +85,7 @@ O **Paiol** é uma plataforma híbrida **Offline-First**, estruturada para garan
 ### 3.2. Destaques da Implementação
 - **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico de 6 caracteres gerado pelo Gestor).
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
-- **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações.
+- **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações. O gestor edita o cadastro (`PATCH /products/:id`), desativa e reativa o insumo com histórico e exclui o que não tem movimentações (`DELETE /products/:id`, exclusão lógica levada aos celulares pelo sync). A unidade não muda depois da primeira movimentação. Desativados e excluídos saem da lista, das retiradas e dos alertas; o histórico fica.
 - **Gestão de Operadores:** O gestor edita nomes, ativa/desativa acesso e exclui operadores da própria fazenda, com confirmação. Movimentações preservam somente o nome histórico do responsável, sem FK ao operador. O aplicativo Desktop/Android fica exclusivamente em `client/`.
 - **Protocolo de Sincronização Confiável (v2):** Outbox transacional com UUIDs imutáveis, recibos individuais auditáveis, idempotência e tratamento explícito de divergências de saldo sem descartar fatos físicos.
 - **Backup Automático Estilo Anki:** Snapshots atômicos locais via `VACUUM INTO`, retenção automática de 7 dias e restauração garantida em 1 clique.
@@ -277,8 +277,8 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
-- **API NestJS:** 386 testes unitários e de HTTP aprovados em 29/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 27/10.
-- **Desktop/Mobile (Tauri + Vue):** 613 testes Vitest aprovados em 29/10, cobrindo cadastro, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
+- **API NestJS:** 407 testes unitários e de HTTP aprovados em 29/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 29/10.
+- **Desktop/Mobile (Tauri + Vue):** 637 testes Vitest aprovados em 29/10, cobrindo cadastro, edição, desativação e exclusão de insumos, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
 - **Integração contínua:** o GitHub Actions roda os testes da API e os testes e a checagem de tipos do app a cada push e Pull Request na `dev` e na `main` ([`ci.yml`](.github/workflows/ci.yml)).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 - **Em aparelho real:** o modo offline (registro em modo avião, "Esperando envio" e envio ao reconectar), o pareamento por QR Code e o WhatsApp foram testados pela equipe num celular Motorola g75 5G (Android 16) e gravados no vídeo de 28/10. Não há medições de desempenho.
@@ -295,7 +295,7 @@ Em conformidade com as diretrizes acadêmicas do IFRO, documentamos com clareza 
 7. **WhatsApp na conta de testes da Twilio:** a mensagem chega com o texto do modelo pré-aprovado da Twilio; o alerta completo (insumo, nível, diagnóstico) fica no app. Detalhes na seção 4.4.
 8. **Previsão simples:** a duração usa a média dos últimos 30 dias, sem considerar a cultura nem a época do ano. Os limites dos alertas são parâmetros da equipe (seção 5.1), ainda não calibrados com a Agronomia.
 9. **Sem importação de planilha:** os dados entram pelo app (cadastro e movimentações) ou pela carga de demonstração reproduzível.
-10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes e variação de preço entre compras não são tratados. Cadastros duplicados só são detectados quando o nome é o mesmo sem contar maiúsculas, acentos, espaços e símbolos; nomes parecidos, como "Ureia" e "Uréia granulada", não são comparados, e o app não junta os cadastros sozinho.
+10. **Lote, validade e preço por produto:** cada insumo tem um lote, uma validade e um preço vigentes. Lotes com validades diferentes e variação de preço entre compras não são tratados. Cadastros duplicados só são detectados quando o nome é o mesmo sem contar maiúsculas, acentos, espaços e símbolos; nomes parecidos, como "Ureia" e "Uréia granulada", não são comparados. O app não junta os cadastros: o gestor exclui o duplicado sem movimentações ou desativa o que já tem histórico, e as movimentações não mudam de um cadastro para o outro.
 11. **Sem retorno do público:** ver seção 7.1.
 
 ---
@@ -340,12 +340,13 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada na final:** **1.1.3**, tag [`v1.1.3`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.3), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
+- **Versão avaliada na final:** **1.1.4**, tag [`v1.1.4`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.4), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
   - Traz as melhorias da Etapa 12 (final presencial):
     - todo alerta diz o que fazer, incluindo quanto comprar para 30 dias e o custo; no app, o "O que fazer" aparece em linha própria, em negrito (1.1.1);
     - alertas do mais grave para o menos grave e resumo no topo para o gestor;
     - fora do padrão em toda a janela de 30 dias e alerta de consumo crescente;
     - alerta de possível cadastro duplicado (1.1.3);
+    - editar, desativar e excluir insumo pelo Estoque (1.1.4);
     - "o que mudou" depois de cada registro;
     - tela Como funciona;
     - paginação no Histórico, no Estoque e nos Operadores, com escolha de 10, 25, 50 ou 100 itens por página (1.1.2);
@@ -353,8 +354,8 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - nome Paiol;
     - testes do app no CI.
 - **Versão do vídeo de 28/10:** app 1.0.4, release `android-build-22` (a primeira com Windows, Android e Linux juntos), com as melhorias de uso no celular da Etapa 11. O roteiro antigo citava a tag `v1.0.4-entrega`, que nunca foi criada.
-- **Versões anteriores:** `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
-- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.3`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
+- **Versões anteriores:** `v1.1.3` (29/10, igual à 1.1.4 sem editar, desativar e excluir insumo), `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
+- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.4`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
 - **Vídeo final da entrega:** [demonstração no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 - **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)

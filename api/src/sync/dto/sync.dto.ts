@@ -36,6 +36,10 @@ export class SyncProductDto {
   validade!: string | null;
   lote!: string | null;
   fornecedor!: string | null;
+  /** false: desativado; some da lista, das retiradas e dos alertas. */
+  ativo!: boolean;
+  /** Preenchido quando o insumo foi excluído; o celular apaga a cópia local. */
+  excluidoEm!: string | null;
   updatedAt!: string;
 }
 

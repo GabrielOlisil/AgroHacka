@@ -59,10 +59,10 @@ describe('StockService: análise pelo motor completo (tarefa 10.3)', () => {
   });
 
   describe('analyzeStock', () => {
-    it('busca só a fazenda pedida', async () => {
+    it('busca só a fazenda pedida, sem insumos desativados ou excluídos', async () => {
       await stockService.analyzeStock(farmId, NOW);
       expect(prisma.product.findMany).toHaveBeenCalledWith({
-        where: { farmId },
+        where: { farmId, ativo: true, excluidoEm: null },
         include: { movements: true },
       });
     });

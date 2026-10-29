@@ -96,6 +96,10 @@ model Product {
   validade       DateTime?
   lote           String?
   fornecedor     String?
+  /// Desativado: some da lista, das retiradas e dos alertas; o histórico fica.
+  ativo          Boolean   @default(true)
+  /// Exclusão lógica, só sem movimentações; o sync leva a exclusão aos celulares.
+  excluidoEm     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
