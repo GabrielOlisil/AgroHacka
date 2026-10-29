@@ -515,7 +515,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     2. PR #130, da `dev` para a `main`;
     3. tag `v1.1.0-final` no commit `fcd6266` da `main`;
     4. release conferida, com `.exe`, `.msi`, `app-portable.exe`, `.apk` e `.AppImage` da versão 1.1.0.
-  - **Falta:** informar a tag à organização.
+  - Em 29/10, a pedido do Kauê, o "O que fazer" passou para linha própria, em negrito (PR #133). Para entrar na versão avaliada: app **1.1.1** e tag nova `v1.1.1-final`; a `v1.1.0-final` fica como versão anterior.
+  - **Falta:** informar a tag `v1.1.1-final` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
