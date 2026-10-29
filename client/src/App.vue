@@ -547,7 +547,7 @@ onUnmounted(() => {
     <section class="welcome-story">
       <a class="brand" href="#"
         ><span class="brand-icon"><UiIcon name="tractor" :size="24" /></span>
-        AgroHacka</a
+        Paiol</a
       >
       <div>
         <span class="eyebrow">GESTÃO RURAL · DO CAMPO À DECISÃO</span>
@@ -706,7 +706,7 @@ onUnmounted(() => {
         </form>
       </div>
       <small
-        >AgroHack 2026 · Gestão inteligente de insumos rurais · versão
+        >Paiol · Gestão inteligente de insumos rurais · versão
         {{ APP_VERSION }}</small
       >
     </section>
@@ -715,7 +715,7 @@ onUnmounted(() => {
     <aside class="sidebar">
       <a class="brand" href="#" @click.prevent="tab = 'overview'"
         ><span class="brand-icon"><UiIcon name="tractor" :size="24" /></span>
-        AgroHacka</a
+        Paiol</a
       >
       <div class="farm-card">
         <span class="eyebrow">SUA PROPRIEDADE</span
@@ -1584,7 +1584,7 @@ onUnmounted(() => {
           }
         "
       />
-      <footer class="page-footer">AgroHacka · versão {{ APP_VERSION }}</footer>
+      <footer class="page-footer">Paiol · versão {{ APP_VERSION }}</footer>
     </main>
     <div
       v-if="productStarted && session.role === 'GESTOR'"

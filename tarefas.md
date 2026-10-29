@@ -524,6 +524,11 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Escolher em conjunto. Sugestões: **Paiol** (o depósito da fazenda), **Tulha**, **Celeiro** e **Galpão em Dia**.
   - Aplicar na tela de entrada, no título da janela, no `productName` do Tauri, no README, nos slides e no roteiro.
   - **Não mudar o `identifier` do Tauri.** Ele define onde fica o banco local; trocar faria a instalação por cima perder os dados do aparelho. Conferir com teste antes do merge.
+  - **Nome escolhido em 28/10: Paiol** (o depósito da fazenda onde se guardam grãos, sementes e insumos).
+  - Aplicado pelo DEV 1, a pedido da equipe: marca da tela de entrada e do menu, rodapé ("Paiol · versão …"), título da página (`index.html`) e título da janela (`tauri.conf.json`).
+  - **`productName` mantido como `agrohacka`, de propósito:** no Windows ele define a pasta de instalação, e trocá-lo faria a versão nova ser instalada ao lado da antiga, como outro programa. Por isso só o nome do arquivo do instalador continua `agrohacka_…`. O `identifier` não mudou.
+  - Testes em `app.spec.ts`: marca, rodapé, título, `productName` e `identifier`. Cliente com 583 testes, checagem de tipos e build aprovados.
+  - Falta: o README (12.13) e os slides (12.21).
 
 **Prioridade 2 — análises e apoio à decisão (C3, peso 20 e primeiro desempate)**
 - [x] **12.5. [DEV 1] Ação recomendada em todos os alertas:** cada alerta termina com o que fazer. A mudança vale nos dois motores; a tela já mostra o texto do alerta.
