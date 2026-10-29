@@ -39,9 +39,9 @@ describe("README da versão final (tarefa 12.13)", () => {
 
   it("identifica a versão avaliada pela tag da final (tarefa 12.1)", () => {
     const version = readme.slice(readme.indexOf("## 10."));
-    expect(version).toContain("**1.1.2**");
+    expect(version).toContain("**1.1.3**");
     // Tags só com a versão, sem sufixo.
-    expect(version).toContain("releases/tag/v1.1.2)");
+    expect(version).toContain("releases/tag/v1.1.3)");
     expect(version).not.toMatch(/releases\/tag\/v[\d.]+-final/);
     expect(version).not.toContain("android-build-21");
   });
