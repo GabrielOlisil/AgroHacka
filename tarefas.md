@@ -698,7 +698,20 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
     - `api/README.md` reescrito: o que a API faz, os comandos reais do `package.json`, onde está cada parte e links para as seções do README principal.
   - Teste: `client/tests/template-leftovers.spec.ts` falhava com os restos (RED) e passou depois da remoção.
   - Resultado: cliente com 557 testes, checagem de tipos e build aprovados (mais as 4 falhas de empacotamento que já existiam, da 12.9).
-- [ ] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
+- [x] **12.13. [DEV 2] README** (com os textos de regras que o DEV 1 deixa na descrição dos PRs das tarefas 12.5 a 12.7):
+  - Feito em 28/10 pelo DEV 1, a pedido da equipe. Mudanças:
+    - nome Paiol no título;
+    - instruções locais completas: `.env`, PostgreSQL por Docker, `prisma migrate deploy` antes da carga e a senha `agro1234` só para o banco local;
+    - regras novas (fora do padrão na janela, consumo crescente, o que fazer, quanto comprar, ordem dos alertas e "o que mudou");
+    - origem dos limites: parâmetros da equipe, sem referência publicada, a calibrar com a Agronomia;
+    - saíram "sazonalidade", "Detecção Estatística", "anomalia grave" e o "desvio estatístico" do roteiro;
+    - correção de "desapercebidos" e da frase herdada da IA ("O usuário confirmou…");
+    - testes atualizados (API 385, app 589, CI), teste-gabarito, uso em aparelho real e a falta de retorno do público;
+    - novas limitações: previsão, importação, lote/preço por produto e retorno do público;
+    - tabela de revisão humana do uso de IA;
+    - data e local da final.
+  - A seção 10 (versão de entrega) fica para a 12.1, junto com a tag.
+  - Teste: `client/tests/readme.spec.ts` (6 testes, RED antes das correções).
   - instruções locais completas: `.env`, subir o PostgreSQL e aplicar as migrations antes da carga;
   - origem dos limiares: dizer que são parâmetros da equipe, ou citar referências;
   - tirar o que vai além do código: "sazonalidade", "detecção estatística" e anomalia "grave", que no app é atenção;
