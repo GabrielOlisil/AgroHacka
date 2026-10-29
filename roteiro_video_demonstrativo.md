@@ -2,7 +2,7 @@
 
 **Equipe:** Oliveira & Oliveira | Gabriel de Oliveira Silva & Kauê Rian Silva Conceição Oliveira
 **Protocolo:** AGRO26-F009CD2F9F | ADS 6º Período — IFRO Campus Ariquemes
-**Versão demonstrada:** `v1.0.4-entrega` ([Releases](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.0.4-entrega))
+**Versão demonstrada no vídeo de 28/10:** app 1.0.4, release [`android-build-22`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/android-build-22). A tag `v1.0.4-entrega`, citada antes neste roteiro, nunca foi criada. A versão avaliada na final é a `v1.1.0-final` (README, seção 10).
 **Meta de duração:** 5 a 7 minutos (o regulamento não fixa limite; a tarefa 8.1 previa 3 a 5)
 **Entrega:** YouTube como **Não listado** → link para a coordenação **até 27/10, 22h (horário de Ariquemes)** → link no README
 
@@ -31,7 +31,7 @@ O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração d
 ## 2. Pré-requisitos (faça antes de começar a gravar)
 
 ### 2.1 Software e aparelhos
-- [ ] **Notebook com Windows** e o instalador da `v1.0.4-entrega` instalado (`agrohacka_1.0.4_x64-setup.exe` da página de Releases).
+- [ ] **Notebook com Windows** e o instalador da release `android-build-22` instalado (`agrohacka_1.0.4_x64-setup.exe` da página de Releases).
 - [ ] **Celular Android** com o `app-universal-debug.apk` da mesma release instalado. Se já houver uma versão antiga, instale por cima.
   - O celular precisa começar **sem estar pareado**, para gravar a Cena 6. Se já estiver conectado, toque em **Sair** no app antes de gravar.
 - [ ] **OBS Studio** (gratuito) configurado com captura da tela inteira (1920×1080) e microfone.
@@ -229,7 +229,7 @@ Legenda: **🖱️ Ação** é o que fazer na tela. As falas em itálico são su
 1. **Editar:** juntar as cenas na ordem, cortar silêncios e erros. O DaVinci Resolve é gratuito.
 2. **Subir no YouTube** como **Não listado**.
    - Título sugerido: `AgroHack 2026 — Oliveira & Oliveira (AGRO26-F009CD2F9F) — Vídeo demonstrativo`
-   - Descrição sugerida: `Demonstração do AgroHack: gestão inteligente de insumos rurais com alertas, funcionamento offline, sincronização com reanálise e aviso por WhatsApp. Repositório: https://github.com/GabrielOlisil/AgroHacka — Versão demonstrada: v1.0.4-entrega. Dados simulados criados pela equipe.`
+   - Descrição sugerida: `Demonstração do AgroHack: gestão inteligente de insumos rurais com alertas, funcionamento offline, sincronização com reanálise e aviso por WhatsApp. Repositório: https://github.com/GabrielOlisil/AgroHacka — Versão demonstrada: 1.0.4 (release android-build-22). Dados simulados criados pela equipe.`
    - Ative as legendas automáticas, se possível.
 3. **Testar o link** numa janela anônima, para garantir que abre sem login.
 4. **Enviar o link para a coordenação** até **22h (horário de Ariquemes)**.

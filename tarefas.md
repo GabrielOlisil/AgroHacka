@@ -505,6 +505,17 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 **Prioridade 1 — obrigatório para a final**
 - [ ] **12.1. [DEV 2] Versão final identificada e informada até 30/10 às 14h** (qualquer um dos dois pode mandar a mensagem à organização): criar uma tag única num commit da `main` (por exemplo `v1.1.0-final`), com a release e os instaladores publicados; usar essa mesma referência no README e no roteiro; informar a tag à organização pelo canal de entrega.
   - Corrigir as divergências apontadas no parecer: o README cita `android-build-21` como versão de entrega, mas o link baixa a release mais recente; o roteiro do vídeo cita `v1.0.4-entrega`, que não existe.
+  - Preparado em 28/10 pelo DEV 1, só em commit local (branch `chore/versao-1-1-0`), para revisão do Kauê em 29/10:
+    - app na versão **1.1.0** (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock` e teste);
+    - README §10 com a tag `v1.1.0-final` e o que ela traz;
+    - roteiro do vídeo sem a tag inexistente (o vídeo de 28/10 é da 1.0.4, release `android-build-22`).
+  - Resultado: cliente com 590 testes, checagem de tipos e build aprovados; API com 385 testes e build aprovados.
+  - **Falta:**
+    1. push e PR para a `dev`;
+    2. merge da `dev` na `main`;
+    3. tag `v1.1.0-final` na `main`;
+    4. conferir a release com os instaladores;
+    5. informar a tag à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
