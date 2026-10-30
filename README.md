@@ -83,7 +83,7 @@ O **Paiol** é uma plataforma híbrida **Offline-First**, estruturada para garan
 ```
 
 ### 3.2. Destaques da Implementação
-- **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico de 6 caracteres gerado pelo Gestor).
+- **Central Dinâmica:** Qualquer dispositivo pode assumir o papel de **Gestor** (mediante e-mail e senha, com sessão offline persistente no SQLite) ou **Operador** (mediante pareamento por QR Code ou código alfanumérico `AGRO-XXXX` gerado pelo Gestor).
 - **100% Offline-First:** Toda baixa ou entrada é gravada atomicamente no SQLite local, recalculando os alertas e a Curva ABC instantaneamente na tela do dispositivo, sem esperar rede.
 - **Estoque do Gestor:** Cadastro online de insumos com categoria/unidade livres, filtros e ações de entrada/saída na própria aba Estoque. Novos insumos chegam aos operadores pelo sync; o saldo vem das movimentações. O gestor edita o cadastro (`PATCH /products/:id`), desativa e reativa o insumo com histórico e exclui o que não tem movimentações (`DELETE /products/:id`, exclusão lógica levada aos celulares pelo sync). A unidade não muda depois da primeira movimentação. Desativados e excluídos saem da lista, das retiradas e dos alertas; o histórico fica. O cadastro e a edição recusam o nome de outro insumo da fazenda, inclusive desativado, sem contar maiúsculas, acentos, espaços e símbolos (no app e na API, 409).
 - **Gestão de Operadores:** O gestor edita nomes, ativa/desativa acesso e exclui operadores da própria fazenda, com confirmação. Movimentações preservam somente o nome histórico do responsável, sem FK ao operador. O aplicativo Desktop/Android fica exclusivamente em `client/`.
@@ -122,8 +122,8 @@ docker run -d --name paiol-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=pos
 npm install
 npx prisma generate
 
-# 5. Crie as tabelas aplicando as migrations (antes da carga)
-npx prisma migrate deploy
+# 5. Crie as tabelas a partir do schema (antes da carga; a API publicada faz o mesmo ao iniciar)
+npx prisma db push
 
 # 6. Execute os testes unitários e de HTTP (não precisam do banco)
 npm test
@@ -136,7 +136,7 @@ npm run start:dev
 ```
 A API estará acessível em `http://localhost:3000` (documentação Swagger em `http://localhost:3000/api/docs`).
 
-A carga cria o gestor `gestor@agrohack.com` com a senha `agro1234`, que vale só para o banco local criado por ela. A conta de demonstração da API publicada usa outra senha, que não fica no repositório (tarefa 12.3).
+A carga cria o gestor `gestor@agrohack.com` com a senha `agro1234`, que vale só para o banco local criado por ela. A conta de demonstração da API publicada usa outra senha, que não fica no repositório (tarefa 12.3). Na final, a demonstração usa a conta `agro@agrohack.com`, uma cópia dessa fazenda criada em 30/10 com as mesmas movimentações, para os números do roteiro não mudarem com as datas (seção 6.2).
 
 ### 4.3. Executando o Cliente (Desktop / Mobile - Vue 3 + Tauri)
 
@@ -183,7 +183,7 @@ O servidor envia um WhatsApp ao Gestor quando uma sincronização cria um alerta
 - O disparo acontece depois de um `/sync` que aceita movimentações: a API reanalisa o estoque, grava os alertas e avisa os urgentes ainda não notificados.
 - **Um aviso por alerta.** O alerta é gravado uma vez por insumo e tipo enquanto estiver aberto, e um novo lançamento com a mesma situação **não reenvia** a mensagem.
 - **Ciclo automático:** a cada reanálise, o alerta cuja situação deixou de existir é marcado como resolvido (o histórico fica). Se a situação voltar, um novo alerta é gravado e notificado. Um alerta que sobe de atenção para urgente é atualizado e passa a ser notificado.
-- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base simulada, a *Ureia* (falta em ~3 dias) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
+- Somente o nível **urgente** gera WhatsApp; atenção e informativo aparecem só no app. Na base simulada, a *Ureia* (abaixo do mínimo, com poucos dias de estoque) é o cenário de falta crítica; outros insumos podem ficar urgentes conforme os lançamentos.
 - Os endpoints `POST /notifications/test-whatsapp` e `POST /notifications/dispatch-critical` exigem o JWT do Gestor.
 
 **Para repetir a demonstração:** marque como resolvidos os alertas da fazenda, sem apagar o histórico. A próxima sincronização os recria e notifica de novo.
@@ -271,6 +271,12 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 8. **Disparo no WhatsApp:** O alerta urgente é enviado via Twilio para o smartphone do Gestor (pré-requisitos e como reiniciar os alertas na seção 4.4).
 9. **Segurança de Dados:** Demonstração do backup automático no SQLite com restauração atômica em 1 clique.
 
+### 6.2. Apresentação da Final (30/10)
+O roteiro completo está em [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md): tempos, falas, passo a passo e planos B.
+- **Ao vivo, no notebook do gestor:** alertas da Visão geral, tela Como funciona, Estoque, uma saída que leva os Bicos de Pulverização ao mínimo e deixa o alerta urgente, uma entrada que resolve a falta do Óleo Lubrificante e o Histórico. É a atualização dos registros com reanálise.
+- **Em vídeo, no deck:** o celular sem internet, o pareamento por QR Code e o alerta no WhatsApp, que dependem de dois aparelhos, câmera e Twilio.
+- **Conta usada:** `agro@agrohack.com` (senha fora do repositório), cópia da fazenda de demonstração com o cenário conferido em 28/10 trazido para 30/10. Ninguém registra nada nela antes da apresentação; os ensaios usam outra cópia, `ensaio@agrohack.com`.
+
 ---
 
 ## 7. Validação, Testes Automatizados e Limitações
@@ -278,7 +284,7 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 415 testes unitários e de HTTP aprovados em 29/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 29/10.
-- **Desktop/Mobile (Tauri + Vue):** 648 testes Vitest aprovados em 30/10, cobrindo cadastro, edição, desativação e exclusão de insumos, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
+- **Desktop/Mobile (Tauri + Vue):** 649 testes Vitest aprovados em 30/10, cobrindo cadastro, edição, desativação e exclusão de insumos, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
 - **Integração contínua:** o GitHub Actions roda os testes da API e os testes e a checagem de tipos do app a cada push e Pull Request na `dev` e na `main` ([`ci.yml`](.github/workflows/ci.yml)).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 - **Em aparelho real:** o modo offline (registro em modo avião, "Esperando envio" e envio ao reconectar), o pareamento por QR Code e o WhatsApp foram testados pela equipe num celular Motorola g75 5G (Android 16) e gravados no vídeo de 28/10. Não há medições de desempenho.
@@ -341,7 +347,7 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada na final:** **1.1.6**, tag [`v1.1.6`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.6), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
+- **Versão avaliada na final:** **1.1.7**, tag [`v1.1.7`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.7), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
   - Traz as melhorias da Etapa 12 (final presencial):
     - todo alerta diz o que fazer, incluindo quanto comprar para 30 dias e o custo; no app, o "O que fazer" aparece em linha própria, em negrito (1.1.1);
     - alertas do mais grave para o menos grave e resumo no topo para o gestor;
@@ -350,6 +356,7 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - editar, desativar e excluir insumo pelo Estoque (1.1.4);
     - o cadastro recusa o nome de um insumo que já existe (1.1.5);
     - sem internet, o cadastro de insumos explica a falta de conexão, e o operador no celular abre o Como funciona pelo menu Mais; o APK passa a se chamar `agrohacka_<versão>_arm64-debug.apk` (1.1.6);
+    - roteiro da apresentação no repositório e correção das instruções locais (`npx prisma db push`), sem mudança no app (1.1.7);
     - "o que mudou" depois de cada registro;
     - tela Como funciona;
     - paginação no Histórico, no Estoque e nos Operadores, com escolha de 10, 25, 50 ou 100 itens por página (1.1.2);
@@ -357,8 +364,8 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - nome Paiol;
     - testes do app no CI.
 - **Versão do vídeo de 28/10:** app 1.0.4, release `android-build-22` (a primeira com Windows, Android e Linux juntos), com as melhorias de uso no celular da Etapa 11. O roteiro antigo citava a tag `v1.0.4-entrega`, que nunca foi criada.
-- **Versões anteriores:** `v1.1.5` (29/10, igual à 1.1.6 sem a mensagem de falta de internet no cadastro e sem o menu Mais do operador), `v1.1.4` (29/10, igual à 1.1.5 sem o bloqueio do nome repetido no cadastro), `v1.1.3` (29/10, igual à 1.1.4 sem editar, desativar e excluir insumo), `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
-- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.6`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
+- **Versões anteriores:** `v1.1.6` (30/10, o mesmo app da 1.1.7, sem o roteiro da apresentação no repositório), `v1.1.5` (29/10, igual à 1.1.6 sem a mensagem de falta de internet no cadastro e sem o menu Mais do operador), `v1.1.4` (29/10, igual à 1.1.5 sem o bloqueio do nome repetido no cadastro), `v1.1.3` (29/10, igual à 1.1.4 sem editar, desativar e excluir insumo), `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
+- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.7`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
 - **Vídeo final da entrega:** [demonstração no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 - **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)

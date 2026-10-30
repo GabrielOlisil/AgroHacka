@@ -17,11 +17,13 @@ describe("README da versão final (tarefa 12.13)", () => {
     expect(readme).not.toMatch(/sazonalidade/i);
   });
 
-  it("tem as instruções locais completas: .env, PostgreSQL e migrations antes da carga", () => {
+  it("tem as instruções locais completas: .env, PostgreSQL e tabelas antes da carga", () => {
     const local = readme.slice(readme.indexOf("### 4.2."), readme.indexOf("### 4.3."));
-    const steps = ["cp .env.example .env", "docker run", "npx prisma migrate deploy", "npx tsx prisma/seed.ts"];
+    const steps = ["cp .env.example .env", "docker run", "npx prisma db push", "npx tsx prisma/seed.ts"];
     for (const step of steps) expect(local).toContain(step);
-    expect(local.indexOf("npx prisma migrate deploy")).toBeLessThan(local.indexOf("npx tsx prisma/seed.ts"));
+    // Não há pasta de migrations: as tabelas vêm do schema, como no Dockerfile da API.
+    expect(local).not.toContain("migrate deploy");
+    expect(local.indexOf("npx prisma db push")).toBeLessThan(local.indexOf("npx tsx prisma/seed.ts"));
     expect(local).toMatch(/agro1234.*só.*local|local.*agro1234/s);
   });
 
@@ -39,11 +41,17 @@ describe("README da versão final (tarefa 12.13)", () => {
 
   it("identifica a versão avaliada pela tag da final (tarefa 12.1)", () => {
     const version = readme.slice(readme.indexOf("## 10."));
-    expect(version).toContain("**1.1.6**");
+    expect(version).toContain("**1.1.7**");
     // Tags só com a versão, sem sufixo.
-    expect(version).toContain("releases/tag/v1.1.6)");
+    expect(version).toContain("releases/tag/v1.1.7)");
     expect(version).not.toMatch(/releases\/tag\/v[\d.]+-final/);
     expect(version).not.toContain("android-build-21");
+  });
+
+  it("liga o roteiro da demonstração ao vivo, que fica na raiz", () => {
+    expect(readme).toContain("](roteiro-demonstracao-final.md)");
+    const roteiro = readFileSync(fileURLToPath(new NodeURL("../../roteiro-demonstracao-final.md", import.meta.url)), "utf8");
+    expect(roteiro).toContain("agro@agrohack.com");
   });
 
   it("aponta a data e o local certos da final", () => {
