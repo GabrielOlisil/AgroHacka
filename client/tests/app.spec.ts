@@ -466,17 +466,23 @@ describe("navegação inferior no celular (tarefa 11.9)", () => {
     wrapper.unmount();
   });
 
-  it("o operador já cabe em 4 abas: sem Mais, Cópias continua no menu", () => {
+  it("o operador também tem Mais, com Cópias e Como funciona", async () => {
     const wrapper = mount(App, { props: { controller: controller("OPERADOR") as never } });
-    expect(nav(wrapper).find('[data-testid="more-nav"]').exists()).toBe(false);
-    // "Como funciona" só aparece no computador; no celular o operador usa o link dos alertas.
-    expect(nav(wrapper).findAll("button.nav-secondary").map((b) => b.text())).toEqual(["Como funciona"]);
+    expect(nav(wrapper).findAll("button.nav-secondary").map((b) => b.text())).toEqual([
+      "Cópias",
+      "Como funciona",
+    ]);
     expect(nav(wrapper).findAll("button:not(.nav-secondary)").map((b) => b.text())).toEqual([
       "Visão geral",
       "Estoque",
       "Histórico",
-      "Cópias",
+      "Mais",
     ]);
+    await nav(wrapper).get('[data-testid="more-nav"]').trigger("click");
+    const menu = wrapper.get(".more-menu");
+    expect(menu.findAll("button").map((b) => b.text())).toEqual(["Cópias", "Como funciona"]);
+    await menu.findAll("button")[1]!.trigger("click");
+    expect(wrapper.get("h1").text()).toBe("Como funciona");
     wrapper.unmount();
   });
 });
