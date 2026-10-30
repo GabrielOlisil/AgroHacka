@@ -278,7 +278,7 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 ### 7.1. Validação por Testes Automatizados (TDD)
 O projeto foi desenvolvido sob a disciplina rigorosa do **Desenvolvimento Orientado a Testes (TDD)**:
 - **API NestJS:** 415 testes unitários e de HTTP aprovados em 29/10, incluindo o teste-gabarito da base simulada (seção 5.2) e a paridade com o motor do app. `npm run test:sync`: 32 testes em PostgreSQL descartável, cobrindo sync, carga de demonstração, produtos e administração/exclusão concorrente de operadores, aprovados na última execução, em 29/10.
-- **Desktop/Mobile (Tauri + Vue):** 647 testes Vitest aprovados em 30/10, cobrindo cadastro, edição, desativação e exclusão de insumos, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
+- **Desktop/Mobile (Tauri + Vue):** 648 testes Vitest aprovados em 30/10, cobrindo cadastro, edição, desativação e exclusão de insumos, SQLite, interface (incluindo usabilidade no celular, linguagem simples e paginação), regras e textos dos alertas, gestão de operadores e empacotamento. Os 5 testes Rust não foram reexecutados nesta etapa, que não muda o código nativo.
 - **Integração contínua:** o GitHub Actions roda os testes da API e os testes e a checagem de tipos do app a cada push e Pull Request na `dev` e na `main` ([`ci.yml`](.github/workflows/ci.yml)).
 - **Validação de Tipos e Build:** `vue-tsc -b` e `vite build` sem warnings ou erros de tipagem.
 - **Em aparelho real:** o modo offline (registro em modo avião, "Esperando envio" e envio ao reconectar), o pareamento por QR Code e o WhatsApp foram testados pela equipe num celular Motorola g75 5G (Android 16) e gravados no vídeo de 28/10. Não há medições de desempenho.
@@ -349,7 +349,7 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - alerta de possível cadastro duplicado (1.1.3);
     - editar, desativar e excluir insumo pelo Estoque (1.1.4);
     - o cadastro recusa o nome de um insumo que já existe (1.1.5);
-    - sem internet, o cadastro de insumos explica a falta de conexão, e o operador no celular abre o Como funciona pelo menu Mais (1.1.6);
+    - sem internet, o cadastro de insumos explica a falta de conexão, e o operador no celular abre o Como funciona pelo menu Mais; o APK passa a se chamar `agrohacka_<versão>_arm64-debug.apk` (1.1.6);
     - "o que mudou" depois de cada registro;
     - tela Como funciona;
     - paginação no Histórico, no Estoque e nos Operadores, com escolha de 10, 25, 50 ou 100 itens por página (1.1.2);

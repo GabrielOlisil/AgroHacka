@@ -78,6 +78,20 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     expect(android).not.toContain("--sign");
   });
 
+  it("o .apk publicado leva a versão do app no nome, como os instaladores", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    const android = workflow
+      .split("  build-mobile-android:")[1]!
+      .split("  create-release:")[0]!;
+    const rename = android.indexOf('agrohacka_${versao}_arm64-debug.apk');
+    expect(rename).toBeGreaterThan(android.indexOf("cli android build"));
+    expect(rename).toBeLessThan(android.indexOf("actions/upload-artifact"));
+    expect(android).toContain("src-tauri/tauri.conf.json");
+  });
+
   it("não exige chave release ou secrets Android nem mantém scripts de assinatura", () => {
     const workflow = readFileSync(
       resolve(repoRoot, ".github/workflows/build-release.yml"),
