@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath, URL as NodeURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -41,17 +41,20 @@ describe("README da versão final (tarefa 12.13)", () => {
 
   it("identifica a versão avaliada pela tag da final (tarefa 12.1)", () => {
     const version = readme.slice(readme.indexOf("## 10."));
-    expect(version).toContain("**1.1.7**");
+    expect(version).toContain("**1.1.8**");
     // Tags só com a versão, sem sufixo.
-    expect(version).toContain("releases/tag/v1.1.7)");
+    expect(version).toContain("releases/tag/v1.1.8)");
     expect(version).not.toMatch(/releases\/tag\/v[\d.]+-final/);
     expect(version).not.toContain("android-build-21");
   });
 
-  it("liga o roteiro da demonstração ao vivo, que fica na raiz", () => {
-    expect(readme).toContain("](roteiro-demonstracao-final.md)");
-    const roteiro = readFileSync(fileURLToPath(new NodeURL("../../roteiro-demonstracao-final.md", import.meta.url)), "utf8");
-    expect(roteiro).toContain("agro@agrohack.com");
+  it("liga o roteiro da apresentação para a banca, que fica na raiz", () => {
+    expect(readme).toContain("](roteiro-apresentacao-banca.md)");
+    const roteiro = readFileSync(fileURLToPath(new NodeURL("../../roteiro-apresentacao-banca.md", import.meta.url)), "utf8");
+    expect(roteiro).toContain("ensaio@agrohack.com");
+    // A apresentação passou a ser em vídeos: o roteiro da demonstração ao vivo saiu.
+    expect(existsSync(fileURLToPath(new NodeURL("../../roteiro-demonstracao-final.md", import.meta.url)))).toBe(false);
+    expect(readme).not.toContain("roteiro-demonstracao-final.md");
   });
 
   it("aponta a data e o local certos da final", () => {

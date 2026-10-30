@@ -524,14 +524,15 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Em 30/10, a mensagem de falta de internet e o menu Mais do operador (12.26) entraram na versão avaliada: app **1.1.6** e tag `v1.1.6`. A `v1.1.5` fica como anterior.
   - **Aceite anterior em 30/10:** Gabriel confirmou que a `v1.1.6` foi informada à organização e que o notebook estava instalado e sincronizado nessa preparação. A confirmação não se estende automaticamente à nova versão.
   - Ainda em 30/10, o roteiro da apresentação e a revisão do README (12.27) entraram na versão avaliada: app **1.1.7** e tag `v1.1.7`, com o mesmo app da 1.1.6. A `v1.1.6` fica como anterior.
-  - Concluída em 30/10: a versão final é a tag `v1.1.7` (commit `e4b724a`), identificada no README (seção 10). O organizador informou que não é preciso enviar de novo a referência.
+  - Ainda em 30/10, a apresentação passou a ser em vídeos (12.28): app **1.1.8** e tag `v1.1.8`, com o mesmo app da 1.1.6. A `v1.1.7` fica como anterior.
+  - Concluída em 30/10: a versão final é a tag `v1.1.8`, identificada no README (seção 10). O organizador informou que não é preciso enviar de novo a referência.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
   - Ter dois planos B: sem internet, o app registra e reanalisa no aparelho; se o notebook falhar, os vídeos.
-  - [x] **DEV 2, preparação em 30/10:** Gabriel confirmou notebook com o Paiol instalado e fazenda sincronizada. O roteiro preparado para a 1.1.6 foi substituído pelo [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md) e removido em 30/10, para não haver dois guias.
+  - [x] **DEV 2, preparação em 30/10:** Gabriel confirmou notebook com o Paiol instalado e fazenda sincronizada. O roteiro preparado para a 1.1.6 foi substituído e removido em 30/10; o guia vigente é o [`roteiro-apresentacao-banca.md`](roteiro-apresentacao-banca.md) (12.28).
   - [x] **Conferência automatizada do roteiro:** 21 testes do cliente (`alert-changes`, `alert-summary`, `manager-stock`) e 28 da API (`official-seed`, `parity`) aprovados em 30/10. Não houve lançamento na API publicada nem alteração de banco pelo agente.
-  - [ ] Ensaiar nos aparelhos da final seguindo [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md), o roteiro vigente da 1.1.7. Nunca registrar nada na conta da apresentação antes da banca; ensaiar na `ensaio@agrohack.com`.
+  - [x] A coordenação informou em 30/10 que a demonstração ao vivo é opcional. A atualização com reanálise é mostrada em vídeo, gravado na versão avaliada (12.28).
 - [x] **12.3. [DEV 1] Credenciais públicas da fazenda de demonstração:** a senha e os tokens fixos de `official-seed.data.ts` estão no repositório. Conferir se funcionam na API publicada. Se funcionarem, trocar a senha do gestor de demonstração e desativar os aparelhos fictícios, sem apagar dados.
   - Aceite: os tokens do repositório recebem 401 na API publicada.
   - Em 28/10, a senha e os dois tokens do repositório funcionavam na API publicada (200). A senha do gestor de demonstração foi trocada direto no banco, com hash bcrypt gerado localmente; a senha nova não está no repositório. Os aparelhos `tok_tratorista_01` e `tok_almoxarife_02` foram desativados, sem apagar dados. No novo teste, a senha antiga e os dois tokens receberam 401. Sessões abertas e o celular pareado por QR Code continuam funcionando.
@@ -747,7 +748,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 
 **Prioridade 4 — apresentação e sabatina**
 - [ ] **12.15. [EM CONJUNTO] Apresentação de até 10 minutos:**
-  - [x] Cronograma e papéis em `roteiro-demonstracao-final.md` (12.27). A duração ainda depende de ensaio físico.
+  - [x] Cronograma, papéis e o que gravar em cada vídeo em `roteiro-apresentacao-banca.md` (12.28). A duração ainda depende de ensaio com cronômetro.
   - montar a demonstração ao vivo da 12.2 dentro da apresentação;
   - atualizar os slides com a versão final e as melhorias da Etapa 12;
   - ensaiar com cronômetro: até 10 minutos, mais 3 de perguntas.
@@ -761,7 +762,7 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - [x] Preparação DEV 2 em 30/10: [`SABATINA_FINAL.md`](SABATINA_FINAL.md), com 22 perguntas/respostas sobre o produto, regras, offline, dados, IA e limites. Inclui roteiro para os dois treinarem em 3 minutos.
   - [ ] Conferir contra o parecer original, alinhar as respostas e atualizar o Anki externo. O texto original das perguntas 21–25, o deck e o baralho da equipe não estão no workspace; o agente não os revisou nem modificou.
 - [ ] **12.21. [EM CONJUNTO] Revisão final da apresentação (por último):** fazer depois de todas as outras tarefas ou no dia 30/10, o que acontecer primeiro.
-  - Preparação em 30/10: checklist de conferência em `roteiro-demonstracao-final.md` e `SABATINA_FINAL.md`. A revisão dos slides/vídeos externos e o ensaio cronometrado ainda não foram executados.
+  - Preparação em 30/10: checklist de conferência em `roteiro-apresentacao-banca.md` e `SABATINA_FINAL.md`. A revisão dos slides/vídeos externos e o ensaio cronometrado ainda não foram executados.
   - Conferir se os slides, as falas e os vídeos refletem a versão final: nome do software (12.19), ações recomendadas (12.5), ordem por gravidade (12.6), resumo no topo (12.20), "o que mudou" (12.17), tela "Como funciona" (12.18) e a tag da versão (12.1).
   - Regravar os vídeos que mostram telas que mudaram.
   - Cronometrar a apresentação completa com a demonstração ao vivo: no máximo 10 minutos, com folga.
@@ -793,9 +794,14 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Testes: `product-edit-ui.spec.ts`, `app.spec.ts` e `build-packaging.spec.ts` (RED antes de cada parte). App com 648 testes.
 
 - [x] **12.27. [DEV 1] Roteiro da apresentação no repositório e revisão do README:** pedida pelo Kauê em 30/10.
-  - `roteiro-demonstracao-final.md` na raiz, ligado na seção 6.2 do README: tempos, falas, passo a passo e planos B. A demonstração ao vivo fica no notebook do gestor; celular sem internet, QR Code e WhatsApp ficam em vídeo.
+  - `roteiro-demonstracao-final.md` na raiz (substituído na 12.28 pelo `roteiro-apresentacao-banca.md`), ligado na seção 6.2 do README: tempos, falas, passo a passo e planos B. A demonstração ao vivo fica no notebook do gestor; celular sem internet, QR Code e WhatsApp ficam em vídeo.
   - A demonstração usa a conta `agro@agrohack.com`, cópia da fazenda de demonstração com o cenário de 28/10 trazido para 30/10, para os números do roteiro não mudarem com as datas. Os ensaios usam `ensaio@agrohack.com`. Senhas fora do repositório.
   - README revisado inteiro. Correções: a instalação local usava `npx prisma migrate deploy`, mas o repositório não tem migrations e a API cria as tabelas com `npx prisma db push`; o código de pareamento é `AGRO-XXXX`, não "6 caracteres".
+  - Testes: `readme.spec.ts` e `build-packaging.spec.ts` (RED antes). App com 649 testes.
+- [x] **12.28. [DEV 1] Apresentação para a banca em vídeos:** pedida pelo Kauê em 30/10, depois que a coordenação informou que a demonstração ao vivo é opcional.
+  - `roteiro-apresentacao-banca.md` substitui o `roteiro-demonstracao-final.md` (removido): um dia na Fazenda Modelo em 12 vídeos curtos, que repetem enquanto a equipe explica, mais os slides do problema, de validação e limites e o Obrigado. Cerca de 8 minutos, abaixo do limite de 9 que a equipe definiu.
+  - Entra tudo o que as regras pedem (problema, solução, análises e critérios, atualização com reanálise, limitações) e o que mais o app faz: cadastro com bloqueio de nome repetido, equipe por QR Code, registro sem internet, WhatsApp, histórico, correção de cadastro e cópias de segurança.
+  - Os vídeos do notebook são gravados na conta `ensaio@agrohack.com`; a `agro@agrohack.com` fica de reserva. Seção 6.2 do README atualizada.
   - Testes: `readme.spec.ts` e `build-packaging.spec.ts` (RED antes). App com 649 testes.
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, vários gestores por fazenda, papéis (administrador, consulta) e recuperação de senha (analisados em 29/10: mexem no login, que a demonstração usa primeiro), variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 

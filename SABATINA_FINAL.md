@@ -1,6 +1,6 @@
 # Paiol — preparação da sabatina
 
-Material das tarefas 12.16 e 12.21, conferido com código, README e tarefas em 30/10/2026. Versão de referência: 1.1.7 (mesmas funcionalidades da 1.1.6, com revisão documental e roteiro). O roteiro vigente é [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md). Gabriel e Kauê devem estudar todas as respostas. Divisão sugerida: Gabriel apresenta telas e offline; Kauê detalha motor, autenticação e banco; qualquer um deve conseguir responder ao núcleo de cada pergunta.
+Material das tarefas 12.16 e 12.21, conferido com código, README e tarefas em 30/10/2026. Versão de referência: 1.1.8 (mesmas funcionalidades da 1.1.6, com revisão documental e o roteiro da apresentação). O roteiro vigente é [`roteiro-apresentacao-banca.md`](roteiro-apresentacao-banca.md). Gabriel e Kauê devem estudar todas as respostas. Divisão sugerida: Gabriel apresenta telas e offline; Kauê detalha motor, autenticação e banco; qualquer um deve conseguir responder ao núcleo de cada pergunta.
 
 As perguntas abaixo são uma preparação temática. O texto original das perguntas 21–25 do parecer e o baralho Anki da equipe não estão no workspace, portanto este material não afirma reproduzi-los nem atualiza o baralho externo.
 
@@ -8,9 +8,9 @@ As perguntas abaixo são uma preparação temática. O texto original das pergun
 
 1. **Qual problema vocês resolvem e para quem?** Para o gestor rural, transformamos entradas e saídas em prioridades de compra, uso antes do vencimento e conferência de retiradas. Para o operador, permitimos registrar no celular mesmo sem internet.
 
-2. **A fazenda de demonstração funciona na API publicada?** O usuário confirmou o notebook instalado e sincronizado. A release v1.1.7 está pública, e a demonstração usa a conta agro@agrohack.com, cópia da fazenda de demonstração. As credenciais antigas da carga foram revogadas em produção, conforme a 12.3; a demonstração usa a sessão autorizada já preparada, sem projetar senha ou tokens. Não informar que um login novo foi testado agora pelo agente.
+2. **A fazenda de demonstração funciona na API publicada?** O usuário confirmou o notebook instalado e sincronizado. A release v1.1.8 está pública. Os vídeos da apresentação foram gravados na conta ensaio@agrohack.com, cópia da fazenda de demonstração, e a agro@agrohack.com fica de reserva. As credenciais antigas da carga foram revogadas em produção, conforme a 12.3; a demonstração usa a sessão autorizada já preparada, sem projetar senha ou tokens. Não informar que um login novo foi testado agora pelo agente.
 
-3. **Onde está a reanálise de verdade?** Ao salvar, o aplicativo analisa os registros locais e mostra alertas novos, resolvidos e com mudança de nível. A API também reanalisa depois de aceitar movimentações. Na demonstração, repor a Ureia resolve a falta na tela e preserva a compra no histórico.
+3. **Onde está a reanálise de verdade?** Ao salvar, o aplicativo analisa os registros locais e mostra alertas novos, resolvidos e com mudança de nível. A API também reanalisa depois de aceitar movimentações. Nos vídeos, a saída de 30 bicos faz o alerta subir para urgente e a entrada de 100 L de óleo resolve a falta, e as duas ficam no histórico.
 
 4. **Como a previsão é calculada?** Saídas dos últimos 30 dias divididas pelos dias de calendário desde a primeira retirada da janela, incluindo dias sem uso. O saldo dividido por esse uso diário dá a duração estimada. Sem consumo recente suficiente, a tela explicita os limites; não é uma previsão de clima, safra ou sazonalidade.
 
@@ -56,8 +56,8 @@ As perguntas abaixo são uma preparação temática. O texto original das pergun
 - [ ] Comparar este material com o parecer original e preencher qualquer pergunta 21–25 não coberta.
 - [ ] Atualizar o Anki da equipe, se for usado; o baralho externo não foi modificado pelo agente.
 - [ ] Ensaiar três perguntas seguidas com tempo total de 3 minutos.
-- [ ] Conferir slides: nome Paiol; tag v1.1.7; dados simulados; ação e reanálise; parâmetros da equipe; limites e IA.
+- [ ] Conferir slides: nome Paiol; tag v1.1.8; dados simulados; ação e reanálise; parâmetros da equipe; limites e IA.
 - [ ] Vídeo de 28/10 identificado como versão 1.0.4; preferir mostrar ao vivo as melhorias da 1.1.6.
 - [ ] Conferir números da fala contra o app atual. O gabarito fixo não representa automaticamente a fazenda publicada de hoje.
 
-Referências: `README.md` §§5–10, `tarefas.md` Etapa 12, `roteiro-demonstracao-final.md`, `client/src/alert-changes.ts`, `client/src/offline/analysis.ts` e testes de paridade/gabarito. A revisão dos slides externos e o ensaio entre os integrantes continuam pendentes.
+Referências: `README.md` §§5–10, `tarefas.md` Etapa 12, `roteiro-apresentacao-banca.md`, `client/src/alert-changes.ts`, `client/src/offline/analysis.ts` e testes de paridade/gabarito. A revisão dos slides externos e o ensaio entre os integrantes continuam pendentes.
