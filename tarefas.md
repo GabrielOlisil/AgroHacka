@@ -801,6 +801,22 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 
 ---
 
+### ETAPA 13: Evolução para lotes/carregamentos e migração compatível
+
+Planejamento solicitado em 30/10/2026. Documento: [`PLANO_INTEGRACAO_LOTES.md`](PLANO_INTEGRACAO_LOTES.md). Não altera a versão avaliada da final nem autoriza migração de banco real. O seed novo prepara demonstrações novas; a migração do histórico existente é um procedimento independente.
+
+- [x] **13.0. [EM CONJUNTO] Elaborar o plano de integração:** modelo de lotes e detalhes sem reescrever movimentos, legado identificado, coexistência v2/v3, SQLite/backup, seed versionado, testes, implantação e recuperação documentados. Planejamento concluído; implementação não iniciada.
+- [ ] **13.1. [EM CONJUNTO] Fechar contrato e políticas:** referência única por produto/fazenda, casos sem validade, exceções de saldo/vencido, legado não identificado, estratégia de ativação e preço de referência versus custo real.
+- [ ] **13.2. [DEV 1] Preparar baseline e migration aditiva PostgreSQL:** associação idempotente do histórico, relatório de conservação de saldos/IDs/recibos e coordenação de todos os escritores sob o lock da fazenda.
+- [ ] **13.3. [DEV 1] Implementar compatibilidade de sincronização:** protocolo 2 preservado, comandos v3 com lote, recibos versionados, dependências e snapshot consistente; publicar o OpenAPI.
+- [ ] **13.4. [DEV 2] Evoluir SQLite e recuperação:** nova migration sem editar a 001, parsers/outbox por versão, aplicação atômica e suporte explícito a backups antigos; regenerar contrato com `npm run openapi`.
+- [ ] **13.5. [DEV 2] Integrar formulários:** cadastro de produto sem lote global, entrada com carregamento e saída com seleção de referência/validade/saldo nos dois fluxos; preservar o lote escolhido no histórico.
+- [ ] **13.6. [EM CONJUNTO] Adaptar análise e alertas por lote:** saldo/falta agregados, vencimento por quantidade remanescente, projeção de consumo sem dupla alocação, identidade/persistência de alertas e notificações; paridade API/app.
+- [ ] **13.7. [DEV 1 + DEV 2] Versionar seed e validar integração:** dados com múltiplos carregamentos, carga repetível sem sobrescrever fazendas, PostgreSQL/SQLite reais descartáveis, filas antigas, concorrência e restauração.
+- [ ] **13.8. [EM CONJUNTO] Piloto e implantação autorizada:** backup recuperável, relatórios sem diferenças, API de compatibilidade antes dos clientes, aceite físico sobre instalação existente e gate de ativação por fazenda. Remoção dos campos legados fica para entrega posterior.
+
+---
+
 ## Roadmap detalhado de finalização
 
 Atualizado em 27/10/2026, com base na revisão do regulamento e da `dev` em
