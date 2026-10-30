@@ -521,7 +521,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Ainda em 29/10, o alerta de cadastro duplicado (12.23, PR #141) entrou na versão avaliada: app **1.1.3** e tag `v1.1.3`. A `v1.1.2` fica como anterior.
   - Ainda em 29/10, editar, desativar e excluir insumo (12.24) entrou na versão avaliada: app **1.1.4** e tag `v1.1.4`. A `v1.1.3` fica como anterior.
   - Ainda em 29/10, o bloqueio do nome repetido no cadastro (12.25) entrou na versão avaliada: app **1.1.5** e tag `v1.1.5`. A `v1.1.4` fica como anterior.
-  - **Falta:** informar a tag `v1.1.5` à organização.
+  - Em 30/10, a mensagem de falta de internet e o menu Mais do operador (12.26) entraram na versão avaliada: app **1.1.6** e tag `v1.1.6`. A `v1.1.5` fica como anterior.
+  - **Falta:** informar a tag `v1.1.6` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
