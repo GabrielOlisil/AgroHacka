@@ -22,10 +22,10 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     );
     const cargo = readFileSync(resolve(root, "src-tauri/Cargo.toml"), "utf-8");
     const lock = readFileSync(resolve(root, "src-tauri/Cargo.lock"), "utf-8");
-    // Tarefa 12.1: versão da final presencial (tag v1.1.5).
-    expect(config.version).toBe("1.1.5");
-    expect(cargo).toMatch(/^version = "1\.1\.5"$/m);
-    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.1\.5"/);
+    // Tarefa 12.1: versão da final presencial (tag v1.1.6).
+    expect(config.version).toBe("1.1.6");
+    expect(cargo).toMatch(/^version = "1\.1\.6"$/m);
+    expect(lock).toMatch(/name = "app"\r?\nversion = "1\.1\.6"/);
   });
 
   it("sincronização cloud não exige script para abrir porta no firewall", () => {
@@ -76,6 +76,20 @@ describe("Empacotamento Desktop e Mobile (Etapa 5)", () => {
     );
     expect(android).toContain("if-no-files-found: error");
     expect(android).not.toContain("--sign");
+  });
+
+  it("o .apk publicado leva a versão do app no nome, como os instaladores", () => {
+    const workflow = readFileSync(
+      resolve(repoRoot, ".github/workflows/build-release.yml"),
+      "utf-8",
+    );
+    const android = workflow
+      .split("  build-mobile-android:")[1]!
+      .split("  create-release:")[0]!;
+    const rename = android.indexOf('agrohacka_${versao}_arm64-debug.apk');
+    expect(rename).toBeGreaterThan(android.indexOf("cli android build"));
+    expect(rename).toBeLessThan(android.indexOf("actions/upload-artifact"));
+    expect(android).toContain("src-tauri/tauri.conf.json");
   });
 
   it("não exige chave release ou secrets Android nem mantém scripts de assinatura", () => {

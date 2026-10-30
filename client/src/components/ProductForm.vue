@@ -8,6 +8,7 @@ import {
 import UiIcon from "./UiIcon.vue";
 import { openPicker } from "../open-picker";
 import { nameKey } from "../offline/analysis";
+import { describeFailure } from "../network-error";
 
 const props = defineProps<{
   categories: string[];
@@ -79,7 +80,7 @@ async function submit() {
     await props.save(pending);
     emit("saved");
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : String(cause);
+    error.value = describeFailure(cause);
   } finally {
     saving.value = false;
   }

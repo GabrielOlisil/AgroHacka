@@ -17,6 +17,7 @@ import { DEFAULT_PAGE_SIZE, paginate } from "./pagination";
 import { APP_VERSION } from "./app-version";
 import { formatPhone, maskPhone, toWhatsApp } from "./phone";
 import { openPicker } from "./open-picker";
+import { describeFailure, isNetworkFailure } from "./network-error";
 
 const props = defineProps<{ controller?: Workspace }>();
 const workspace = props.controller ?? createWorkspace();
@@ -370,7 +371,7 @@ async function changeProduct(action: () => Promise<unknown>, success: string) {
     alertChanges.value = null;
     feedback.value = success;
   } catch (cause) {
-    productError.value = cause instanceof Error ? cause.message : String(cause);
+    productError.value = describeFailure(cause);
   } finally {
     busy.value = false;
   }
@@ -433,11 +434,7 @@ async function saveWhatsAppNumber() {
   }
 }
 function describeWhatsAppFailure(cause: unknown) {
-  const offline =
-    cause instanceof TypeError ||
-    (cause instanceof Error &&
-      (cause.name === "TimeoutError" || cause.name === "AbortError"));
-  if (offline)
+  if (isNetworkFailure(cause))
     return "sem internet no momento. Tente de novo quando tiver sinal.";
   return cause instanceof Error ? cause.message : String(cause);
 }
@@ -456,7 +453,7 @@ function openOperators() {
   tab.value = "operators";
   void workspace.loadOperators();
 }
-// Tarefa 11.9: no celular, o gestor acessa Operadores e Cópias pelo "Mais".
+// Tarefa 11.9: no celular, Operadores (só gestor), Cópias e Como funciona ficam no "Mais".
 const showMore = ref(false);
 function chooseMore(next: "operators" | "backups" | "help") {
   showMore.value = false;
@@ -821,10 +818,8 @@ onUnmounted(() => {
         >
           <UiIcon name="users" :size="18" /><span>Operadores</span></button
         ><button
-          :class="{
-            active: tab === 'backups',
-            'nav-secondary': session.role === 'GESTOR',
-          }"
+          class="nav-secondary"
+          :class="{ active: tab === 'backups' }"
           :aria-current="tab === 'backups' ? 'page' : undefined"
           @click="tab = 'backups'"
         >
@@ -837,7 +832,6 @@ onUnmounted(() => {
         >
           <UiIcon name="info" :size="18" /><span>Como funciona</span></button
         ><button
-          v-if="session.role === 'GESTOR'"
           data-testid="more-nav"
           class="nav-more"
           :class="{
@@ -851,7 +845,10 @@ onUnmounted(() => {
         </button>
       </nav>
       <div v-if="showMore" id="more-menu" class="more-menu">
-        <button @click="chooseMore('operators')">
+        <button
+          v-if="session.role === 'GESTOR'"
+          @click="chooseMore('operators')"
+        >
           <UiIcon name="users" :size="18" />Operadores</button
         ><button @click="chooseMore('backups')">
           <UiIcon name="database-backup" :size="18" />Cópias</button

@@ -521,7 +521,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Ainda em 29/10, o alerta de cadastro duplicado (12.23, PR #141) entrou na versão avaliada: app **1.1.3** e tag `v1.1.3`. A `v1.1.2` fica como anterior.
   - Ainda em 29/10, editar, desativar e excluir insumo (12.24) entrou na versão avaliada: app **1.1.4** e tag `v1.1.4`. A `v1.1.3` fica como anterior.
   - Ainda em 29/10, o bloqueio do nome repetido no cadastro (12.25) entrou na versão avaliada: app **1.1.5** e tag `v1.1.5`. A `v1.1.4` fica como anterior.
-  - **Falta:** informar a tag `v1.1.5` à organização.
+  - Em 30/10, a mensagem de falta de internet e o menu Mais do operador (12.26) entraram na versão avaliada: app **1.1.6** e tag `v1.1.6`. A `v1.1.5` fica como anterior.
+  - **Falta:** informar a tag `v1.1.6` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
@@ -776,8 +777,13 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - A API também recusa (409), sob o lock da fazenda, para o caso de catálogo desatualizado ou de dois aparelhos ao mesmo tempo.
   - Editar um duplicado antigo sem mudar o nome continua permitido, para poder corrigi-lo. Nomes só parecidos continuam aceitos.
   - Testes: `products.edit.spec.ts` na API e `product-duplicate-form.spec.ts` no app (RED antes de cada parte). API com 415 testes e app com 645.
+- [x] **12.26. [DEV 1] Mensagem sem internet no cadastro e "Como funciona" do operador no celular:** pedida pelo Kauê em 30/10, ao testar a 1.1.5.
+  - Sem internet, cadastrar, editar, desativar e excluir insumo mostravam o erro cru "Failed to fetch". Agora mostram "Sem internet no momento. Tente de novo quando tiver sinal.", com a mesma regra que o teste do WhatsApp já usava (`network-error.ts`).
+  - No celular, o operador não tinha como abrir o "Como funciona" (só pelo link dos alertas). Agora ele também tem o **Mais**, com Cópias e Como funciona; Operadores continua só para o gestor.
+  - O APK da release passa a ter a versão no nome, como os instaladores: `agrohacka_1.1.6_arm64-debug.apk` em vez de `app-universal-debug.apk`.
+  - Testes: `product-edit-ui.spec.ts`, `app.spec.ts` e `build-packaging.spec.ts` (RED antes de cada parte). App com 648 testes.
 
-**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
+**Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, vários gestores por fazenda, papéis (administrador, consulta) e recuperação de senha (analisados em 29/10: mexem no login, que a demonstração usa primeiro), variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
 ---
 
