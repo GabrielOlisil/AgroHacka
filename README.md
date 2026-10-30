@@ -136,7 +136,7 @@ npm run start:dev
 ```
 A API estará acessível em `http://localhost:3000` (documentação Swagger em `http://localhost:3000/api/docs`).
 
-A carga cria o gestor `gestor@agrohack.com` com a senha `agro1234`, que vale só para o banco local criado por ela. A conta de demonstração da API publicada usa outra senha, que não fica no repositório (tarefa 12.3). Na final, a demonstração usa a conta `agro@agrohack.com`, uma cópia dessa fazenda criada em 30/10 com as mesmas movimentações, para os números do roteiro não mudarem com as datas (seção 6.2).
+A carga cria o gestor `gestor@agrohack.com` com a senha `agro1234`, que vale só para o banco local criado por ela. A conta de demonstração da API publicada usa outra senha, que não fica no repositório (tarefa 12.3). Para a final, foram criadas em 30/10 duas cópias dessa fazenda, com as mesmas movimentações: `ensaio@agrohack.com`, onde os vídeos da apresentação foram gravados, e `agro@agrohack.com`, de reserva. Assim os números do roteiro não mudam com as datas (seção 6.2).
 
 ### 4.3. Executando o Cliente (Desktop / Mobile - Vue 3 + Tauri)
 
@@ -272,10 +272,10 @@ Depois de cada registro, a tela mostra o que mudou na análise: alertas novos, q
 9. **Segurança de Dados:** Demonstração do backup automático no SQLite com restauração atômica em 1 clique.
 
 ### 6.2. Apresentação da Final (30/10)
-O roteiro completo está em [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md): tempos, falas, passo a passo e planos B.
-- **Ao vivo, no notebook do gestor:** alertas da Visão geral, tela Como funciona, Estoque, uma saída que leva os Bicos de Pulverização ao mínimo e deixa o alerta urgente, uma entrada que resolve a falta do Óleo Lubrificante e o Histórico. É a atualização dos registros com reanálise.
-- **Em vídeo, no deck:** o celular sem internet, o pareamento por QR Code e o alerta no WhatsApp, que dependem de dois aparelhos, câmera e Twilio.
-- **Conta usada:** `agro@agrohack.com` (senha fora do repositório), cópia da fazenda de demonstração com o cenário conferido em 28/10 trazido para 30/10. Ninguém registra nada nela antes da apresentação; os ensaios usam outra cópia, `ensaio@agrohack.com`.
+O roteiro da apresentação para a banca está em [`roteiro-apresentacao-banca.md`](roteiro-apresentacao-banca.md): tempos, falas, o que gravar em cada vídeo e planos B. A coordenação informou que a demonstração ao vivo é opcional, então a apresentação usa vídeos curtos do app, que repetem enquanto a equipe explica.
+- **Um dia na Fazenda Modelo, em 12 vídeos:** de manhã, o gestor cadastra os insumos (com o bloqueio de nome repetido) e conecta a equipe pelo QR Code; no campo, o operador registra sem internet; no escritório, o gestor vê os alertas, os critérios e o estoque; à tarde, uma retirada de 30 bicos deixa o alerta urgente, o aviso chega no WhatsApp, a entrada de 100 L de óleo resolve a falta e tudo fica no Histórico; no fim do dia, o gestor corrige um cadastro e o aparelho guarda a cópia de segurança. As saídas e entradas mostram a atualização dos registros com reanálise ("o que mudou").
+- **Em slides:** o problema, a validação (testes e uso de IA) e as limitações. Cerca de 8 minutos no total.
+- **Contas:** os vídeos do notebook foram gravados na `ensaio@agrohack.com` (senha fora do repositório), cópia da fazenda de demonstração com o cenário conferido em 28/10 trazido para 30/10. Os vídeos do celular, o QR Code e o WhatsApp são de 28/10 (app 1.0.4). A `agro@agrohack.com` fica de reserva, caso a banca peça para ver algo no app.
 
 ---
 
@@ -347,7 +347,7 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
 
 ## 10. Versão de Entrega e Rastreabilidade
 
-- **Versão avaliada na final:** **1.1.7**, tag [`v1.1.7`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.7), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi informada à organização até 30/10/2026 às 14h. Depois disso, o repositório fica congelado.
+- **Versão avaliada na final:** **1.1.8**, tag [`v1.1.8`](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.8), com instaladores Windows (`.exe`/`.msi`), Windows sem instalador (`app-portable.exe`), Android (`.apk` debug) e Linux (`.AppImage`). A tag identifica o commit avaliado e foi registrada neste README até 30/10/2026 às 14h; o organizador informou que não era preciso enviá-la de novo. Depois disso, o repositório fica congelado.
   - Traz as melhorias da Etapa 12 (final presencial):
     - todo alerta diz o que fazer, incluindo quanto comprar para 30 dias e o custo; no app, o "O que fazer" aparece em linha própria, em negrito (1.1.1);
     - alertas do mais grave para o menos grave e resumo no topo para o gestor;
@@ -357,6 +357,7 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - o cadastro recusa o nome de um insumo que já existe (1.1.5);
     - sem internet, o cadastro de insumos explica a falta de conexão, e o operador no celular abre o Como funciona pelo menu Mais; o APK passa a se chamar `agrohacka_<versão>_arm64-debug.apk` (1.1.6);
     - roteiro da apresentação no repositório e correção das instruções locais (`npx prisma db push`), sem mudança no app (1.1.7);
+    - roteiro da apresentação para a banca em vídeos (`roteiro-apresentacao-banca.md`) no lugar do roteiro da demonstração ao vivo, sem mudança no app (1.1.8);
     - "o que mudou" depois de cada registro;
     - tela Como funciona;
     - paginação no Histórico, no Estoque e nos Operadores, com escolha de 10, 25, 50 ou 100 itens por página (1.1.2);
@@ -364,8 +365,8 @@ Na reta final (28/10, Etapa 12), parte das telas (aviso de dados simulados, resu
     - nome Paiol;
     - testes do app no CI.
 - **Versão do vídeo de 28/10:** app 1.0.4, release `android-build-22` (a primeira com Windows, Android e Linux juntos), com as melhorias de uso no celular da Etapa 11. O roteiro antigo citava a tag `v1.0.4-entrega`, que nunca foi criada.
-- **Versões anteriores:** `v1.1.6` (30/10, o mesmo app da 1.1.7, sem o roteiro da apresentação no repositório), `v1.1.5` (29/10, igual à 1.1.6 sem a mensagem de falta de internet no cadastro e sem o menu Mais do operador), `v1.1.4` (29/10, igual à 1.1.5 sem o bloqueio do nome repetido no cadastro), `v1.1.3` (29/10, igual à 1.1.4 sem editar, desativar e excluir insumo), `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
-- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.7`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
+- **Versões anteriores:** `v1.1.7` (30/10, o mesmo app da 1.1.8, com o roteiro da demonstração ao vivo), `v1.1.6` (30/10, o mesmo app da 1.1.7, sem o roteiro da apresentação no repositório), `v1.1.5` (29/10, igual à 1.1.6 sem a mensagem de falta de internet no cadastro e sem o menu Mais do operador), `v1.1.4` (29/10, igual à 1.1.5 sem o bloqueio do nome repetido no cadastro), `v1.1.3` (29/10, igual à 1.1.4 sem editar, desativar e excluir insumo), `v1.1.2` (29/10, igual à 1.1.3 sem o alerta de cadastro duplicado), `v1.1.1` (29/10, igual à 1.1.2 sem a paginação), `v1.1.1-final` (29/10, o mesmo app da `v1.1.1`, com o nome antigo da tag), `v1.1.0-final` (29/10, igual à 1.1.1 sem o destaque do "O que fazer"), `v1.0.3-entrega`, `v1.0.2-entrega` (27/10, com o botão de desativar substituído pela gestão completa de operadores na 1.0.3), `v1.0.1-entrega` (27/10, antes do cadastro de produtos) e `v1.0.0-entrega` (21/10), preservadas sem alteração. O botão Desativar da 1.0.2 não funciona mais com a API atual; use a versão avaliada.
+- **Como as releases são geradas:** cada atualização da `main` compila Windows, Android e Linux e publica uma release oficial `android-build-<número da execução>`, marcada como a mais recente; o prefixo histórico `android-build` vale para as três plataformas. Tags `v*`, como a `v1.1.8`, publicam uma release com o nome da própria tag. A versão interna do app é definida em `client/src-tauri/tauri.conf.json`; o número do build não altera essa versão.
 - **Vídeo final da entrega:** [demonstração no Drive](https://drive.google.com/file/d/1htR_aHty0eEUVUoWbqxzCKKcaz6VC5T8/view?usp=sharing).
 - **Slides:** [Slides da apresentação](https://claude.ai/artifact/RYQspiozQ9YGQcuYXGnVza#slide-568dce959502)
 - **Repositório Oficial:** [https://github.com/GabrielOlisil/AgroHacka](https://github.com/GabrielOlisil/AgroHacka)
