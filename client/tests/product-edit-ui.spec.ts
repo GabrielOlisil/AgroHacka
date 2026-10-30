@@ -90,6 +90,27 @@ describe("formulário de insumo em modo de edição", () => {
     ).toBeUndefined();
     wrapper.unmount();
   });
+
+  it("sem internet, salvar o cadastro explica a falta de conexão", async () => {
+    const save = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    for (const product of [diesel, undefined]) {
+      const wrapper = mount(ProductForm, {
+        props: { categories: [], save, product },
+      });
+      if (!product) {
+        await wrapper.get('[name="nome"]').setValue("Calcário");
+        await wrapper.get('[name="categoria"]').setValue("Corretivos");
+        await wrapper.get('[name="unidadeMedida"]').setValue("t");
+        await wrapper.get('[name="estoqueMinimo"]').setValue("1");
+      }
+      await wrapper.get("form").trigger("submit");
+      await flushPromises();
+      const alert = wrapper.get('[role="alert"]').text();
+      expect(alert).toContain("Sem internet no momento");
+      expect(alert).not.toContain("Failed to fetch");
+      wrapper.unmount();
+    }
+  });
 });
 
 function controller(role: "GESTOR" | "OPERADOR" = "GESTOR") {
@@ -240,6 +261,29 @@ describe("editar, desativar e excluir pela aba Estoque", () => {
     await flushPromises();
     const dialog = wrapper.get('[aria-labelledby="edit-product-title"]');
     expect(dialog.get('[role="alert"]').text()).toContain("Sem conexão");
+    wrapper.unmount();
+  });
+
+  it("sem internet, desativar e excluir explicam a falta de conexão", async () => {
+    const state = controller();
+    state.updateProduct.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    state.deleteProduct.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    const wrapper = mount(App, { props: { controller: state as never } });
+    await open(wrapper, "Estoque");
+    await wrapper.get(`[data-testid="editar-${D}"]`).trigger("click");
+    await wrapper.get('[data-testid="deactivate-product"]').trigger("click");
+    await flushPromises();
+    let alert = wrapper.get('[aria-labelledby="edit-product-title"] [role="alert"]');
+    expect(alert.text()).toContain("Sem internet no momento");
+    expect(alert.text()).not.toContain("Failed to fetch");
+    await wrapper.get('[aria-labelledby="edit-product-title"] .modal-close').trigger("click");
+    await wrapper.get(`[data-testid="editar-${U2}"]`).trigger("click");
+    await wrapper.get('[data-testid="delete-product"]').trigger("click");
+    await wrapper.get('[data-testid="confirm-delete-product"]').trigger("click");
+    await flushPromises();
+    alert = wrapper.get('[aria-labelledby="edit-product-title"] [role="alert"]');
+    expect(alert.text()).toContain("Sem internet no momento");
+    expect(alert.text()).not.toContain("Failed to fetch");
     wrapper.unmount();
   });
 

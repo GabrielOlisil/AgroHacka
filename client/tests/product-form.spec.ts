@@ -57,9 +57,11 @@ describe("cadastro de insumos", () => {
     expect(
       wrapper.get('button[type="submit"]').attributes("disabled"),
     ).toBeDefined();
-    fail(new TypeError("Sem conexão"));
+    fail(new TypeError("Failed to fetch"));
     await flushPromises();
-    expect(wrapper.get('[role="alert"]').text()).toContain("Sem conexão");
+    expect(wrapper.get('[role="alert"]').text()).toContain(
+      "Sem internet no momento",
+    );
     expect(wrapper.emitted("saved")).toBeUndefined();
     await wrapper.get("form").trigger("submit");
     await flushPromises();
