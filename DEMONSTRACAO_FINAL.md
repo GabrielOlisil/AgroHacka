@@ -1,5 +1,7 @@
 # Paiol — demonstração ao vivo da final
 
+> Preparação anterior da 1.1.6, preservada como apoio técnico e ficha de evidências. O roteiro vigente da **1.1.7** é [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md), com conta de ensaio e conta da apresentação separadas. Seguir os cenários e o cronograma desse roteiro; não executar a reposição alternativa abaixo na conta reservada da apresentação. O aceite de instalação registrado aqui é da 1.1.6.
+
 Preparação das tarefas 12.2, 12.15 e 12.21, em 30/10/2026.
 Versão: [v1.1.6](https://github.com/GabrielOlisil/AgroHacka/releases/tag/v1.1.6).
 Final: 30/10 às 19h15, Auditório do CEI. Apresentação de até 10 minutos, mais 3 de perguntas.

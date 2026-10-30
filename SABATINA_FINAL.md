@@ -1,6 +1,6 @@
 # Paiol — preparação da sabatina
 
-Material das tarefas 12.16 e 12.21, conferido com código, README e tarefas em 30/10/2026. Versão de referência: 1.1.6. Gabriel e Kauê devem estudar todas as respostas. Divisão sugerida: Gabriel apresenta telas e offline; Kauê detalha motor, autenticação e banco; qualquer um deve conseguir responder ao núcleo de cada pergunta.
+Material das tarefas 12.16 e 12.21, conferido com código, README e tarefas em 30/10/2026. Versão de referência: 1.1.7 (mesmas funcionalidades da 1.1.6, com revisão documental e roteiro). O roteiro vigente é [`roteiro-demonstracao-final.md`](roteiro-demonstracao-final.md). Gabriel e Kauê devem estudar todas as respostas. Divisão sugerida: Gabriel apresenta telas e offline; Kauê detalha motor, autenticação e banco; qualquer um deve conseguir responder ao núcleo de cada pergunta.
 
 As perguntas abaixo são uma preparação temática. O texto original das perguntas 21–25 do parecer e o baralho Anki da equipe não estão no workspace, portanto este material não afirma reproduzi-los nem atualiza o baralho externo.
 
@@ -56,7 +56,7 @@ As perguntas abaixo são uma preparação temática. O texto original das pergun
 - [ ] Comparar este material com o parecer original e preencher qualquer pergunta 21–25 não coberta.
 - [ ] Atualizar o Anki da equipe, se for usado; o baralho externo não foi modificado pelo agente.
 - [ ] Ensaiar três perguntas seguidas com tempo total de 3 minutos.
-- [ ] Conferir slides: nome Paiol; tag v1.1.6; dados simulados; ação e reanálise; parâmetros da equipe; limites e IA.
+- [ ] Conferir slides: nome Paiol; tag v1.1.7; dados simulados; ação e reanálise; parâmetros da equipe; limites e IA.
 - [ ] Vídeo de 28/10 identificado como versão 1.0.4; preferir mostrar ao vivo as melhorias da 1.1.6.
 - [ ] Conferir números da fala contra o app atual. O gabarito fixo não representa automaticamente a fazenda publicada de hoje.
 
