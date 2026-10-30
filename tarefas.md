@@ -522,7 +522,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - Ainda em 29/10, editar, desativar e excluir insumo (12.24) entrou na versão avaliada: app **1.1.4** e tag `v1.1.4`. A `v1.1.3` fica como anterior.
   - Ainda em 29/10, o bloqueio do nome repetido no cadastro (12.25) entrou na versão avaliada: app **1.1.5** e tag `v1.1.5`. A `v1.1.4` fica como anterior.
   - Em 30/10, a mensagem de falta de internet e o menu Mais do operador (12.26) entraram na versão avaliada: app **1.1.6** e tag `v1.1.6`. A `v1.1.5` fica como anterior.
-  - **Falta:** informar a tag `v1.1.6` à organização.
+  - Ainda em 30/10, o roteiro da apresentação e a revisão do README (12.27) entraram na versão avaliada: app **1.1.7** e tag `v1.1.7`, com o mesmo app da 1.1.6. A `v1.1.6` fica como anterior.
+  - **Falta:** informar a tag `v1.1.7` à organização.
 - [ ] **12.2. [EM CONJUNTO] Demonstração ao vivo com reanálise (C2):** na final, slides e vídeos não substituem a demonstração. Preparar no notebook o app desktop com a fazenda de demonstração e um roteiro para registrar uma movimentação ao vivo e mostrar a reanálise.
   - **DEV 1:** confirmar que a fazenda de demonstração está na API publicada e que o login funciona. Essa é a pergunta 21 do parecer.
   - **DEV 2:** deixar o notebook com o app instalado, a fazenda sincronizada e o roteiro da demonstração.
@@ -783,6 +784,11 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
   - O APK da release passa a ter a versão no nome, como os instaladores: `agrohacka_1.1.6_arm64-debug.apk` em vez de `app-universal-debug.apk`.
   - Testes: `product-edit-ui.spec.ts`, `app.spec.ts` e `build-packaging.spec.ts` (RED antes de cada parte). App com 648 testes.
 
+- [x] **12.27. [DEV 1] Roteiro da apresentação no repositório e revisão do README:** pedida pelo Kauê em 30/10.
+  - `roteiro-demonstracao-final.md` na raiz, ligado na seção 6.2 do README: tempos, falas, passo a passo e planos B. A demonstração ao vivo fica no notebook do gestor; celular sem internet, QR Code e WhatsApp ficam em vídeo.
+  - A demonstração usa a conta `agro@agrohack.com`, cópia da fazenda de demonstração com o cenário de 28/10 trazido para 30/10, para os números do roteiro não mudarem com as datas. Os ensaios usam `ensaio@agrohack.com`. Senhas fora do repositório.
+  - README revisado inteiro. Correções: a instalação local usava `npx prisma migrate deploy`, mas o repositório não tem migrations e a API cria as tabelas com `npx prisma db push`; o código de pareamento é `AGRO-XXXX`, não "6 caracteres".
+  - Testes: `readme.spec.ts` e `build-packaging.spec.ts` (RED antes). App com 649 testes.
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, vários gestores por fazenda, papéis (administrador, consulta) e recuperação de senha (analisados em 29/10: mexem no login, que a demonstração usa primeiro), variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 
 ---
