@@ -780,7 +780,8 @@ Juntos: 12.14 no dia 29; 12.15 e 12.16 no dia 30 depois das 14h; 12.4 no dia 30;
 - [x] **12.26. [DEV 1] Mensagem sem internet no cadastro e "Como funciona" do operador no celular:** pedida pelo Kauê em 30/10, ao testar a 1.1.5.
   - Sem internet, cadastrar, editar, desativar e excluir insumo mostravam o erro cru "Failed to fetch". Agora mostram "Sem internet no momento. Tente de novo quando tiver sinal.", com a mesma regra que o teste do WhatsApp já usava (`network-error.ts`).
   - No celular, o operador não tinha como abrir o "Como funciona" (só pelo link dos alertas). Agora ele também tem o **Mais**, com Cópias e Como funciona; Operadores continua só para o gestor.
-  - Testes: `product-edit-ui.spec.ts` e `app.spec.ts` (RED antes de cada parte). App com 647 testes.
+  - O APK da release passa a ter a versão no nome, como os instaladores: `agrohacka_1.1.6_arm64-debug.apk` em vez de `app-universal-debug.apk`.
+  - Testes: `product-edit-ui.spec.ts`, `app.spec.ts` e `build-packaging.spec.ts` (RED antes de cada parte). App com 648 testes.
 
 **Fora do escopo até a final (responder como limitação):** importação de arquivo (cinco das seis concorrentes têm; a resposta é a carga de demonstração reproduzível e o cadastro pelo app), lotes por entrada, junção automática de cadastros duplicados, vários gestores por fazenda, papéis (administrador, consulta) e recuperação de senha (analisados em 29/10: mexem no login, que a demonstração usa primeiro), variação de preço e a divisão do `App.vue` (cerca de 1.700 linhas). São mudanças grandes demais para fazer com segurança até 30/10 às 14h.
 

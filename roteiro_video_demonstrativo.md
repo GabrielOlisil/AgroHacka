@@ -32,7 +32,7 @@ O regulamento (itens 7e e 7g) pede o vídeo demonstrativo e a **demonstração d
 
 ### 2.1 Software e aparelhos
 - [ ] **Notebook com Windows** e o instalador da release `android-build-22` instalado (`agrohacka_1.0.4_x64-setup.exe` da página de Releases).
-- [ ] **Celular Android** com o `app-universal-debug.apk` da mesma release instalado. Se já houver uma versão antiga, instale por cima.
+- [ ] **Celular Android** com o `agrohacka_1.1.6_arm64-debug.apk` da mesma release instalado. Se já houver uma versão antiga, instale por cima.
   - O celular precisa começar **sem estar pareado**, para gravar a Cena 6. Se já estiver conectado, toque em **Sair** no app antes de gravar.
 - [ ] **OBS Studio** (gratuito) configurado com captura da tela inteira (1920×1080) e microfone.
 - [ ] Um jeito de filmar o celular: outro celular num suporte, a webcam apontada para a mesa, ou o espelhamento do Android com o scrcpy.

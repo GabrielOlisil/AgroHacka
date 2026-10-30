@@ -170,6 +170,14 @@ jobs:
         working-directory: client
         run: npx @tauri-apps/cli android build --apk --debug --target aarch64 --ci
 
+      # Mesmo padrão dos instaladores (agrohacka_<versão>_...), em vez de app-universal-debug.apk.
+      - name: Pôr a versão no nome do .apk
+        working-directory: client
+        run: |
+          versao=$(node -p "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json', 'utf8')).version")
+          apk=$(find src-tauri/gen/android/app/build/outputs/apk -path '*/debug/*.apk')
+          mv "$apk" "$(dirname "$apk")/agrohacka_${versao}_arm64-debug.apk"
+
       - name: Upload Artefatos Android (.apk)
         uses: actions/upload-artifact@v4
         with:
