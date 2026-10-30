@@ -8,7 +8,7 @@ As perguntas abaixo são uma preparação temática. O texto original das pergun
 
 1. **Qual problema vocês resolvem e para quem?** Para o gestor rural, transformamos entradas e saídas em prioridades de compra, uso antes do vencimento e conferência de retiradas. Para o operador, permitimos registrar no celular mesmo sem internet.
 
-2. **A fazenda de demonstração funciona na API publicada?** O usuário confirmou o notebook instalado e sincronizado. A release v1.1.6 está pública. As credenciais antigas da carga foram revogadas em produção, conforme a 12.3; a demonstração usa a sessão autorizada já preparada, sem projetar senha ou tokens. Não informar que um login novo foi testado agora pelo agente.
+2. **A fazenda de demonstração funciona na API publicada?** O usuário confirmou o notebook instalado e sincronizado. A release v1.1.7 está pública, e a demonstração usa a conta agro@agrohack.com, cópia da fazenda de demonstração. As credenciais antigas da carga foram revogadas em produção, conforme a 12.3; a demonstração usa a sessão autorizada já preparada, sem projetar senha ou tokens. Não informar que um login novo foi testado agora pelo agente.
 
 3. **Onde está a reanálise de verdade?** Ao salvar, o aplicativo analisa os registros locais e mostra alertas novos, resolvidos e com mudança de nível. A API também reanalisa depois de aceitar movimentações. Na demonstração, repor a Ureia resolve a falta na tela e preserva a compra no histórico.
 
@@ -60,4 +60,4 @@ As perguntas abaixo são uma preparação temática. O texto original das pergun
 - [ ] Vídeo de 28/10 identificado como versão 1.0.4; preferir mostrar ao vivo as melhorias da 1.1.6.
 - [ ] Conferir números da fala contra o app atual. O gabarito fixo não representa automaticamente a fazenda publicada de hoje.
 
-Referências: `README.md` §§5–10, `tarefas.md` Etapa 12, `DEMONSTRACAO_FINAL.md`, `client/src/alert-changes.ts`, `client/src/offline/analysis.ts` e testes de paridade/gabarito. A revisão dos slides externos e o ensaio entre os integrantes continuam pendentes.
+Referências: `README.md` §§5–10, `tarefas.md` Etapa 12, `roteiro-demonstracao-final.md`, `client/src/alert-changes.ts`, `client/src/offline/analysis.ts` e testes de paridade/gabarito. A revisão dos slides externos e o ensaio entre os integrantes continuam pendentes.
